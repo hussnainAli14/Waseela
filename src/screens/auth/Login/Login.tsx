@@ -1,85 +1,155 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { AuthScreenProps } from '@/navigation/types';
-import { colors } from '@/theme';
-import { navigationRef } from '@/navigation';
-import { CommonActions } from '@react-navigation/native';
+import React, { useState } from 'react';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { Text, TextField, Button, Image } from '@/components/atoms';
+import { LoginScreenProps, LoginFormData } from './types';
+import { styles } from './styles';
+import { images } from '@/assets/images/images';
+import { RootStackParamList } from '@/navigation/types';
 
-type LoginScreenProps = AuthScreenProps<'Login'>;
+const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const [formData, setFormData] = useState<LoginFormData>({
+    email: '',
+    password: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Partial<LoginFormData>>({});
 
-const Login = ({ navigation }: LoginScreenProps) => {
-  const handleNavigateToHome = () => {
-    if (navigationRef.isReady()) {
-      navigationRef.dispatch(
-        CommonActions.navigate({
-          name: 'Main',
-          params: {
-            screen: 'Home',
-          },
-        }),
-      );
+  const handleInputChange = (field: keyof LoginFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<LoginFormData> = {};
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const handleSignIn = () => {
+    if (validateForm()) {
+      rootNavigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        <View style={styles.logoContainer}>
+          <Image
+            source={images.mainLogo}
+            width={80}
+            height={80}
+            resizeMode="contain"
+            containerStyle={styles.logo}
+          />
+        </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleNavigateToHome}>
-        <Text style={styles.buttonText}>Go to Home Page</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => navigation.navigate('Signup')}>
-        <Text style={styles.buttonText}>Go to Signup</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.button, styles.secondaryButton]}
-        onPress={() => navigation.navigate('ForgotPassword')}>
-        <Text style={styles.secondaryButtonText}>Forgot Password?</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.welcomeContainer}>
+          <Text variant="3xl-bold" style={styles.welcomeTitle}>
+            Welcome Back
+          </Text>
+          <Text variant="md-normal" style={styles.welcomeSubtitle}>
+            Sign in to continue your journey
+          </Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <TextField
+            label="Email"
+            placeholder="Enter your email"
+            value={formData.email}
+            onChangeText={value => handleInputChange('email', value)}
+            error={errors.email}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            leftIcon={
+              <Ionicons name="mail-outline" size={20} style={styles.icon} />
+            }
+          />
+
+          <TextField
+            label="Password"
+            placeholder="Enter your password"
+            value={formData.password}
+            onChangeText={value => handleInputChange('password', value)}
+            error={errors.password}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+            autoComplete="password"
+            leftIcon={
+              <Ionicons name="lock-closed-outline" size={20} style={styles.icon} />
+            }
+            rightIcon={
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  style={styles.icon}
+                />
+              </TouchableOpacity>
+            }
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.forgotPasswordContainer}
+          onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text variant="md-medium" style={styles.forgotPasswordText}>
+            Forgot Password?
+          </Text>
+        </TouchableOpacity>
+
+        <Button
+          title="Sign In"
+          variant="primary"
+          size="large"
+          fullWidth
+          onPress={handleSignIn}
+          containerStyle={styles.signInButton}
+        />
+
+        <View style={styles.signUpContainer}>
+          <Text variant="md-normal" style={styles.signUpText}>
+            Don't have an account?
+          </Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+            <Text variant="md-semibold" style={styles.signUpLink}>
+              Sign Up
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background.light,
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontFamily: 'Outfit-Bold',
-    color: colors.text.primary,
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: colors.primary[500],
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    minWidth: 200,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: colors.common.white,
-    fontSize: 16,
-    fontFamily: 'Outfit-SemiBold',
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-  },
-  secondaryButtonText: {
-    color: colors.primary[600],
-    fontSize: 16,
-    fontFamily: 'Outfit-Medium',
-  },
-});
 
 export default Login;

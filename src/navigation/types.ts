@@ -14,15 +14,97 @@ export type AuthStackParamList = {
 
 // Main/App Stack Param List (for authenticated users)
 export type MainStackParamList = {
+  Tabs: undefined;
   Home: undefined;
+  Directory: undefined;
+  Services: undefined;
+  BuySell: undefined;
+  RoomFinder: undefined;
+  ProfessionalNetwork: undefined;
   Profile: undefined;
-  About: undefined;
+  Details: {
+    listing: ListingItem;
+  };
+  MarketItemDetails: {
+    item: MarketItem;
+  };
+  RoomDetails: {
+    room: RoomItem;
+  };
+  ProfessionalProfile: {
+    professional: ProfessionalProfileItem;
+  };
 };
 
 // Root Navigator Param List
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainStackParamList>;
+};
+
+export type ListingItem = {
+  id: string;
+  name: string;
+  category: string;
+  location: string;
+  rating: number;
+  reviews: number;
+  verified?: boolean;
+  image: string;
+  description?: string;
+  address?: string;
+  timings?: string;
+  phone?: string;
+  email?: string;
+};
+
+export type MarketItem = {
+  id: string;
+  title: string;
+  price: string;
+  location: string;
+  condition: string;
+  category: string;
+  image: string;
+  postedAt?: string;
+  sellerName?: string;
+  description?: string;
+  safetyTips?: string[];
+};
+
+export type RoomItem = {
+  id: string;
+  title: string;
+  city: string;
+  type: 'single' | 'double' | 'studio' | 'shared';
+  price: number;
+  priceLabel: string;
+  image: string;
+  billsIncluded: boolean;
+  locationLine1: string;
+  locationLine2: string;
+  description?: string;
+  amenities?: string[];
+  availableFrom?: string;
+  landlordName?: string;
+  postedAt?: string;
+};
+
+export type ProfessionalProfileItem = {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  industry: string;
+  city: string;
+  yearsExperience: number;
+  tags: string[];
+  avatar: string;
+  about?: string;
+  expertise?: string[];
+  helpTitle?: string;
+  helpDescription?: string;
+  linkedinUrl?: string;
 };
 
 // Navigation prop types for screens

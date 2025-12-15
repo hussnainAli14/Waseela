@@ -5,12 +5,27 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { MainStackParamList } from './types';
-import { About, Home, Profile } from '@/screens';
+import {
+  Home,
+  Profile,
+  Directory,
+  Services,
+  Details,
+  BuySell,
+  RoomFinder,
+  MarketItemDetails,
+  RoomDetails,
+  ProfessionalNetwork,
+  ProfessionalProfile,
+} from '@/screens';
 import { colors } from '@/theme';
+import { BottomNavigator } from '@/components';
 
 const Tab = createBottomTabNavigator<MainStackParamList>();
+const Stack = createNativeStackNavigator<MainStackParamList>();
 
 // Icon renderer functions
 const renderHomeIcon = ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
@@ -29,9 +44,17 @@ const renderProfileIcon = ({ color, size, focused }: { color: string; size: numb
   />
 );
 
-const renderAboutIcon = ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
+const renderDirectoryIcon = ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
   <Ionicons
-    name={focused ? 'information-circle' : 'information-circle-outline'}
+    name={focused ? 'storefront' : 'storefront-outline'}
+    size={size || 24}
+    color={color}
+  />
+);
+
+const renderServicesIcon = ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
+  <Ionicons
+    name={focused ? 'briefcase' : 'briefcase-outline'}
     size={size || 24}
     color={color}
   />
@@ -39,63 +62,89 @@ const renderAboutIcon = ({ color, size, focused }: { color: string; size: number
 
 export const MainNavigator = () => {
   return (
-    <Tab.Navigator
+    <Stack.Navigator
       screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: '#6366F1',
-        },
-        headerTintColor: '#FFFFFF',
-        headerTitleStyle: {
-          fontFamily: 'Outfit-SemiBold',
-        },
-        tabBarActiveTintColor: colors.primary[600],
-        tabBarInactiveTintColor: colors.text.secondary,
-        tabBarStyle: {
-          backgroundColor: colors.common.white,
-          borderTopWidth: 1,
-          borderTopColor: colors.border.light,
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 60,
-        },
-        tabBarLabelStyle: {
-          fontFamily: 'Outfit-Medium',
-          fontSize: 12,
-        },
-        tabBarIconStyle: {
-          marginTop: 4,
-        },
-      }}
-      initialRouteName="Home">
-      <Tab.Screen
-        name="Home"
-        component={Home}
-        options={{
-          title: 'Home',
-          tabBarLabel: 'Home',
-          tabBarIcon: renderHomeIcon,
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={Profile}
-        options={{
-          title: 'Profile',
-          tabBarLabel: 'Profile',
-          tabBarIcon: renderProfileIcon,
-        }}
-      />
-      <Tab.Screen
-        name="About"
-        component={About}
-        options={{
-          title: 'About',
-          tabBarLabel: 'About',
-          tabBarIcon: renderAboutIcon,
-        }}
-      />
-    </Tab.Navigator>
+        headerShown: false,
+      }}>
+      <Stack.Screen name="Tabs" options={{ headerShown: false }}>
+        {() => (
+          <Tab.Navigator
+            screenOptions={{
+              headerShown: false,
+              tabBarActiveTintColor: colors.primary[600],
+              tabBarInactiveTintColor: colors.text.secondary,
+            }}
+            tabBar={props => <BottomNavigator {...props} />}
+            initialRouteName="Home">
+            <Tab.Screen
+              name="Home"
+              component={Home}
+              options={{
+                title: 'Home',
+                tabBarLabel: 'Home',
+                tabBarIcon: renderHomeIcon,
+              }}
+            />
+            <Tab.Screen
+              name="Directory"
+              component={Directory}
+              options={{
+                title: 'Directory',
+                tabBarLabel: 'Directory',
+                tabBarIcon: renderDirectoryIcon,
+              }}
+            />
+            <Tab.Screen
+              name="Services"
+              component={Services}
+              options={{
+                title: 'Services',
+                tabBarLabel: 'Services',
+                tabBarIcon: renderServicesIcon,
+              }}
+            />
+            <Tab.Screen
+              name="Profile"
+              component={Profile}
+              options={{
+                title: 'Profile',
+                tabBarLabel: 'Profile',
+                tabBarIcon: renderProfileIcon,
+              }}
+            />
+            {/* Hidden tabs for Buy & Sell, Room Finder and Professionals so they share bottom bar */}
+            <Tab.Screen
+              name="BuySell"
+              component={BuySell}
+              options={{
+                headerShown: false,
+                tabBarButton: () => null,
+              }}
+            />
+            <Tab.Screen
+              name="RoomFinder"
+              component={RoomFinder}
+              options={{
+                headerShown: false,
+                tabBarButton: () => null,
+              }}
+            />
+            <Tab.Screen
+              name="ProfessionalNetwork"
+              component={ProfessionalNetwork}
+              options={{
+                headerShown: false,
+                tabBarButton: () => null,
+              }}
+            />
+          </Tab.Navigator>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="Details" component={Details} />
+      <Stack.Screen name="MarketItemDetails" component={MarketItemDetails} />
+      <Stack.Screen name="RoomDetails" component={RoomDetails} />
+      <Stack.Screen name="ProfessionalProfile" component={ProfessionalProfile} />
+    </Stack.Navigator>
   );
 };
 
