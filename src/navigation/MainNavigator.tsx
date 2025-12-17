@@ -37,12 +37,14 @@ const ProfileStack = createNativeStackNavigator<MainStackParamList>();
 const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="Home" component={Home} />
+    <HomeStack.Screen name="Details" component={Details} />
   </HomeStack.Navigator>
 );
 
 const DirectoryStackNavigator = () => (
   <DirectoryStack.Navigator screenOptions={{ headerShown: false }}>
     <DirectoryStack.Screen name="Directory" component={Directory} />
+    <DirectoryStack.Screen name="Details" component={Details} />
   </DirectoryStack.Navigator>
 );
 
@@ -52,6 +54,7 @@ const ServicesStackNavigator = () => (
     <ServicesStack.Screen name="SellItem" component={SellItem} />
     <ServicesStack.Screen name="RoomFinder" component={RoomFinder} />
     <ServicesStack.Screen name="PostRoom" component={PostRoom} />
+    <ServicesStack.Screen name="Details" component={Details} />
   </ServicesStack.Navigator>
 );
 
@@ -67,6 +70,7 @@ const ProfileStackNavigator = () => (
       component={ProfileCommunityGuidelines}
     />
     <ProfileStack.Screen name="SubmitListing" component={SubmitListing} />
+    <ProfileStack.Screen name="Details" component={Details} />
   </ProfileStack.Navigator>
 );
 
@@ -158,7 +162,6 @@ export const MainNavigator = () => {
           </Tab.Navigator>
         )}
       </Stack.Screen>
-      <Stack.Screen name="Details" component={Details} />
       <Stack.Screen name="MarketItemDetails" component={MarketItemDetails} />
       <Stack.Screen name="RoomDetails" component={RoomDetails} />
       <Stack.Screen name="ProfessionalProfile" component={ProfessionalProfile} />

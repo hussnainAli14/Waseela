@@ -8,7 +8,7 @@ import { colors } from '@/theme';
 import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
-import { MainStackParamList, ListingItem } from '@/navigation/types';
+import { ListingItem } from '@/navigation/types';
 
 type CategoryItem = { key: string; label: string; icon: string };
 
@@ -80,7 +80,7 @@ const Directory = () => {
   const [searchValue, setSearchValue] = useState('');
   const [selectedCity, setSelectedCity] = useState<string | undefined>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<NavigationProp<any>>();
 
   const renderCategory = ({ item }: { item: CategoryItem }) => (
     <TouchableOpacity
