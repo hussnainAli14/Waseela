@@ -33,6 +33,7 @@ export const styles = StyleSheet.create({
   },
   postButtonText: {
     color: colors.accent.orange,
+    fontFamily: 'Outfit-Medium',
   },
   filtersSection: {
     paddingHorizontal: 16,
@@ -127,6 +128,7 @@ export const styles = StyleSheet.create({
   },
   roomTitle: {
     color: colors.text.primary,
+    fontFamily: 'Outfit-SemiBold',
   },
   badgeRow: {
     flexDirection: 'row',
@@ -165,6 +167,7 @@ export const styles = StyleSheet.create({
   },
   subLocationText: {
     color: colors.text.secondary,
+    fontFamily: 'Outfit-Medium',
   },
 });
 

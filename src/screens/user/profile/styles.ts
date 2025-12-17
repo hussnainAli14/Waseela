@@ -106,6 +106,7 @@ export const styles = StyleSheet.create({
   },
   primaryActionText: {
     color: colors.common.white,
+    fontFamily: 'Outfit-Medium',
   },
   secondaryActionCard: {
     flex: 1,
