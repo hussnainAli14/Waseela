@@ -7,7 +7,7 @@ import { colors } from '@/theme';
 import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { ListingItem, MainStackParamList } from '@/navigation/types';
+import type { ListingItem } from '@/navigation/types';
 
 const user = {
   name: 'Ali Hassan',
@@ -60,10 +60,7 @@ const savedListings: SavedListing[] = [
   },
 ];
 
-type ProfileScreenNavigation = NativeStackNavigationProp<
-  MainStackParamList,
-  'Profile'
->;
+type ProfileScreenNavigation = NativeStackNavigationProp<any>;
 
 const Profile = () => {
   const navigation = useNavigation<ProfileScreenNavigation>();
@@ -227,7 +224,7 @@ const Profile = () => {
           <TouchableOpacity
             style={[styles.secondaryActionCard,{borderWidth:1, borderColor:colors.accent.purple}]}
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('SellItem')}>
+            onPress={() => navigation.navigate('Services', { screen: 'SellItem' })}>
             <Ionicons
               name="bag-outline"
               size={20}
@@ -240,7 +237,7 @@ const Profile = () => {
           <TouchableOpacity
             style={[styles.secondaryActionCard,{borderWidth:1, borderColor:colors.accent.orange}]}
             activeOpacity={0.9}
-            onPress={() => navigation.navigate('PostRoom')}>
+            onPress={() => navigation.navigate('Services', { screen: 'PostRoom' })}>
             <Ionicons
               name="home-outline"
               size={20}

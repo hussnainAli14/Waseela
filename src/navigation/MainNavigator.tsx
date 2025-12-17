@@ -14,11 +14,9 @@ import {
   Directory,
   Services,
   Details,
-  BuySell,
   RoomFinder,
   MarketItemDetails,
   RoomDetails,
-  ProfessionalNetwork,
   ProfessionalProfile,
   ProfileCommunityGuidelines,
   SubmitListing,
@@ -29,8 +27,48 @@ import {
 import { colors } from '@/theme';
 import { BottomNavigator } from '@/components';
 
-const Tab = createBottomTabNavigator<MainStackParamList>();
+const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<MainStackParamList>();
+const HomeStack = createNativeStackNavigator<MainStackParamList>();
+const DirectoryStack = createNativeStackNavigator<MainStackParamList>();
+const ServicesStack = createNativeStackNavigator<MainStackParamList>();
+const ProfileStack = createNativeStackNavigator<MainStackParamList>();
+
+const HomeStackNavigator = () => (
+  <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+    <HomeStack.Screen name="Home" component={Home} />
+  </HomeStack.Navigator>
+);
+
+const DirectoryStackNavigator = () => (
+  <DirectoryStack.Navigator screenOptions={{ headerShown: false }}>
+    <DirectoryStack.Screen name="Directory" component={Directory} />
+  </DirectoryStack.Navigator>
+);
+
+const ServicesStackNavigator = () => (
+  <ServicesStack.Navigator screenOptions={{ headerShown: false }}>
+    <ServicesStack.Screen name="Services" component={Services} />
+    <ServicesStack.Screen name="SellItem" component={SellItem} />
+    <ServicesStack.Screen name="RoomFinder" component={RoomFinder} />
+    <ServicesStack.Screen name="PostRoom" component={PostRoom} />
+  </ServicesStack.Navigator>
+);
+
+const ProfileStackNavigator = () => (
+  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Screen name="Profile" component={Profile} />
+    <ProfileStack.Screen
+      name="JoinProfessionalNetwork"
+      component={JoinProfessionalNetwork}
+    />
+    <ProfileStack.Screen
+      name="CommunityGuidelines"
+      component={ProfileCommunityGuidelines}
+    />
+    <ProfileStack.Screen name="SubmitListing" component={SubmitListing} />
+  </ProfileStack.Navigator>
+);
 
 // Icon renderer functions
 const renderHomeIcon = ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
@@ -83,7 +121,7 @@ export const MainNavigator = () => {
             initialRouteName="Home">
             <Tab.Screen
               name="Home"
-              component={Home}
+              component={HomeStackNavigator}
               options={{
                 title: 'Home',
                 tabBarLabel: 'Home',
@@ -92,7 +130,7 @@ export const MainNavigator = () => {
             />
             <Tab.Screen
               name="Directory"
-              component={Directory}
+              component={DirectoryStackNavigator}
               options={{
                 title: 'Directory',
                 tabBarLabel: 'Directory',
@@ -101,7 +139,7 @@ export const MainNavigator = () => {
             />
             <Tab.Screen
               name="Services"
-              component={Services}
+              component={ServicesStackNavigator}
               options={{
                 title: 'Services',
                 tabBarLabel: 'Services',
@@ -110,36 +148,11 @@ export const MainNavigator = () => {
             />
             <Tab.Screen
               name="Profile"
-              component={Profile}
+              component={ProfileStackNavigator}
               options={{
                 title: 'Profile',
                 tabBarLabel: 'Profile',
                 tabBarIcon: renderProfileIcon,
-              }}
-            />
-            {/* Hidden tabs for Buy & Sell, Room Finder and Professionals so they share bottom bar */}
-            <Tab.Screen
-              name="BuySell"
-              component={BuySell}
-              options={{
-                headerShown: false,
-                tabBarButton: () => null,
-              }}
-            />
-            <Tab.Screen
-              name="RoomFinder"
-              component={RoomFinder}
-              options={{
-                headerShown: false,
-                tabBarButton: () => null,
-              }}
-            />
-            <Tab.Screen
-              name="ProfessionalNetwork"
-              component={ProfessionalNetwork}
-              options={{
-                headerShown: false,
-                tabBarButton: () => null,
               }}
             />
           </Tab.Navigator>
@@ -149,15 +162,6 @@ export const MainNavigator = () => {
       <Stack.Screen name="MarketItemDetails" component={MarketItemDetails} />
       <Stack.Screen name="RoomDetails" component={RoomDetails} />
       <Stack.Screen name="ProfessionalProfile" component={ProfessionalProfile} />
-      <Stack.Screen
-        name="CommunityGuidelines"
-        component={ProfileCommunityGuidelines}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen name="SubmitListing" component={SubmitListing} />
-      <Stack.Screen name="SellItem" component={SellItem} />
-      <Stack.Screen name="PostRoom" component={PostRoom} />
-      <Stack.Screen name="JoinProfessionalNetwork" component={JoinProfessionalNetwork} />
     </Stack.Navigator>
   );
 };

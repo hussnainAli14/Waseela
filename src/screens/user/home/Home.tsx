@@ -8,7 +8,7 @@ import { colors } from '@/theme';
 import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
-import { MainStackParamList, ListingItem } from '@/navigation/types';
+import { ListingItem } from '@/navigation/types';
 
 const exploreItems = [
   {
@@ -75,7 +75,7 @@ const featuredListings = [
 
 const Home = () => {
   const [searchValue, setSearchValue] = useState('');
-  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+  const navigation = useNavigation<NavigationProp<any>>();
 
   const handleExplorePress = useCallback(
     (key: string) => {
@@ -84,9 +84,9 @@ const Home = () => {
       } else if (key === 'services') {
         navigation.navigate('Services');
       } else if (key === 'buy-sell') {
-        navigation.navigate('SellItem');
+        navigation.navigate('Services', { screen: 'SellItem' });
       } else if (key === 'rooms') {
-        navigation.navigate('PostRoom');
+        navigation.navigate('Services', { screen: 'RoomFinder' });
       }
     },
     [navigation],
@@ -151,7 +151,7 @@ const Home = () => {
             style={[styles.networkCard, { borderColor: colors.border.light }]}
             backgroundColor={colors.background.light}
             padding={18}
-            onPress={() => navigation.navigate('JoinProfessionalNetwork')}>
+            onPress={() => navigation.navigate('Profile', { screen: 'JoinProfessionalNetwork' })}>
             <View style={styles.networkContent}>
               <View
                 style={[

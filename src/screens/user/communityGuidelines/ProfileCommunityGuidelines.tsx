@@ -349,44 +349,6 @@ const ProfileCommunityGuidelines: React.FC = () => {
           </TouchableOpacity>
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        <TouchableOpacity
-          style={styles.bottomNavItem}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Home')}>
-          <Ionicons name="home-outline" size={22} color={colors.text.secondary} />
-          <Text variant="xs-normal" style={styles.bottomNavLabel}>
-            Home
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomNavItem}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Directory')}>
-          <Ionicons name="storefront-outline" size={22} color={colors.text.secondary} />
-          <Text variant="xs-normal" style={styles.bottomNavLabel}>
-            Directory
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomNavItem}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Services')}>
-          <Ionicons name="briefcase-outline" size={22} color={colors.text.secondary} />
-          <Text variant="xs-normal" style={styles.bottomNavLabel}>
-            Services
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bottomNavItem}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person-outline" size={22} color={colors.secondary[600]} />
-          <Text variant="xs-normal" style={[styles.bottomNavLabel, styles.bottomNavLabelActive]}>
-            Profile
-          </Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };

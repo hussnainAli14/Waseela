@@ -13,7 +13,6 @@ import { Text, Button, Checkbox, TextField } from '@/components/atoms';
 import { Dropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './JoinProfessionalNetwork.styles';
-import { FormBottomNav } from './index';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
@@ -327,7 +326,6 @@ const JoinProfessionalNetwork: React.FC = () => {
             Your profile will be visible to all community members
           </Text>
         </ScrollView>
-        <FormBottomNav activeTab="Profile" />
       </View>
     </SafeAreaView>
   );
