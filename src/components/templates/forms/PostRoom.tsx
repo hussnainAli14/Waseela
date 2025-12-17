@@ -13,9 +13,6 @@ import { Text, Button, Checkbox, TextField } from '@/components/atoms';
 import { Dropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './PostRoom.styles';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { MainStackParamList } from '@/navigation/types';
 import {
   launchImageLibrary,
   type Asset,
@@ -40,10 +37,7 @@ const defaultAmenities = [
   'Study Room',
 ];
 
-type Navigation = NativeStackNavigationProp<MainStackParamList, 'PostRoom'>;
-
 const PostRoom: React.FC = () => {
-  const navigation = useNavigation<Navigation>();
   const [photos, setPhotos] = useState<Asset[]>([]);
   const [roomType, setRoomType] = useState('');
   const [rent, setRent] = useState('');
@@ -104,16 +98,6 @@ const PostRoom: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
-          style={styles.headerRow}>
-          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
-          <Text variant="lg-semibold" style={styles.headerTitle}>
-            Post Your Room
-          </Text>
-        </TouchableOpacity>
-
         <View style={styles.card}>
           <TextField
             label="Room Title"

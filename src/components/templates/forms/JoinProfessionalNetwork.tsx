@@ -13,9 +13,6 @@ import { Text, Button, Checkbox, TextField } from '@/components/atoms';
 import { Dropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './JoinProfessionalNetwork.styles';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { MainStackParamList } from '@/navigation/types';
 import {
   launchImageLibrary,
   type Asset,
@@ -36,10 +33,7 @@ const industryOptions = [
   { label: 'Other', value: 'other' },
 ];
 
-type Navigation = NativeStackNavigationProp<MainStackParamList, 'JoinProfessionalNetwork'>;
-
 const JoinProfessionalNetwork: React.FC = () => {
-  const navigation = useNavigation<Navigation>();
   const [fullName, setFullName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [company, setCompany] = useState('');
@@ -98,16 +92,6 @@ const JoinProfessionalNetwork: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => navigation.goBack()}
-            style={styles.headerRow}>
-            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
-            <Text variant="lg-semibold" style={styles.headerTitle}>
-              Join Professional Network
-            </Text>
-          </TouchableOpacity>
-
           <View style={styles.infoCard}>
             <Text variant="md-semibold" style={styles.infoTitle}>
               About This Network

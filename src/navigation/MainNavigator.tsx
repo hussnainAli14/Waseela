@@ -49,25 +49,47 @@ const DirectoryStackNavigator = () => (
 );
 
 const ServicesStackNavigator = () => (
-  <ServicesStack.Navigator screenOptions={{ headerShown: false }}>
+  <ServicesStack.Navigator
+    screenOptions={{
+      headerShown: false,
+      headerTitleStyle: {
+        fontFamily: 'Outfit-Semibold',
+      },
+    }}>
     <ServicesStack.Screen name="Services" component={Services} />
-    <ServicesStack.Screen name="SellItem" component={SellItem} />
+    <ServicesStack.Screen
+      name="SellItem"
+      component={SellItem}
+      options={{ headerShown: true, title: 'Sell an Item' }}
+    />
     <ServicesStack.Screen name="RoomFinder" component={RoomFinder} />
-    <ServicesStack.Screen name="PostRoom" component={PostRoom} />
+    <ServicesStack.Screen
+      name="PostRoom"
+      component={PostRoom}
+      options={{ headerShown: true, title: 'Post a Room' }}
+    />
     <ServicesStack.Screen name="Details" component={Details} />
   </ServicesStack.Navigator>
 );
 
 const ProfileStackNavigator = () => (
-  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+  <ProfileStack.Navigator
+    screenOptions={{
+      headerShown: false,
+      headerTitleStyle: {
+        fontFamily: 'Outfit-Semibold',
+      },
+    }}>
     <ProfileStack.Screen name="Profile" component={Profile} />
     <ProfileStack.Screen
       name="JoinProfessionalNetwork"
       component={JoinProfessionalNetwork}
+      options={{ headerShown: true, title: 'Join Professional Network' }}
     />
     <ProfileStack.Screen
       name="CommunityGuidelines"
       component={ProfileCommunityGuidelines}
+      options={{ headerShown: true, title: 'Community Guidelines' }}
     />
     <ProfileStack.Screen name="SubmitListing" component={SubmitListing} />
     <ProfileStack.Screen name="Details" component={Details} />

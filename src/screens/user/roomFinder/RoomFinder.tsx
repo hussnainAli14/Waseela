@@ -237,7 +237,10 @@ const RoomFinder = () => {
             value={searchValue}
             onChangeText={setSearchValue}
           />
-          <TouchableOpacity style={styles.postButton} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={styles.postButton}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('PostRoom')}>
             <Ionicons
               name="add"
               size={20}
