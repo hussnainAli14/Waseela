@@ -122,7 +122,7 @@ const Details = () => {
         </View>
 
         <View style={styles.section}>
-          <Text variant="lg-semibold">{listing.name}</Text>
+          <Text variant="lg-semibold" style={styles.title}>{listing.name}</Text>
           <View style={styles.badge}>
             <Text variant="md-medium" style={styles.badgeText}>
               {listing.category}

@@ -57,6 +57,7 @@ export const styles = StyleSheet.create({
   },
   nameText: {
     color: colors.text.primary,
+    fontFamily: 'Outfit-SemiBold',
   },
   locationRow: {
     flexDirection: 'row',
@@ -130,6 +131,7 @@ export const styles = StyleSheet.create({
   },
   networkTitle: {
     color: colors.common.white,
+    fontFamily: 'Outfit-SemiBold',
   },
   networkSubtitle: {
     color: colors.common.white,
@@ -144,6 +146,7 @@ export const styles = StyleSheet.create({
   },
   joinNetworkButtonText: {
     color: colors.primary[700],
+    fontFamily: 'Outfit-SemiBold',
   },
   sectionWrapper: {
     paddingHorizontal: 16,
@@ -157,6 +160,7 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text.primary,
+    fontFamily: 'Outfit-SemiBold',
   },
   sectionBadge: {
     borderRadius: 999,
@@ -203,9 +207,11 @@ export const styles = StyleSheet.create({
   },
   listingTitle: {
     color: colors.text.primary,
+    fontFamily: 'Outfit-SemiBold',
   },
   listingSubtitle: {
     color: colors.text.secondary,
+    fontFamily: 'Outfit-Medium',
   },
   listingStatusRow: {
     flexDirection: 'row',
@@ -267,6 +273,7 @@ export const styles = StyleSheet.create({
   },
   logoutText: {
     color: colors.status.error,
+    fontFamily: 'Outfit-SemiBold',
   },
   listingActionText: {
     color: colors.text.primary,

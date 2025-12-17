@@ -106,13 +106,6 @@ const Home = () => {
             placeholder="Search businesses or services..."
             value={searchValue}
             onChangeText={setSearchValue}
-            rightIcon={
-              <Ionicons
-                name="mic-outline"
-                size={20}
-                color={colors.text.secondary}
-              />
-            }
           />
         </View>
       </Header>

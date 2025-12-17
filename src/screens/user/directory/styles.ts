@@ -101,6 +101,7 @@ export const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text.primary,
+    fontFamily: 'Outfit-SemiBold',
   },
   listItem: {
     width: '100%',

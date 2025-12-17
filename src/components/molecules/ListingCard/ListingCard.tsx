@@ -35,7 +35,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
         />
         <View style={styles.info}>
           <View style={styles.titleRow}>
-            <Text variant="lg-semibold">{title}</Text>
+            <Text variant="lg-semibold" style={styles.title}>{title}</Text>
             {verified && (
               <MaterialCommunityIcons
                 name="check-decagram-outline"

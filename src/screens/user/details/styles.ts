@@ -120,5 +120,8 @@ export const styles = StyleSheet.create({
   badgeText: {
     color: colors.secondary[500],
   },
+  title:{
+    fontFamily: 'Outfit-SemiBold',
+  }
 });
 

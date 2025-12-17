@@ -219,6 +219,17 @@ const ProfileCommunityGuidelines: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.topBarButton}
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+            <Text variant="md-semibold" style={styles.topBarLabel}>
+              Back
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.heroCard}>
           <Text variant="lg-bold" style={styles.heroTitle}>
             Welcome to Wasila

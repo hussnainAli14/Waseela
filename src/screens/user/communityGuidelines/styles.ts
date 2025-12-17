@@ -11,6 +11,17 @@ export const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 14,
   },
+  topBar: {
+    marginBottom: 4,
+  },
+  topBarButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  topBarLabel: {
+    color: colors.text.primary,
+  },
   heroCard: {
     backgroundColor: '#02a97b',
     borderRadius: 16,

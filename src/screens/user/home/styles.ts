@@ -30,6 +30,7 @@ export const styles = StyleSheet.create({
   },
   headerTitle: {
     color: colors.common.white,
+    fontFamily: 'Outfit-Bold',
   },
   headerSubtitle: {
     color: colors.common.white,
@@ -46,6 +47,7 @@ export const styles = StyleSheet.create({
   sectionTitle: {
     color: colors.text.primary,
     marginBottom: 16,
+    fontFamily: 'Outfit-Bold',
   },
   exploreGrid: {
     display: 'none',
@@ -81,6 +83,7 @@ export const styles = StyleSheet.create({
   exploreLabel: {
     textAlign: 'center',
     color: colors.text.primary,
+    fontFamily: 'Outfit-Medium',
   },
   networkCard: {
     marginTop: 16,

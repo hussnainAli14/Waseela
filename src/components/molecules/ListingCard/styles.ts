@@ -29,6 +29,7 @@ export const styles = StyleSheet.create({
   },
   category: {
     color: colors.text.secondary,
+    fontFamily: 'Outfit-Medium',
   },
   metaRow: {
     flexDirection: 'row',
@@ -65,5 +66,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  title:{
+    fontFamily: 'Outfit-SemiBold',
+  }
 });
 

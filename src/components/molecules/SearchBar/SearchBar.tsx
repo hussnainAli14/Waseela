@@ -18,6 +18,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   ...inputProps
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [internalValue, setInternalValue] = useState('');
 
   const renderLeftIcon = () =>
     leftIcon || (
@@ -43,20 +44,34 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return null;
   };
 
+  // Allow typing even when a value is passed without an onChange handler by falling back
+  // to internal state updates.
+  const isControlled = value !== undefined && onChangeText !== undefined;
+  const inputValue = isControlled ? value : value ?? internalValue;
+
+  const handleChangeText = (text: string) => {
+    if (!isControlled) {
+      setInternalValue(text);
+    }
+    onChangeText?.(text);
+  };
+
   return (
     <View
       style={[
         styles.container,
         isFocused && styles.containerFocused,
         style,
-      ]}>
+      ]}
+      // Capture touch so parent touchables (e.g., wrappers that dismiss keyboard) don't steal focus
+      onStartShouldSetResponderCapture={() => true}>
       {renderLeftIcon()}
       <TextInput
         style={[styles.input, inputStyle]}
         placeholder={placeholder}
         placeholderTextColor={colors.text.secondary}
-        value={value}
-        onChangeText={onChangeText}
+        value={inputValue}
+        onChangeText={handleChangeText}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onSubmitEditing={onSubmitEditing}
