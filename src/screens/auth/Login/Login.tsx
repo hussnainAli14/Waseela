@@ -75,14 +75,14 @@ const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
             Welcome Back
           </Text>
           <Text variant="md-normal" style={styles.welcomeSubtitle}>
-            Sign in to continue your journey
+            Sign in to continue to your community
           </Text>
         </View>
 
         <View style={styles.formContainer}>
           <TextField
-            label="Email"
-            placeholder="Enter your email"
+            label="Email Address"
+            placeholder="your.email@example.com"
             value={formData.email}
             onChangeText={value => handleInputChange('email', value)}
             error={errors.email}
@@ -120,14 +120,6 @@ const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.forgotPasswordContainer}
-          onPress={() => navigation.navigate('ForgotPassword')}>
-          <Text variant="md-medium" style={styles.forgotPasswordText}>
-            Forgot Password?
-          </Text>
-        </TouchableOpacity>
-
         <Button
           title="Sign In"
           variant="primary"
@@ -137,16 +129,30 @@ const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
           containerStyle={styles.signInButton}
         />
 
-        <View style={styles.signUpContainer}>
-          <Text variant="md-normal" style={styles.signUpText}>
+        <TouchableOpacity
+          style={styles.forgotPasswordContainer}
+          onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text variant="md-medium" style={styles.forgotPasswordText}>
+            Forgot password?
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text variant="md-normal" style={styles.dividerText}>
             Don't have an account?
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-            <Text variant="md-semibold" style={styles.signUpLink}>
-              Sign Up
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.dividerLine} />
         </View>
+
+        <Button
+          title="Create Account"
+          variant="outline"
+          size="large"
+          fullWidth
+          onPress={() => navigation.navigate('AgeVerification')}
+          containerStyle={styles.createAccountButton}
+        />
       </ScrollView>
     </SafeAreaView>
   );

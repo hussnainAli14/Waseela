@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, ViewStyle, StyleProp } from 'react-native';
 import { TextFieldProps } from './types';
 import { styles } from './styles';
 import { Text } from '../Text';
@@ -9,9 +9,9 @@ const TextField: React.FC<TextFieldProps> = ({
   error,
   leftIcon,
   rightIcon,
-  variant = 'default',
   size = 'medium',
   containerStyle,
+  inputContainerStyle,
   inputStyle,
   labelStyle,
   errorStyle,
@@ -31,12 +31,13 @@ const TextField: React.FC<TextFieldProps> = ({
     onBlur?.(e);
   };
 
-  const getInputContainerStyle = () => {
-    const baseStyle = [
+  const getInputContainerStyle = (): Array<StyleProp<ViewStyle>> => {
+    const baseStyle: Array<StyleProp<ViewStyle>> = [
       styles.inputContainer,
       size === 'small' && styles.inputContainerSmall,
       size === 'medium' && styles.inputContainerMedium,
       size === 'large' && styles.inputContainerLarge,
+      inputContainerStyle,
     ];
 
     if (error) {

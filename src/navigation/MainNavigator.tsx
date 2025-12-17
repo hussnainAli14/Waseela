@@ -20,6 +20,11 @@ import {
   RoomDetails,
   ProfessionalNetwork,
   ProfessionalProfile,
+  ProfileCommunityGuidelines,
+  SubmitListing,
+  SellItem,
+  PostRoom,
+  JoinProfessionalNetwork,
 } from '@/screens';
 import { colors } from '@/theme';
 import { BottomNavigator } from '@/components';
@@ -144,6 +149,15 @@ export const MainNavigator = () => {
       <Stack.Screen name="MarketItemDetails" component={MarketItemDetails} />
       <Stack.Screen name="RoomDetails" component={RoomDetails} />
       <Stack.Screen name="ProfessionalProfile" component={ProfessionalProfile} />
+      <Stack.Screen
+        name="CommunityGuidelines"
+        component={ProfileCommunityGuidelines}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="SubmitListing" component={SubmitListing} />
+      <Stack.Screen name="SellItem" component={SellItem} />
+      <Stack.Screen name="PostRoom" component={PostRoom} />
+      <Stack.Screen name="JoinProfessionalNetwork" component={JoinProfessionalNetwork} />
     </Stack.Navigator>
   );
 };

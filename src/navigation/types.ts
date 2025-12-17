@@ -7,7 +7,9 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 
 // Auth Stack Param List
 export type AuthStackParamList = {
+  CommunityGuidelines: undefined;
   Login: undefined;
+  AgeVerification: undefined;
   Signup: undefined;
   ForgotPassword: undefined;
 };
@@ -22,6 +24,11 @@ export type MainStackParamList = {
   RoomFinder: undefined;
   ProfessionalNetwork: undefined;
   Profile: undefined;
+  SubmitListing: undefined;
+  SellItem: undefined;
+  PostRoom: undefined;
+  JoinProfessionalNetwork: undefined;
+  CommunityGuidelines: undefined;
   Details: {
     listing: ListingItem;
   };

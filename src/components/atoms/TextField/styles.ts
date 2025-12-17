@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
   label: {
     fontFamily: 'Outfit-Medium',
     fontSize: 14,
-    color: colors.secondary[500],
+    color: colors.common.black,
     marginBottom: 8,
   },
   inputContainer: {

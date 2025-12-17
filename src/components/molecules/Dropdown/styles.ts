@@ -51,7 +51,7 @@ export const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   optionTextActive: {
-    color: colors.secondary[500],
+    color: colors.text.primary,
   },
   optionSeparator: {
     height: 1,

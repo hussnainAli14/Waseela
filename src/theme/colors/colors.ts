@@ -98,6 +98,7 @@ export const colors = {
     warning: '#FEF9C2',
     dark: '#000000',
     darkSecondary: '#000000',
+    neutral: '#ECEEF2',
   },
 
   // Text Colors

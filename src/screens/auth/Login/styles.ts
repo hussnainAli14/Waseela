@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
   welcomeTitle: {
     fontFamily: 'Outfit-Bold',
     fontSize: 28,
-    color: colors.secondary[500],
+    color: colors.text.primary,
   },
   welcomeSubtitle: {
     fontFamily: 'Outfit-Regular',
@@ -43,36 +43,41 @@ export const styles = StyleSheet.create({
   formContainer: {
     marginBottom: 24,
   },
+  signInButton: {
+    marginBottom: 16,
+    borderRadius: 16,
+  },
   forgotPasswordContainer: {
-    alignItems: 'flex-end',
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 32,
   },
   forgotPasswordText: {
     fontFamily: 'Outfit-Medium',
     fontSize: 14,
-    color: colors.accent.orangeBrown,
+    color: colors.secondary[500],
   },
-  signInButton: {
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 24,
   },
-  signUpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 'auto',
-    marginBottom: 32,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.neutral[600],
+    opacity: 0.1,
   },
-  signUpText: {
+  dividerText: {
     fontFamily: 'Outfit-Regular',
     fontSize: 14,
     color: colors.text.secondary,
     opacity: 0.7,
-    marginRight: 4,
+    marginHorizontal: 16,
   },
-  signUpLink: {
-    fontFamily: 'Outfit-SemiBold',
-    fontSize: 14,
-    color: colors.secondary[500],
+  createAccountButton: {
+    marginBottom: 32,
+    borderRadius: 16,
+
   },
   icon: {
     fontSize: 20,

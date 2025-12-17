@@ -84,9 +84,9 @@ const Home = () => {
       } else if (key === 'services') {
         navigation.navigate('Services');
       } else if (key === 'buy-sell') {
-        navigation.navigate('BuySell');
+        navigation.navigate('SellItem');
       } else if (key === 'rooms') {
-        navigation.navigate('RoomFinder');
+        navigation.navigate('PostRoom');
       }
     },
     [navigation],
@@ -158,7 +158,7 @@ const Home = () => {
             style={[styles.networkCard, { borderColor: colors.border.light }]}
             backgroundColor={colors.background.light}
             padding={18}
-            onPress={() => navigation.navigate('ProfessionalNetwork')}>
+            onPress={() => navigation.navigate('JoinProfessionalNetwork')}>
             <View style={styles.networkContent}>
               <View
                 style={[

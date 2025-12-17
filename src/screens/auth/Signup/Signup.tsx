@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Text, TextField, Button, Image } from '@/components/atoms';
+import { Text, TextField, Button, Image, Checkbox } from '@/components/atoms';
 import { SignupScreenProps, SignupFormData } from './types';
 import { styles } from './styles';
 import { images } from '@/assets/images/images';
@@ -17,6 +17,15 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<SignupFormData>>({});
+  const [agreements, setAgreements] = useState({
+    terms: false,
+    privacy: false,
+    processing: false,
+    guidelines: false,
+    marketing: false,
+  });
+  const [agreementsError, setAgreementsError] = useState<string | null>(null);
+  const [showDisclaimers, setShowDisclaimers] = useState(false);
 
   const handleInputChange = (field: keyof SignupFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -53,7 +62,17 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    const { terms, privacy, processing, guidelines } = agreements;
+    const allRequiredChecked = terms && privacy && processing && guidelines;
+
+    if (!allRequiredChecked) {
+      setAgreementsError('Please review and accept all required agreements.');
+    } else {
+      setAgreementsError(null);
+    }
+
+    return Object.keys(newErrors).length === 0 && allRequiredChecked;
   };
 
   const handleSignUp = () => {
@@ -61,6 +80,17 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
       // TODO: Implement sign up logic
       console.log('Sign up:', formData);
     }
+  };
+
+  const toggleAgreement = (key: keyof typeof agreements) => {
+    setAgreements(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      const { terms, privacy, processing, guidelines } = updated;
+      if (terms && privacy && processing && guidelines) {
+        setAgreementsError(null);
+      }
+      return updated;
+    });
   };
 
   return (
@@ -84,8 +114,33 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
             Create Account
           </Text>
           <Text variant="md-normal" style={styles.subtitle}>
-            Join us and start your journey
+            Join the Wasila community
           </Text>
+        </View>
+
+        <View style={styles.dataProtectionCard}>
+          <View style={styles.dataProtectionHeader}>
+            <View style={styles.dataProtectionIconWrapper}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={styles.dataProtectionIcon.color}
+              />
+            </View>
+            <Text variant="md-semibold" style={styles.dataProtectionTitle}>
+              Your Data Protection Rights
+            </Text>
+          </View>
+          <Text variant="sm-normal" style={styles.dataProtectionText}>
+            Under UK GDPR, you have the right to access, rectify, erase, restrict
+            processing, data portability, and object to processing of your
+            personal data.
+          </Text>
+          <TouchableOpacity>
+            <Text variant="sm-semibold" style={styles.dataProtectionLink}>
+              View full data protection notice
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.formContainer}>
@@ -167,8 +222,52 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
           />
         </View>
 
+        <View style={styles.agreementsSection}>
+          <Text variant="md-semibold" style={styles.agreementsTitle}>
+            Required Agreements *
+          </Text>
+
+          <View style={styles.checkboxGroup}>
+            <Checkbox
+              checked={agreements.terms}
+              onPress={() => toggleAgreement('terms')}
+              label="I agree to the Terms of Service and confirm I am at least 16 years old or have parental consent *"
+            />
+            <Checkbox
+              checked={agreements.privacy}
+              onPress={() => toggleAgreement('privacy')}
+              label="I have read and accept the Privacy Policy and understand how my data will be processed *"
+            />
+            <Checkbox
+              checked={agreements.processing}
+              onPress={() => toggleAgreement('processing')}
+              label="I consent to Wasila processing my personal data to provide community services, verify my age, and ensure platform safety in accordance with UK GDPR *"
+            />
+            <Checkbox
+              checked={agreements.guidelines}
+              onPress={() => toggleAgreement('guidelines')}
+              label="I agree to follow the Community Guidelines and understand the safeguarding policies *"
+            />
+          </View>
+
+          {agreementsError && (
+            <Text variant="sm-normal" style={styles.agreementsError}>
+              {agreementsError}
+            </Text>
+          )}
+
+          <Text variant="md-semibold" style={styles.optionalTitle}>
+            Optional (You can change this later)
+          </Text>
+          <Checkbox
+            checked={agreements.marketing}
+            onPress={() => toggleAgreement('marketing')}
+            label="I consent to receive community updates, newsletters, and promotional emails from Wasila. You can unsubscribe at any time."
+          />
+        </View>
+
         <Button
-          title="Sign Up"
+          title="Create Account"
           variant="primary"
           size="large"
           fullWidth
@@ -185,6 +284,123 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
               Sign In
             </Text>
           </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={styles.disclaimerRow}
+          onPress={() => setShowDisclaimers(prev => !prev)}>
+          <Ionicons
+            name="information-circle-outline"
+            size={16}
+            color={styles.disclaimerIcon.color}
+          />
+          <Text variant="sm-normal" style={styles.disclaimerText}>
+            {showDisclaimers ? 'Hide disclaimers' : 'View important disclaimers'}
+          </Text>
+        </TouchableOpacity>
+
+        {showDisclaimers && (
+          <View style={styles.legalDisclaimerCard}>
+            <View style={styles.legalDisclaimerHeader}>
+              <Ionicons
+                name="warning-outline"
+                size={18}
+                color={styles.legalDisclaimerIcon.color}
+              />
+              <Text variant="md-semibold" style={styles.legalDisclaimerTitle}>
+                Legal Disclaimer
+              </Text>
+            </View>
+
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              Wasila is a community platform connecting Shia Muslims with local
+              businesses and services. We are not responsible for the quality,
+              legality, or safety of services provided by third parties listed on
+              our platform. All transactions and interactions are between users
+              and third-party providers at their own risk.
+            </Text>
+
+            <Text variant="sm-semibold" style={styles.legalSectionTitle}>
+              Age Verification & Online Safety
+            </Text>
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              By creating an account, you confirm you are at least 16 years old.
+              Users aged 13-15 must have explicit parental or guardian consent.
+              We implement age-appropriate safeguarding measures in compliance
+              with the UK Online Safety Act 2023 and Children's Code (Age
+              Appropriate Design Code).
+            </Text>
+
+            <Text variant="sm-semibold" style={styles.legalSectionTitle}>
+              Personal Information & Safety
+            </Text>
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              Never share sensitive personal information (home address, phone
+              number, financial details) in public listings or messages. Always
+              meet in public places for transactions. Report suspicious activity
+              immediately. Wasila is not designed for the collection of sensitive
+              personal data or children's data beyond age verification.
+            </Text>
+
+            <Text variant="sm-semibold" style={styles.legalSectionTitle}>
+              Content Moderation
+            </Text>
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              All user-generated content is subject to moderation. We reserve the
+              right to remove content or suspend accounts that violate our
+              Community Guidelines. However, we cannot guarantee all content is
+              monitored in real-time.
+            </Text>
+
+            <Text variant="sm-semibold" style={styles.legalSectionTitle}>
+              Data Breach Notification
+            </Text>
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              In the event of a data breach affecting your personal data, we will
+              notify you and the ICO within 72 hours as required by UK GDPR.
+            </Text>
+
+            <Text variant="sm-semibold" style={styles.legalSectionTitle}>
+              Right to Withdraw Consent
+            </Text>
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              You can withdraw your consent and delete your account at any time
+              through your profile settings. Your data will be permanently
+              deleted within 30 days, except where we are legally required to
+              retain it.
+            </Text>
+
+            <View style={styles.legalDivider} />
+
+            <Text variant="sm-semibold" style={styles.legalSectionTitle}>
+              Contact for Data Protection & Safeguarding Concerns:
+            </Text>
+            <Text variant="sm-normal" style={styles.legalDisclaimerText}>
+              Email: dataprotection@wasila.uk{'\n'}
+              Safeguarding: safeguarding@wasila.uk{'\n'}
+              ICO Complaints: ico.org.uk
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.verificationCard}>
+          <View style={styles.verificationHeader}>
+            <View style={styles.verificationIconWrapper}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={styles.verificationIcon.color}
+              />
+            </View>
+            <Text variant="md-semibold" style={styles.verificationTitle}>
+              Account Verification Required
+            </Text>
+          </View>
+          <Text variant="sm-normal" style={styles.verificationText}>
+            You'll receive a verification email. Your account and any submitted
+            listings will be reviewed by our moderation team to ensure community
+            safety.
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

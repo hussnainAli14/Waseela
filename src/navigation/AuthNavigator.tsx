@@ -6,7 +6,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthStackParamList } from './types';
-import { Login, Signup, ForgotPassword } from '@/screens/auth';
+import {
+  CommunityGuidelines,
+  Login,
+  AgeVerification,
+  Signup,
+  ForgotPassword,
+} from '@/screens/auth';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
@@ -17,8 +23,10 @@ export const AuthNavigator = () => {
         headerShown: false,
         animation: 'slide_from_right',
       }}
-      initialRouteName="Login">
+      initialRouteName="CommunityGuidelines">
+      <Stack.Screen name="CommunityGuidelines" component={CommunityGuidelines} />
       <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="AgeVerification" component={AgeVerification} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
     </Stack.Navigator>

@@ -1,0 +1,177 @@
+import { StyleSheet } from 'react-native';
+import { colors } from '@/theme';
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.light,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    color: colors.text.primary,
+    marginLeft: 12,
+  },
+  infoCard: {
+    backgroundColor: '#eef2ff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#d6ddff',
+    marginBottom: 16,
+  },
+  infoTitle: {
+    color: colors.accent.blue,
+    marginBottom: 8,
+  },
+  infoBody: {
+    color: colors.accent.blue,
+  },
+  card: {
+    backgroundColor: colors.common.white,
+    borderRadius: 16,
+    marginBottom: 14,
+  },
+  label: {
+    marginBottom: 10,
+    color: colors.text.primary,
+    fontFamily: 'Outfit-Medium',
+  },
+  dropdownButton: {
+    backgroundColor: colors.background.lightSecondary,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+  },
+  dropdownText: {
+    color: colors.text.primary,
+  },
+  helperText: {
+    color: colors.text.secondary,
+    marginTop: 6,
+  },
+  textareaContainer: {
+    height: 190,
+    minHeight: 190,
+    alignItems: 'flex-start',
+    paddingTop: 12,
+  },
+  textareaInput: {
+    height: 190,
+    textAlignVertical: 'top',
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  chipInput: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    backgroundColor: colors.background.lightSecondary,
+    color: colors.text.primary,
+  },
+  chipAddButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.common.white,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    minWidth: 64,
+    alignItems: 'center',
+  },
+  chipAddText: {
+    color: colors.text.primary,
+    fontFamily: 'Outfit-Medium',
+  },
+  chipList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: colors.secondary[50],
+    borderWidth: 1,
+    borderColor: colors.secondary[200],
+  },
+  chipText: {
+    color: colors.text.primary,
+  },
+  chipIcon: {
+    marginLeft: 8,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: 8,
+  },
+  checkboxText: {
+    flex: 1,
+    color: colors.text.primary,
+  },
+  uploadCard: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border.medium,
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    backgroundColor: colors.background.light,
+    marginTop: 10,
+  },
+  uploadTitle: {
+    color: colors.text.primary,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  uploadSubtitle: {
+    color: colors.text.secondary,
+  },
+  guidelinesCard: {
+    backgroundColor: '#e9edff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#c9d4ff',
+    marginBottom: 12,
+  },
+  guidelineItem: {
+    color: colors.text.primary,
+    marginBottom: 6,
+  },
+  buttonSpacing: {
+    marginTop: 4,
+  },
+  primaryButton: {
+    backgroundColor: '#b7a8f8',
+  },
+  bottomInfo: {
+    textAlign: 'center',
+    color: colors.text.secondary,
+    marginTop: 8,
+  },
+});
+
+

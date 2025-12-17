@@ -12,6 +12,7 @@ export interface TextFieldProps extends TextInputProps {
   variant?: TextFieldVariant;
   size?: TextFieldSize;
   containerStyle?: ViewStyle;
+  inputContainerStyle?: ViewStyle;
   inputStyle?: TextStyle;
   labelStyle?: TextStyle;
   errorStyle?: TextStyle;
