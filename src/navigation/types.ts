@@ -24,6 +24,7 @@ export type MainStackParamList = {
   RoomFinder: undefined;
   ProfessionalNetwork: undefined;
   Profile: undefined;
+  EditProfile: undefined;
   SubmitListing: undefined;
   SellItem: undefined;
   PostRoom: undefined;

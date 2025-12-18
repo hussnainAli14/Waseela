@@ -11,6 +11,7 @@ import { MainStackParamList } from './types';
 import {
   Home,
   Profile,
+  EditProfile,
   Directory,
   Services,
   Details,
@@ -95,9 +96,19 @@ const ProfileStackNavigator = () => (
     }}>
     <ProfileStack.Screen name="Profile" component={Profile} />
     <ProfileStack.Screen
+      name="EditProfile"
+      component={EditProfile}
+      options={{ headerShown: false }}
+    />
+    <ProfileStack.Screen
       name="JoinProfessionalNetwork"
       component={JoinProfessionalNetwork}
       options={{ headerShown: true, title: 'Join Professional Network' }}
+    />
+    <ProfileStack.Screen
+      name="ProfessionalNetwork"
+      component={ProfessionalNetwork}
+      options={{ headerShown: true, title: 'Professional Network' }}
     />
     <ProfileStack.Screen
       name="CommunityGuidelines"

@@ -1,4 +1,4 @@
-import { ModalProps, StyleProp, ViewStyle, TextStyle } from 'react-native';
+import { StyleProp, ViewStyle, TextStyle } from 'react-native';
 
 export interface DropdownOption {
   label: string;
@@ -14,7 +14,5 @@ export interface DropdownProps {
   buttonTextStyle?: StyleProp<TextStyle>;
   optionTextStyle?: StyleProp<TextStyle>;
   optionItemStyle?: StyleProp<ViewStyle>;
-  modalProps?: ModalProps;
-  dropdownOffset?: number;
 }
 
