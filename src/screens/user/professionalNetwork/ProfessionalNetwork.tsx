@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, FlatList, TouchableOpacity, Switch } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, CommonActions } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
 import { Card, Dropdown, SearchBar } from '@/components/molecules';
 import { colors } from '@/theme';
@@ -129,6 +129,17 @@ const ProfessionalNetwork = () => {
     });
   }, [searchValue, selectedIndustry, selectedCity, onlyMentors]);
 
+  const handleJoinNetwork = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Profile',
+        params: {
+          screen: 'JoinProfessionalNetwork',
+        },
+      }),
+    );
+  }, [navigation]);
+
   const renderHeader = useMemo(
     () => (
       <View style={styles.header}>
@@ -143,12 +154,16 @@ const ProfessionalNetwork = () => {
             placeholder="Search by name, title, or expertise..."
             value={searchValue}
             onChangeText={setSearchValue}
+            style={styles.searchBar}
           />
-          <TouchableOpacity style={styles.joinButton} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={styles.joinButton}
+            activeOpacity={0.9}
+            onPress={handleJoinNetwork}>
             <Ionicons
               name="add"
               size={20}
-              color={colors.accent.purple}
+              color={colors.accent.blueDark}
             />
             <Text variant="md-semibold" style={styles.joinButtonText}>
               Join Network as Professional
@@ -157,7 +172,7 @@ const ProfessionalNetwork = () => {
         </View>
       </View>
     ),
-    [searchValue],
+    [searchValue, handleJoinNetwork],
   );
 
   const renderListHeader = useMemo(
@@ -217,6 +232,8 @@ const ProfessionalNetwork = () => {
     ),
     [selectedIndustry, selectedCity, onlyMentors, filteredProfessionals.length],
   );
+
+  const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
 
   const renderProfessionalCard = useCallback(
     ({ item }: { item: Professional }) => {
@@ -301,7 +318,7 @@ const ProfessionalNetwork = () => {
           </View>
           <View style={styles.metaItem}>
             <Ionicons
-              name="time-outline"
+              name="person-outline"
               size={14}
               color={colors.text.secondary}
             />
@@ -327,7 +344,7 @@ const ProfessionalNetwork = () => {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderListHeader}
         renderItem={renderProfessionalCard}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={renderSeparator}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>

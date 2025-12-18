@@ -1,8 +1,8 @@
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
 import { colors } from '@/theme';
 import { styles } from './styles';
@@ -11,11 +11,21 @@ import { MainStackParamList, ProfessionalProfileItem } from '@/navigation/types'
 type ProfileRoute = RouteProp<MainStackParamList, 'ProfessionalProfile'>;
 
 const ProfessionalProfile = () => {
-  const navigation = useNavigation();
   const { params } = useRoute<ProfileRoute>();
   const professional: ProfessionalProfileItem = params.professional;
 
-  const goBack = () => navigation.goBack();
+  const handleEmail = () => {
+    // You can add email to ProfessionalProfileItem type if needed
+    const email = (professional as any).email || 'contact@example.com';
+    const url = `mailto:${email}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const handleLinkedIn = () => {
+    if (professional.linkedinUrl) {
+      Linking.openURL(professional.linkedinUrl).catch(() => {});
+    }
+  };
 
   const expertiseChips =
     professional.expertise ?? [
@@ -35,23 +45,10 @@ const ProfessionalProfile = () => {
     'General career guidance, CV reviews, and interview preparation';
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            onPress={goBack}
-            activeOpacity={0.8}
-            style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text variant="md-medium" style={styles.headerTitle}>
-            Professional Profile
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
         <View style={styles.hero}>
           <View style={styles.avatarWrapper}>
             <Image
@@ -70,16 +67,17 @@ const ProfessionalProfile = () => {
           <Text variant="md-normal" style={styles.companyText}>
             {professional.company}
           </Text>
-          <View style={styles.careerBadge}>
-            <Ionicons
-              name="briefcase-outline"
-              size={14}
-              color={colors.common.white}
-            />
-            <Text variant="sm-medium" style={styles.careerBadgeText}>
-              Career Advice
-            </Text>
-          </View>
+          {professional.tags && professional.tags.length > 0 && (
+            <View style={styles.tagsRow}>
+              {professional.tags.map(tag => (
+                <View key={tag} style={styles.tagBadge}>
+                  <Text variant="sm-medium" style={styles.tagBadgeText}>
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.statsCardWrapper}>
@@ -159,12 +157,30 @@ const ProfessionalProfile = () => {
         </View>
 
         <View style={styles.section}>
-          <TouchableOpacity style={styles.linkButton} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={styles.emailButton}
+            activeOpacity={0.9}
+            onPress={handleEmail}>
+            <View style={styles.emailButtonContent}>
+              <Ionicons
+                name="mail-outline"
+                size={18}
+                color={colors.common.white}
+              />
+              <Text variant="md-semibold" style={styles.emailButtonText}>
+                Send Email
+              </Text>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.linkButton}
+            activeOpacity={0.9}
+            onPress={handleLinkedIn}>
             <View style={styles.linkButtonContent}>
               <Ionicons
                 name="logo-linkedin"
                 size={18}
-                color={colors.primary[500]}
+                color={colors.accent.purple}
               />
               <Text variant="md-semibold" style={styles.linkButtonText}>
                 View LinkedIn Profile

@@ -23,6 +23,7 @@ import {
   SellItem,
   PostRoom,
   JoinProfessionalNetwork,
+  ProfessionalNetwork,
 } from '@/screens';
 import { colors } from '@/theme';
 import { BottomNavigator } from '@/components';
@@ -38,6 +39,18 @@ const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="Home" component={Home} />
     <HomeStack.Screen name="Details" component={Details} />
+    <HomeStack.Screen name="ProfessionalNetwork" component={ProfessionalNetwork} />
+    <HomeStack.Screen
+      name="ProfessionalProfile"
+      component={ProfessionalProfile}
+      options={{
+        headerShown: true,
+        title: 'Professional Profile',
+        headerTitleStyle: {
+          fontFamily: 'Outfit-Semibold',
+        },
+      }}
+    />
   </HomeStack.Navigator>
 );
 
@@ -186,7 +199,6 @@ export const MainNavigator = () => {
       </Stack.Screen>
       <Stack.Screen name="MarketItemDetails" component={MarketItemDetails} />
       <Stack.Screen name="RoomDetails" component={RoomDetails} />
-      <Stack.Screen name="ProfessionalProfile" component={ProfessionalProfile} />
     </Stack.Navigator>
   );
 };

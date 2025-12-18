@@ -9,26 +9,6 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 24,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backButton: {
-    paddingRight: 8,
-    paddingVertical: 4,
-  },
-  headerTitle: {
-    color: colors.text.primary,
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 30,
-  },
   hero: {
     backgroundColor: colors.primary[700],
     paddingTop: 32,
@@ -59,17 +39,21 @@ export const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 8,
   },
-  careerBadge: {
+  tagsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  tagBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     backgroundColor: colors.primary[500],
   },
-  careerBadgeText: {
+  tagBadgeText: {
     color: colors.common.white,
   },
   statsCardWrapper: {
@@ -122,18 +106,16 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.primary[50],
+    backgroundColor: '#E0E7FF',
   },
   chipText: {
     color: colors.primary[700],
   },
   helpCard: {
-    backgroundColor: colors.primary[50],
+    backgroundColor: '#EFF6FF',
     borderRadius: 16,
     padding: 14,
     gap: 6,
-    borderWidth: 1,
-    borderColor: colors.primary[200],
   },
   helpHeader: {
     flexDirection: 'row',
@@ -155,13 +137,29 @@ export const styles = StyleSheet.create({
     color: colors.primary[500],
     lineHeight: 22,
   },
+  emailButton: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.accent.purple,
+    marginBottom: 12,
+  },
+  emailButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  emailButtonText: {
+    color: colors.common.white,
+  },
   linkButton: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.primary[200],
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: colors.background.light,
+    borderColor: colors.accent.purple,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.common.white,
   },
   linkButtonContent: {
     flexDirection: 'row',
@@ -170,7 +168,7 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   linkButtonText: {
-    color: colors.primary[500],
+    color: colors.accent.purple,
   },
   noteText: {
     color: colors.text.secondary,

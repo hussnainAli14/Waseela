@@ -4,10 +4,10 @@ import { colors } from '@/theme';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.lightSecondary,
+    backgroundColor: colors.common.white,
   },
   header: {
-    backgroundColor: colors.primary[700],
+    backgroundColor: colors.accent.blueDark,
     paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 20,
@@ -26,6 +26,9 @@ export const styles = StyleSheet.create({
   searchBlock: {
     gap: 12,
   },
+  searchBar: {
+    backgroundColor: colors.common.white,
+  },
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -36,14 +39,14 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   joinButtonText: {
-    color: colors.primary[700],
+    color: colors.accent.blueDark,
+    fontFamily: 'Outfit-Medium',
   },
   filtersSection: {
-    paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 12,
     gap: 16,
-    backgroundColor: colors.background.lightSecondary,
+    backgroundColor: colors.common.white,
   },
   filterBlock: {
     gap: 8,
@@ -84,12 +87,11 @@ export const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
     paddingBottom: 24,
     gap: 12,
   },
   separator: {
-    height: 12,
+    height: 4,
   },
   professionalCard: {
     borderRadius: 18,

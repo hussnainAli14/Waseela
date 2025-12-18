@@ -151,7 +151,7 @@ const Home = () => {
             style={[styles.networkCard, { borderColor: colors.border.light }]}
             backgroundColor={colors.background.light}
             padding={18}
-            onPress={() => navigation.navigate('Profile', { screen: 'JoinProfessionalNetwork' })}>
+            onPress={() => navigation.navigate('ProfessionalNetwork')}>
             <View style={styles.networkContent}>
               <View
                 style={[
