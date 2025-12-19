@@ -1,3 +1,3 @@
 export const images = {
-  mainLogo: require('./waseela-logo.png'),
+  mainLogo: require('./waseela-logo.jpg'),
 };
