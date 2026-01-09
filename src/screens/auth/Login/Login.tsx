@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
@@ -8,14 +8,43 @@ import { LoginScreenProps, LoginFormData } from './types';
 import { styles } from './styles';
 import { images } from '@/assets/images/images';
 import { RootStackParamList } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { signIn, clearError } from '@/store/slices/authSlice';
+import { colors } from '@/theme';
 
 const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth);
+  const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
+
+  useEffect(() => {
+    // Clear any previous errors when component mounts
+    dispatch(clearError());
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Navigate to main screen when authenticated
+    if (isAuthenticated) {
+      rootNavigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    }
+  }, [isAuthenticated, rootNavigation]);
+
+  useEffect(() => {
+    // Show error alert if authentication fails
+    if (error) {
+      Alert.alert('Sign In Failed', error);
+    }
+  }, [error]);
 
   const handleInputChange = (field: keyof LoginFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -43,14 +72,12 @@ const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
-
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (validateForm()) {
-      rootNavigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
+      await dispatch(signIn({
+        email: formData.email.trim(),
+        password: formData.password,
+      }));
     }
   };
 
@@ -121,11 +148,12 @@ const Login: React.FC<LoginScreenProps> = ({ navigation }) => {
         </View>
 
         <Button
-          title="Sign In"
+          title={isLoading ? 'Signing In...' : 'Sign In'}
           variant="primary"
           size="large"
           fullWidth
           onPress={handleSignIn}
+          disabled={isLoading}
           containerStyle={styles.signInButton}
         />
 

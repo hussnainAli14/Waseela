@@ -15,7 +15,7 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
-import DocumentPicker, { type DocumentPickerResponse } from 'react-native-document-picker';
+import DocumentPicker, { type DocumentPickerResponse } from '@react-native-documents/picker';
 import { launchImageLibrary, ImageLibraryOptions, Asset } from 'react-native-image-picker';
 
 type ListingType = 'business' | 'service';
@@ -204,23 +204,23 @@ const SubmitListing: React.FC = () => {
           />
         </View>
 
-          <View style={styles.fieldGroup}>
-            <TextField
-              label="City"
-              placeholder="e.g., London, Birmingham, Leicester"
-              containerStyle={styles.inputSpacing}
-              value={city}
-              onChangeText={setCity}
-            />
-            <TextField
-              label="Description"
-              placeholder="Describe what you offer, your experience, specialties, and what makes you unique..."
-              containerStyle={styles.inputSpacing}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-          </View>
+        <View style={styles.fieldGroup}>
+          <TextField
+            label="City"
+            placeholder="e.g., London, Birmingham, Leicester"
+            containerStyle={styles.inputSpacing}
+            value={city}
+            onChangeText={setCity}
+          />
+          <TextField
+            label="Description"
+            placeholder="Describe what you offer, your experience, specialties, and what makes you unique..."
+            containerStyle={styles.inputSpacing}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+        </View>
 
         <View style={styles.fieldGroup}>
           <TextField

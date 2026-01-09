@@ -9,14 +9,13 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
+import { useAppSelector } from '@/store/hooks';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// TODO: Replace with actual authentication state management
-// This should come from your auth context/store
-const isAuthenticated = false;
-
 export const RootNavigator = () => {
+  const { isAuthenticated } = useAppSelector(state => state.auth);
+
   return (
     <Stack.Navigator
       screenOptions={{
@@ -24,9 +23,11 @@ export const RootNavigator = () => {
         animation: 'none', // No animation when switching between auth/main
       }}
       initialRouteName={isAuthenticated ? 'Main' : 'Auth'}>
-      <Stack.Screen name="Auth" component={AuthNavigator} />
-      <Stack.Screen name="Main" component={MainNavigator} />
+      {!isAuthenticated ? (
+        <Stack.Screen name="Auth" component={AuthNavigator} />
+      ) : (
+        <Stack.Screen name="Main" component={MainNavigator} />
+      )}
     </Stack.Navigator>
   );
 };
-

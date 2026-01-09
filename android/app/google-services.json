@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "555456746444",
+    "project_id": "wasila-6c12a",
+    "storage_bucket": "wasila-6c12a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:555456746444:android:5fe7be89e30b7c9cc54369",
+        "android_client_info": {
+          "package_name": "com.waseela"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "555456746444-sdb58h2p6bgkb69v2g4688iknqdlb84j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxr0xsjai3O2q4eZ2rFm8IjZ2GTs3DSyE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "555456746444-sdb58h2p6bgkb69v2g4688iknqdlb84j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

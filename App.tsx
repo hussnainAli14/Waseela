@@ -3,24 +3,45 @@
  * Sets up navigation and app-wide providers
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from '@/store';
 import { RootNavigator, navigationRef } from '@/navigation';
 import { colors } from '@/theme';
+import { firebaseAuth } from '@/config/firebase';
+import { loadUser } from '@/store/slices/authSlice';
 
 function App() {
+  useEffect(() => {
+    // Listen to auth state changes
+    const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is signed in, load user data
+        store.dispatch(loadUser(user));
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
   return (
-    <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef}>
-        <StatusBar
-          barStyle="dark-content"
-          backgroundColor={colors.background.light}
-        />
-        <RootNavigator />
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <SafeAreaProvider>
+          <NavigationContainer ref={navigationRef}>
+            <StatusBar
+              barStyle="dark-content"
+              backgroundColor={colors.background.light}
+            />
+            <RootNavigator />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </PersistGate>
+    </Provider>
   );
 }
 

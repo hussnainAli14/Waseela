@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text } from '@/components/atoms';
 import { SearchBar, ListingCard, Dropdown } from '@/components/molecules';
@@ -9,6 +9,8 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchBusinesses, setFilters, resetBusinesses } from '@/store/slices/businessesSlice';
 
 type CategoryItem = { key: string; label: string; icon: string };
 
@@ -19,53 +21,6 @@ const categoryItems: CategoryItem[] = [
   { key: 'health', label: 'Healthcare', icon: 'medkit-outline' },
   { key: 'education', label: 'Education', icon: 'school-outline' },
   { key: 'services', label: 'Services', icon: 'construct-outline' },
-];
-
-const directoryListings = [
-  {
-    id: '1',
-    name: 'Al-Zahra Restaurant',
-    category: 'Food',
-    location: 'London',
-    rating: 4.8,
-    reviews: 124,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1604908177520-4025a13da5b1?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '2',
-    name: 'Noor Grocery',
-    category: 'Retail',
-    location: 'Birmingham',
-    rating: 4.6,
-    reviews: 89,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1515705576963-95cad62945b6?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '3',
-    name: 'Al-Hadi Legal Services',
-    category: 'Legal',
-    location: 'Manchester',
-    rating: 4.9,
-    reviews: 56,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1521791055366-0d553872125f?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '4',
-    name: 'Hussainiya Pharmacy',
-    category: 'Healthcare',
-    location: 'Leeds',
-    rating: 4.7,
-    reviews: 72,
-    verified: false,
-    image:
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-  },
 ];
 
 const cityOptions = [
@@ -81,6 +36,47 @@ const Directory = () => {
   const [selectedCity, setSelectedCity] = useState<string | undefined>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const navigation = useNavigation<NavigationProp<any>>();
+  const dispatch = useAppDispatch();
+
+  // Get businesses from Redux
+  const { businesses, isLoading, hasMore, filters } = useAppSelector(state => state.businesses);
+
+  // Fetch all businesses on initial mount
+  useEffect(() => {
+    console.log('🔍 Directory: Initial fetch - loading all businesses');
+    dispatch(resetBusinesses());
+    dispatch(fetchBusinesses({ filters: {}, limit: 20 }));
+  }, []);
+
+  // Apply filters when user changes them
+  useEffect(() => {
+    // Skip if this is the initial render (both filters are default)
+    if (selectedCity === 'all' && selectedCategory === '') {
+      return;
+    }
+
+    console.log('🔍 Directory: Applying filters:', { selectedCity, selectedCategory });
+
+    const filterObj: any = {};
+
+    if (selectedCity && selectedCity !== 'all') {
+      filterObj.city = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1);
+    }
+
+    if (selectedCategory) {
+      filterObj.category = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
+    }
+
+    dispatch(resetBusinesses());
+    dispatch(fetchBusinesses({ filters: filterObj, limit: 20 }));
+  }, [selectedCity, selectedCategory]);
+
+  // Load more businesses
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !isLoading) {
+      dispatch(fetchBusinesses({}));
+    }
+  }, [dispatch, hasMore, isLoading]);
 
   const renderCategory = ({ item }: { item: CategoryItem }) => (
     <TouchableOpacity
@@ -117,21 +113,30 @@ const Directory = () => {
       <>
         <View style={styles.sectionHeader}>
           <Text variant="lg-semibold" style={styles.sectionTitle}>
-            {directoryListings.length} businesses found
+            {businesses.length} businesses found
           </Text>
         </View>
       </>
     ),
-    [],
+    [businesses.length],
   );
 
   const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
 
   const handlePressListing = useCallback(
-    (item: typeof directoryListings[0]) => {
-      navigation.navigate('Details', {
-        listing: item as ListingItem,
-      });
+    (item: typeof businesses[0]) => {
+      // Convert business to ListingItem format
+      const listingItem: ListingItem = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        location: item.city,
+        rating: item.rating,
+        reviews: item.reviewCount,
+        verified: item.verified,
+        image: item.images[0] || 'https://via.placeholder.com/600',
+      };
+      navigation.navigate('Details', { listing: listingItem });
     },
     [navigation],
   );
@@ -172,7 +177,7 @@ const Directory = () => {
 
       <View style={styles.listArea}>
         <FlatList
-          data={directoryListings}
+          data={businesses}
           keyExtractor={item => item.id}
           ListHeaderComponent={listHeader}
           renderItem={({ item }) => (
@@ -180,11 +185,11 @@ const Directory = () => {
               <ListingCard
                 title={item.name}
                 category={item.category}
-                location={item.location}
+                location={item.city}
                 rating={item.rating}
-                reviews={item.reviews}
+                reviews={item.reviewCount}
                 verified={item.verified}
-                imageUri={item.image}
+                imageUri={item.images[0] || 'https://via.placeholder.com/600'}
                 onPress={() => handlePressListing(item)}
               />
             </View>
@@ -194,6 +199,28 @@ const Directory = () => {
           contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoading ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.primary[500]} />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !isLoading ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Ionicons name="business-outline" size={48} color={colors.text.secondary} />
+                <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+                  No businesses found
+                </Text>
+                <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+                  Try adjusting your filters
+                </Text>
+              </View>
+            ) : null
+          }
         />
       </View>
     </SafeAreaView>

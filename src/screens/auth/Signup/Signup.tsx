@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Text, TextField, Button, Image, Checkbox } from '@/components/atoms';
 import { SignupScreenProps, SignupFormData } from './types';
 import { styles } from './styles';
 import { images } from '@/assets/images/images';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { signUp, clearError } from '@/store/slices/authSlice';
+import { RootStackParamList } from '@/navigation/types';
 
 const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
+  const dispatch = useAppDispatch();
+  const { isLoading, error, isAuthenticated } = useAppSelector(state => state.auth);
+  const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
+
   const [formData, setFormData] = useState<SignupFormData>({
     fullName: '',
     email: '',
@@ -26,6 +34,28 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
   });
   const [agreementsError, setAgreementsError] = useState<string | null>(null);
   const [showDisclaimers, setShowDisclaimers] = useState(false);
+
+  useEffect(() => {
+    // Clear any previous errors when component mounts
+    dispatch(clearError());
+  }, [dispatch]);
+
+  useEffect(() => {
+    // Navigate to main screen when authenticated
+    if (isAuthenticated) {
+      rootNavigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    }
+  }, [isAuthenticated, rootNavigation]);
+
+  useEffect(() => {
+    // Show error alert if authentication fails
+    if (error) {
+      Alert.alert('Sign Up Failed', error);
+    }
+  }, [error]);
 
   const handleInputChange = (field: keyof SignupFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -75,10 +105,13 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
     return Object.keys(newErrors).length === 0 && allRequiredChecked;
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (validateForm()) {
-      // TODO: Implement sign up logic
-      console.log('Sign up:', formData);
+      await dispatch(signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        displayName: formData.fullName.trim(),
+      }));
     }
   };
 
@@ -267,11 +300,12 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
         </View>
 
         <Button
-          title="Create Account"
+          title={isLoading ? 'Creating Account...' : 'Create Account'}
           variant="primary"
           size="large"
           fullWidth
           onPress={handleSignUp}
+          disabled={isLoading}
           containerStyle={styles.signUpButton}
         />
 

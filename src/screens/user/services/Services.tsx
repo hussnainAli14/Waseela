@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity, Linking } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text } from '@/components/atoms';
 import { SearchBar, ListingCard, Dropdown } from '@/components/molecules';
@@ -9,51 +9,18 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchServices, setFilters, resetServices } from '@/store/slices/servicesSlice';
 
-type CategoryItem = { key: string; label: string; icon: string };
+type ServiceTypeItem = { key: string; label: string; icon: string };
 
-const categoryItems: CategoryItem[] = [
-  { key: 'tutor', label: 'Tutor', icon: 'school-outline' },
-  { key: 'plumber', label: 'Plumber', icon: 'construct-outline' },
+const serviceTypeItems: ServiceTypeItem[] = [
+  { key: 'tutor', label: 'Tutor', icon: 'book-outline' },
+  { key: 'plumber', label: 'Plumber', icon: 'water-outline' },
   { key: 'electrician', label: 'Electrician', icon: 'flash-outline' },
   { key: 'designer', label: 'Designer', icon: 'color-palette-outline' },
-  { key: 'caterer', label: 'Caterer', icon: 'restaurant' },
-];
-
-const serviceListings = [
-  {
-    id: 's1',
-    name: 'Fatima Ahmed',
-    category: 'Quran Tutor',
-    location: 'London',
-    rating: 5,
-    reviews: 42,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 's2',
-    name: 'Hassan Ali',
-    category: 'Plumber',
-    location: 'Birmingham',
-    rating: 4.8,
-    reviews: 67,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: 's3',
-    name: 'Zahra Hussain',
-    category: 'Graphic Designer',
-    location: 'Manchester',
-    rating: 4.9,
-    reviews: 38,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80',
-  },
+  { key: 'cleaner', label: 'Cleaner', icon: 'sparkles-outline' },
+  { key: 'driver', label: 'Driver', icon: 'car-outline' },
 ];
 
 const cityOptions = [
@@ -61,38 +28,80 @@ const cityOptions = [
   { label: 'London', value: 'london' },
   { label: 'Birmingham', value: 'birmingham' },
   { label: 'Manchester', value: 'manchester' },
+  { label: 'Leeds', value: 'leeds' },
 ];
 
 const Services = () => {
   const [searchValue, setSearchValue] = useState('');
   const [selectedCity, setSelectedCity] = useState<string | undefined>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedServiceType, setSelectedServiceType] = useState<string>('');
   const navigation = useNavigation<NavigationProp<any>>();
+  const dispatch = useAppDispatch();
 
-  const renderCategory = ({ item }: { item: CategoryItem }) => (
+  // Get services from Redux
+  const { services, isLoading, hasMore } = useAppSelector(state => state.services);
+
+  // Fetch all services on initial mount
+  useEffect(() => {
+    console.log('🔍 Services: Initial fetch - loading all services');
+    dispatch(resetServices());
+    dispatch(fetchServices({ filters: {}, limit: 20 }));
+  }, []);
+
+  // Apply filters when user changes them
+  useEffect(() => {
+    // Skip if this is the initial render (both filters are default)
+    if (selectedCity === 'all' && selectedServiceType === '') {
+      return;
+    }
+
+    console.log('🔍 Services: Applying filters:', { selectedCity, selectedServiceType });
+
+    const filterObj: any = {};
+
+    if (selectedCity && selectedCity !== 'all') {
+      filterObj.city = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1);
+    }
+
+    if (selectedServiceType) {
+      filterObj.serviceType = selectedServiceType.charAt(0).toUpperCase() + selectedServiceType.slice(1);
+    }
+
+    dispatch(resetServices());
+    dispatch(fetchServices({ filters: filterObj, limit: 20 }));
+  }, [selectedCity, selectedServiceType]);
+
+  // Load more services
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !isLoading) {
+      dispatch(fetchServices({}));
+    }
+  }, [dispatch, hasMore, isLoading]);
+
+  const renderCategory = ({ item }: { item: ServiceTypeItem }) => (
     <TouchableOpacity
       style={[
         styles.categoryCard,
-        item.key === selectedCategory && styles.categoryCardActive,
+        item.key === selectedServiceType && styles.categoryCardActive,
       ]}
       activeOpacity={0.85}
-      onPress={() => setSelectedCategory(item.key)}>
+      onPress={() => setSelectedServiceType(item.key)}>
       <View
         style={[
           styles.categoryIconWrapper,
-          item.key === selectedCategory && styles.categoryIconWrapperActive,
+          item.key === selectedServiceType && styles.categoryIconWrapperActive,
         ]}>
         <Ionicons
           name={item.icon as string}
           size={22}
-          color={item.key === selectedCategory ? colors.secondary[500] : colors.text.secondary}
+          color={item.key === selectedServiceType ? colors.common.white : colors.text.primary}
         />
       </View>
       <Text
         variant="md-medium"
         style={[
           styles.categoryLabel,
-          item.key === selectedCategory && styles.categoryLabelActive,
+          item.key === selectedServiceType && styles.categoryCardActive,
         ]}>
         {item.label}
       </Text>
@@ -104,7 +113,7 @@ const Services = () => {
       <>
         <View style={styles.sectionHeader}>
           <Text variant="lg-semibold" style={styles.sectionTitle}>
-            {serviceListings.length} service providers found
+            {services.length} services founders found
           </Text>
         </View>
       </>
@@ -115,19 +124,21 @@ const Services = () => {
   const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
 
   const handlePressListing = useCallback(
-    (item: typeof serviceListings[0]) => {
-      navigation.navigate('Details', {
-        listing: item as ListingItem,
-      });
+    (item: typeof services[0]) => {
+      const listingItem: ListingItem = {
+        id: item.id,
+        name: item.name,
+        category: item.serviceType,
+        location: item.city,
+        rating: item.rating,
+        reviews: item.reviewCount,
+        verified: item.verified,
+        image: item.images[0] || 'https://via.placeholder.com/600',
+      };
+      navigation.navigate('Details', { listing: listingItem });
     },
     [navigation],
   );
-
-  const handleContact = useCallback((item: typeof serviceListings[0]) => {
-    const phone = (item as any).phone || '0000000000';
-    const url = `https://wa.me/${phone}`;
-    Linking.openURL(url).catch(() => {});
-  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -154,7 +165,7 @@ const Services = () => {
 
       <View style={styles.categoryBar}>
         <FlatList
-          data={categoryItems}
+          data={serviceTypeItems}
           keyExtractor={item => item.key}
           renderItem={renderCategory}
           horizontal
@@ -165,23 +176,20 @@ const Services = () => {
 
       <View style={styles.listArea}>
         <FlatList
-          data={serviceListings}
+          data={services}
           keyExtractor={item => item.id}
           ListHeaderComponent={listHeader}
           renderItem={({ item }) => (
             <View style={styles.listItem}>
               <ListingCard
                 title={item.name}
-                category={item.category}
-                location={item.location}
+                category={item.serviceType}
+                location={item.city}
                 rating={item.rating}
-                reviews={item.reviews}
+                reviews={item.reviewCount}
                 verified={item.verified}
-                imageUri={item.image}
-                variant="cta"
-                ctaLabel="Contact"
+                imageUri={item.images[0] || 'https://via.placeholder.com/600'}
                 onPress={() => handlePressListing(item)}
-                onPressCta={() => handleContact(item)}
               />
             </View>
           )}
@@ -190,6 +198,28 @@ const Services = () => {
           contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoading ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.primary[500]} />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !isLoading ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Ionicons name="briefcase-outline" size={48} color={colors.text.secondary} />
+                <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+                  No services found
+                </Text>
+                <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+                  Try adjusting your filters
+                </Text>
+              </View>
+            ) : null
+          }
         />
       </View>
     </SafeAreaView>

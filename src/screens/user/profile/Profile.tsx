@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, ScrollView, TouchableOpacity, FlatList, Image } from 'react-native';
+import { View, ScrollView, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text } from '@/components/atoms';
 import { ExpandableDashboardSection } from '@/components/molecules';
@@ -9,12 +9,9 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ListingItem, MarketItem, RoomItem } from '@/navigation/types';
-
-const user = {
-  name: 'Ali Hassan',
-  location: 'London, UK',
-  isServiceProvider: true,
-};
+import { useSignOut } from '@/hooks/useSignOut';
+import { useAppSelector } from '@/store/hooks';
+import { createAllTestData } from '@/utils/createTestData';
 
 type ListingStatus = 'approved' | 'pending';
 
@@ -98,6 +95,39 @@ const ListingSeparator = () => <View style={styles.listingSeparator} />;
 
 const Profile = () => {
   const navigation = useNavigation<ProfileScreenNavigation>();
+  const { handleSignOut } = useSignOut();
+  const { user } = useAppSelector(state => state.auth);
+
+  // Use user data from Redux, fallback to default values
+  const displayName = user?.displayName || 'User';
+  const userLocation = 'London, UK'; // You can store this in Firestore user document
+
+  // Dev: Test data creation
+  const [isCreatingTestData, setIsCreatingTestData] = useState(false);
+
+  const handleCreateTestData = async () => {
+    Alert.alert(
+      '🧪 Create Test Data',
+      'Add sample data to Firestore?\n\n• 5 Businesses\n• 4 Services\n• 2 Marketplace Items\n• 2 Rooms',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Create',
+          onPress: async () => {
+            setIsCreatingTestData(true);
+            try {
+              await createAllTestData();
+              Alert.alert('✅ Success!', 'Test data created! Check Home, Directory, and Services screens.');
+            } catch (error: any) {
+              Alert.alert('❌ Error', error.message || 'Failed to create test data');
+            } finally {
+              setIsCreatingTestData(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const buildListingItem = (item: Listing): ListingItem => ({
     id: item.id,
@@ -121,8 +151,8 @@ const Profile = () => {
   const renderListingItem = ({ item }: { item: Listing }) => (
     <View style={styles.listingCard}>
       <Image
-        source={{ 
-          uri: item.id === '1' 
+        source={{
+          uri: item.id === '1'
             ? 'https://images.unsplash.com/photo-1580915411954-282cb1c9c450?auto=format&fit=crop&w=600&q=80'
             : 'https://images.unsplash.com/photo-1508873696983-2dfd5898f08b?auto=format&fit=crop&w=600&q=80'
         }}
@@ -281,7 +311,7 @@ const Profile = () => {
             Profile
           </Text>
         </View>
-        
+
         <View style={styles.profileSection}>
           <View style={styles.avatarCircleLarge}>
             <Ionicons
@@ -291,9 +321,9 @@ const Profile = () => {
             />
           </View>
           <Text variant="lg-semibold" style={styles.nameTextCentered}>
-            {user.name}
+            {displayName}
           </Text>
-          {user.isServiceProvider && (
+          {user?.displayName && (
             <View style={styles.serviceProviderTag}>
               <Text variant="sm-medium" style={styles.serviceProviderText}>
                 Service Provider
@@ -307,7 +337,7 @@ const Profile = () => {
               color={colors.text.secondary}
             />
             <Text variant="sm-medium" style={styles.locationText}>
-              {user.location}
+              {userLocation}
             </Text>
           </View>
           <View style={styles.contactButtonsRow}>
@@ -581,8 +611,48 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
 
+        {/* DEV: Create Test Data Button */}
+        <View style={{ paddingHorizontal: 20, marginTop: 20, marginBottom: 16 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: colors.accent.purple,
+              padding: 16,
+              borderRadius: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: isCreatingTestData ? 0.6 : 1,
+            }}
+            onPress={handleCreateTestData}
+            disabled={isCreatingTestData}
+            activeOpacity={0.7}>
+            {isCreatingTestData ? (
+              <>
+                <ActivityIndicator size="small" color={colors.common.white} />
+                <Text
+                  variant="md-semibold"
+                  style={{ color: colors.common.white, marginLeft: 10 }}>
+                  Creating...
+                </Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="flask" size={20} color={colors.common.white} />
+                <Text
+                  variant="md-semibold"
+                  style={{ color: colors.common.white, marginLeft: 10 }}>
+                  🧪 DEV: Create Test Data
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.logoutButtonWrapper}>
-          <TouchableOpacity style={styles.logoutButton} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            activeOpacity={0.9}
+            onPress={handleSignOut}>
             <Ionicons
               name="arrow-forward-outline"
               size={18}

@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, FlatList } from 'react-native';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { View, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, Header, SearchBar, ListingCard } from '@/components/molecules';
@@ -9,6 +9,9 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchFeaturedBusinesses } from '@/store/slices/businessesSlice';
+import { fetchFeaturedServices } from '@/store/slices/servicesSlice';
 
 const exploreItems = [
   {
@@ -37,45 +40,54 @@ const exploreItems = [
   },
 ];
 
-const featuredListings = [
-  {
-    id: '1',
-    name: 'Al-Zahra Restaurant',
-    category: 'Food',
-    location: 'London',
-    rating: 4.8,
-    reviews: 124,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1604908177520-4025a13da5b1?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '2',
-    name: 'Noor Grocery',
-    category: 'Retail',
-    location: 'Birmingham',
-    rating: 4.6,
-    reviews: 89,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1515705576963-95cad62945b6?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '3',
-    name: 'Fatima Ahmed',
-    category: 'Quran Tutor',
-    location: 'London',
-    rating: 5,
-    reviews: 42,
-    verified: true,
-    image:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=600&q=80',
-  },
-];
-
 const Home = () => {
   const [searchValue, setSearchValue] = useState('');
   const navigation = useNavigation<NavigationProp<any>>();
+  const dispatch = useAppDispatch();
+
+  // Get featured data from Redux
+  const { featuredBusinesses, isFeaturedLoading: isBusinessesLoading } = useAppSelector(
+    state => state.businesses
+  );
+  const { featuredServices, isFeaturedLoading: isServicesLoading } = useAppSelector(
+    state => state.services
+  );
+
+  // Fetch featured listings on mount
+  useEffect(() => {
+    dispatch(fetchFeaturedBusinesses(5));
+    dispatch(fetchFeaturedServices(5));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Combine featured businesses and services
+  const featuredListings = useMemo(() => {
+    const combined = [
+      ...featuredBusinesses.map(business => ({
+        id: business.id,
+        name: business.name,
+        category: business.category,
+        location: business.city,
+        rating: business.rating,
+        reviews: business.reviewCount,
+        verified: business.verified,
+        image: business.images[0] || 'https://via.placeholder.com/600',
+      })),
+      ...featuredServices.map(service => ({
+        id: service.id,
+        name: service.name,
+        category: service.serviceType,
+        location: service.city,
+        rating: service.rating,
+        reviews: service.reviewCount,
+        verified: service.verified,
+        image: service.images[0] || 'https://via.placeholder.com/600',
+      })),
+    ];
+    return combined.slice(0, 10); // Limit to 10 total
+  }, [featuredBusinesses, featuredServices]);
+
+  const isLoading = isBusinessesLoading || isServicesLoading;
 
   const handleExplorePress = useCallback(
     (key: string) => {
@@ -189,6 +201,27 @@ const Home = () => {
     [],
   );
 
+  const renderLoadingState = () => (
+    <View style={{ padding: 20, alignItems: 'center' }}>
+      <ActivityIndicator size="large" color={colors.primary[500]} />
+      <Text variant="sm-normal" style={{ marginTop: 10, color: colors.text.secondary }}>
+        Loading featured listings...
+      </Text>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={{ padding: 20, alignItems: 'center' }}>
+      <Ionicons name="business-outline" size={48} color={colors.text.secondary} />
+      <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+        No featured listings yet
+      </Text>
+      <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+        Check back soon for featured businesses and services
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.fixedHeader}>{renderFixedHeader}</View>
@@ -197,6 +230,7 @@ const Home = () => {
           data={featuredListings}
           keyExtractor={item => item.id}
           ListHeaderComponent={renderListHeader}
+          ListEmptyComponent={isLoading ? renderLoadingState : renderEmptyState}
           renderItem={({ item }) => (
             <View style={styles.listItemContainer}>
               <ListingCard
