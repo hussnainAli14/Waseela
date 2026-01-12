@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -18,6 +19,9 @@ import {
   type Asset,
   type ImageLibraryOptions,
 } from 'react-native-image-picker';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { createProfessional } from '@/store/slices/professionalsSlice';
+import type { ProfessionalFormData } from '@/types/firestore';
 
 const industryOptions = [
   { label: 'Technology', value: 'technology' },
@@ -34,18 +38,24 @@ const industryOptions = [
 ];
 
 const JoinProfessionalNetwork: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth);
+  const { isLoading } = useAppSelector(state => state.professionals);
+
   const [fullName, setFullName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [company, setCompany] = useState('');
   const [industry, setIndustry] = useState('');
   const [location, setLocation] = useState('');
   const [experience, setExperience] = useState('');
+  const [education, setEducation] = useState('');
   const [bio, setBio] = useState('');
   const [expertiseInput, setExpertiseInput] = useState('');
   const [expertise, setExpertise] = useState<string[]>([]);
   const [offerMentorship, setOfferMentorship] = useState(false);
   const [offerCareerAdvice, setOfferCareerAdvice] = useState(false);
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [photo, setPhoto] = useState<Asset | null>(null);
   const [confirm, setConfirm] = useState(false);
@@ -79,11 +89,156 @@ const JoinProfessionalNetwork: React.FC = () => {
     }
   };
 
-  const handleSubmit = () => {
-    Alert.alert(
-      'Request sent',
-      'Your profile will be visible to community members once approved.',
-    );
+  const validateForm = (): boolean => {
+    if (!fullName.trim()) {
+      Alert.alert('Validation Error', 'Please enter your full name.');
+      return false;
+    }
+    if (!jobTitle.trim()) {
+      Alert.alert('Validation Error', 'Please enter your job title.');
+      return false;
+    }
+    if (!industry) {
+      Alert.alert('Validation Error', 'Please select an industry.');
+      return false;
+    }
+    if (!location.trim()) {
+      Alert.alert('Validation Error', 'Please enter your location.');
+      return false;
+    }
+    if (!bio.trim()) {
+      Alert.alert('Validation Error', 'Please enter your professional bio.');
+      return false;
+    }
+    if (expertise.length === 0) {
+      Alert.alert('Validation Error', 'Please add at least one area of expertise.');
+      return false;
+    }
+    if (!email.trim()) {
+      Alert.alert('Validation Error', 'Please enter your email address.');
+      return false;
+    }
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address.');
+      return false;
+    }
+    if (!confirm) {
+      Alert.alert('Validation Error', 'Please confirm that you agree to the terms.');
+      return false;
+    }
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to join the professional network.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Double-check user is authenticated
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to join the professional network.');
+      return;
+    }
+
+    try {
+      // Format experience as "X years" if provided
+      const experienceFormatted = experience.trim() 
+        ? `${experience.trim()} years` 
+        : undefined;
+
+      // Prepare form data - only include fields with values (no undefined)
+      const formData: ProfessionalFormData = {
+        fullName: fullName.trim(),
+        profession: jobTitle.trim(),
+        industry: industry,
+        location: location.trim(),
+        bio: bio.trim(),
+        skills: expertise,
+        email: email.trim(),
+      };
+
+      // Add optional fields only if they have values
+      const companyTrimmed = company.trim();
+      if (companyTrimmed) {
+        formData.company = companyTrimmed;
+      }
+
+      if (experienceFormatted) {
+        formData.experience = experienceFormatted;
+      }
+
+      const educationTrimmed = education.trim();
+      if (educationTrimmed) {
+        formData.education = educationTrimmed;
+      }
+
+      const phoneTrimmed = phone.trim();
+      if (phoneTrimmed) {
+        formData.phone = phoneTrimmed;
+      }
+
+      const linkedinTrimmed = linkedin.trim();
+      if (linkedinTrimmed) {
+        formData.linkedIn = linkedinTrimmed;
+      }
+
+      // Use dummy image URL for now (as requested)
+      const dummyProfilePhoto = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80';
+
+      // Dispatch the create professional action
+      // user.uid is guaranteed to exist due to validation check above
+      const result = await dispatch(
+        createProfessional({
+          data: formData,
+          userId: user!.uid,
+          profilePhoto: dummyProfilePhoto,
+        })
+      ).unwrap();
+
+      if (result) {
+        Alert.alert(
+          'Success!',
+          'Your professional profile has been submitted. It will be visible to community members once approved.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Reset form
+                setFullName('');
+                setJobTitle('');
+                setCompany('');
+                setIndustry('');
+                setLocation('');
+                setExperience('');
+                setEducation('');
+                setBio('');
+                setExpertise([]);
+                setExpertiseInput('');
+                setEmail('');
+                setPhone('');
+                setLinkedin('');
+                setPhoto(null);
+                setConfirm(false);
+                setOfferMentorship(false);
+                setOfferCareerAdvice(false);
+              },
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error('Error creating professional profile:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to create professional profile. Please try again.',
+      );
+    }
   };
 
   return (
@@ -144,6 +299,12 @@ const JoinProfessionalNetwork: React.FC = () => {
               keyboardType="number-pad"
               value={experience}
               onChangeText={setExperience}
+            />
+            <TextField
+              label="Education (Optional)"
+              placeholder="e.g., MBBS, MD Cardiology"
+              value={education}
+              onChangeText={setEducation}
             />
             <TextField
               label="Professional Bio"
@@ -241,6 +402,13 @@ const JoinProfessionalNetwork: React.FC = () => {
               This will be visible to those seeking guidance
             </Text>
             <TextField
+              label="Phone Number (Optional)"
+              placeholder="+447700900002"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+            <TextField
               label="LinkedIn Profile (Optional)"
               placeholder="linkedin.com/in/yourprofile"
               value={linkedin}
@@ -301,11 +469,17 @@ const JoinProfessionalNetwork: React.FC = () => {
           </View>
 
           <Button
-            title="Join Professional Network"
+            title={isLoading ? 'Submitting...' : 'Join Professional Network'}
             fullWidth
             onPress={handleSubmit}
+            disabled={isLoading}
             containerStyle={[styles.buttonSpacing, styles.primaryButton]}
           />
+          {isLoading && (
+            <View style={{ alignItems: 'center', marginTop: 10 }}>
+              <ActivityIndicator size="small" color={colors.primary[500]} />
+            </View>
+          )}
           <Text variant="sm-normal" style={styles.bottomInfo}>
             Your profile will be visible to all community members
           </Text>

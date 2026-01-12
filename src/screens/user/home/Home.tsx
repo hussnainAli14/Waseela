@@ -96,7 +96,7 @@ const Home = () => {
       } else if (key === 'services') {
         navigation.navigate('Services');
       } else if (key === 'buy-sell') {
-        navigation.navigate('Services', { screen: 'SellItem' });
+        navigation.navigate('BuySell');
       } else if (key === 'rooms') {
         navigation.navigate('Services', { screen: 'RoomFinder' });
       }

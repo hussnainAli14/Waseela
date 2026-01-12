@@ -25,9 +25,10 @@ import {
   PostRoom,
   JoinProfessionalNetwork,
   ProfessionalNetwork,
+  BuySell,
 } from '@/screens';
 import { colors } from '@/theme';
-import { BottomNavigator } from '@/components';
+import { BottomNavigator } from '@/components/organisms/BottomNavigator';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -41,6 +42,13 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="Home" component={Home} />
     <HomeStack.Screen name="Details" component={Details} />
     <HomeStack.Screen name="ProfessionalNetwork" component={ProfessionalNetwork} />
+    <HomeStack.Screen name="BuySell" component={BuySell} />
+    <HomeStack.Screen
+      name="SellItem"
+      component={SellItem}
+      options={{ headerShown: true, title: 'Sell an Item' }}
+    />
+    <HomeStack.Screen name="SubmitListing" component={SubmitListing} />
     <HomeStack.Screen
       name="ProfessionalProfile"
       component={ProfessionalProfile}

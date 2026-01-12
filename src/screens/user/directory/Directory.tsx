@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchBusinesses, setFilters, resetBusinesses } from '@/store/slices/businessesSlice';
+import { fetchBusinesses, resetBusinesses } from '@/store/slices/businessesSlice';
 
 type CategoryItem = { key: string; label: string; icon: string };
 
@@ -22,6 +22,16 @@ const categoryItems: CategoryItem[] = [
   { key: 'education', label: 'Education', icon: 'school-outline' },
   { key: 'services', label: 'Services', icon: 'construct-outline' },
 ];
+
+// Map UI category keys to database category values
+const categoryMap: Record<string, string> = {
+  food: 'Food',
+  retail: 'Retail',
+  legal: 'Legal',
+  health: 'Healthcare', // Map 'health' key to 'Healthcare' in database
+  education: 'Education',
+  services: 'Services',
+};
 
 const cityOptions = [
   { label: 'All Cities', value: 'all' },
@@ -39,44 +49,93 @@ const Directory = () => {
   const dispatch = useAppDispatch();
 
   // Get businesses from Redux
-  const { businesses, isLoading, hasMore, filters } = useAppSelector(state => state.businesses);
+  const { businesses: allBusinesses, isLoading, hasMore } = useAppSelector(state => state.businesses);
+
+  // Helper function to apply filters and fetch businesses
+  const applyFiltersAndFetch = useCallback(
+    (city: string | undefined, category: string, searchTerm?: string) => {
+      const filterObj: any = {};
+
+      if (city && city !== 'all') {
+        // Capitalize city name to match database format
+        filterObj.city = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+      }
+
+      if (category) {
+        // Use category map to get the correct database value
+        filterObj.category = categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+      }
+
+      // Add search term to filters if provided
+      if (searchTerm && searchTerm.trim()) {
+        filterObj.search = searchTerm.trim();
+      }
+
+      console.log('🔍 Directory: Applying filters:', { city, category, searchTerm, filterObj });
+      dispatch(resetBusinesses());
+      dispatch(fetchBusinesses({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
+    },
+    [dispatch],
+  );
 
   // Fetch all businesses on initial mount
   useEffect(() => {
     console.log('🔍 Directory: Initial fetch - loading all businesses');
     dispatch(resetBusinesses());
     dispatch(fetchBusinesses({ filters: {}, limit: 20 }));
-  }, []);
+  }, [dispatch]);
 
-  // Apply filters when user changes them
-  useEffect(() => {
-    // Skip if this is the initial render (both filters are default)
-    if (selectedCity === 'all' && selectedCategory === '') {
-      return;
+  // Handle search input change (debouncing is handled by SearchBar component)
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchValue(text);
+      applyFiltersAndFetch(selectedCity, selectedCategory, text);
+    },
+    [selectedCity, selectedCategory, applyFiltersAndFetch],
+  );
+
+  // Handle city selection change
+  const handleCityChange = useCallback(
+    (city: string | undefined) => {
+      setSelectedCity(city);
+      applyFiltersAndFetch(city, selectedCategory, searchValue);
+    },
+    [selectedCategory, searchValue, applyFiltersAndFetch],
+  );
+
+  // Handle category selection change (toggle if same category clicked)
+  const handleCategoryChange = useCallback(
+    (category: string) => {
+      const newCategory = selectedCategory === category ? '' : category;
+      setSelectedCategory(newCategory);
+      applyFiltersAndFetch(selectedCity, newCategory, searchValue);
+    },
+    [selectedCity, selectedCategory, searchValue, applyFiltersAndFetch],
+  );
+
+  // Filter businesses by search term (client-side filtering)
+  const businesses = useMemo(() => {
+    if (!searchValue || !searchValue.trim()) {
+      return allBusinesses;
     }
 
-    console.log('🔍 Directory: Applying filters:', { selectedCity, selectedCategory });
-
-    const filterObj: any = {};
-
-    if (selectedCity && selectedCity !== 'all') {
-      filterObj.city = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1);
-    }
-
-    if (selectedCategory) {
-      filterObj.category = selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1);
-    }
-
-    dispatch(resetBusinesses());
-    dispatch(fetchBusinesses({ filters: filterObj, limit: 20 }));
-  }, [selectedCity, selectedCategory]);
+    const searchLower = searchValue.toLowerCase().trim();
+    return allBusinesses.filter(business => {
+      const nameMatch = business.name?.toLowerCase().includes(searchLower);
+      const categoryMatch = business.category?.toLowerCase().includes(searchLower);
+      const descriptionMatch = business.description?.toLowerCase().includes(searchLower);
+      const cityMatch = business.city?.toLowerCase().includes(searchLower);
+      
+      return nameMatch || categoryMatch || descriptionMatch || cityMatch;
+    });
+  }, [allBusinesses, searchValue]);
 
   // Load more businesses
   const handleLoadMore = useCallback(() => {
-    if (hasMore && !isLoading) {
+    if (hasMore && !isLoading && allBusinesses.length > 0) {
       dispatch(fetchBusinesses({}));
     }
-  }, [dispatch, hasMore, isLoading]);
+  }, [dispatch, hasMore, isLoading, allBusinesses.length]);
 
   const renderCategory = ({ item }: { item: CategoryItem }) => (
     <TouchableOpacity
@@ -85,7 +144,7 @@ const Directory = () => {
         item.key === selectedCategory && styles.categoryCardActive,
       ]}
       activeOpacity={0.85}
-      onPress={() => setSelectedCategory(item.key)}>
+      onPress={() => handleCategoryChange(item.key)}>
       <View
         style={[
           styles.categoryIconWrapper,
@@ -151,12 +210,12 @@ const Directory = () => {
           <SearchBar
             placeholder="Search businesses..."
             value={searchValue}
-            onChangeText={setSearchValue}
+            onChangeText={handleSearchChange}
           />
           <Dropdown
             options={cityOptions}
             selectedValue={selectedCity}
-            onSelect={setSelectedCity}
+            onSelect={handleCityChange}
             placeholder="All Cities"
             buttonStyle={styles.citySelector}
             buttonTextStyle={styles.citySelectorText}

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { styles } from './styles';
 import { SearchBarProps } from './types';
 import { colors } from '@/theme';
+import { useDebouncedCallback } from '@/hooks';
 
 const SearchBar: React.FC<SearchBarProps> = ({
   value,
@@ -15,10 +16,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
   leftIcon,
   rightIcon,
   onPressRightIcon,
+  debounceDelay = 500,
   ...inputProps
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [internalValue, setInternalValue] = useState('');
+  // Local state for immediate UI feedback (especially important when debouncing)
+  const [localValue, setLocalValue] = useState(value ?? '');
+
+  // Sync local value with prop value when it changes externally
+  useEffect(() => {
+    if (value !== undefined) {
+      setLocalValue(value);
+    }
+  }, [value]);
 
   const renderLeftIcon = () =>
     leftIcon || (
@@ -44,16 +54,28 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return null;
   };
 
-  // Allow typing even when a value is passed without an onChange handler by falling back
-  // to internal state updates.
-  const isControlled = value !== undefined && onChangeText !== undefined;
-  const inputValue = isControlled ? value : value ?? internalValue;
+  // Use local value for immediate UI feedback
+  const inputValue = localValue;
+
+  // Create debounced callback if debouncing is enabled (debounceDelay > 0)
+  const debouncedOnChangeText = useDebouncedCallback(
+    (text: string) => {
+      onChangeText?.(text);
+    },
+    debounceDelay
+  );
 
   const handleChangeText = (text: string) => {
-    if (!isControlled) {
-      setInternalValue(text);
+    // Always update local value immediately for responsive UI
+    setLocalValue(text);
+    
+    // Debounce the onChangeText callback if debouncing is enabled
+    if (debounceDelay > 0 && onChangeText) {
+      debouncedOnChangeText(text);
+    } else {
+      // Call immediately if debouncing is disabled
+      onChangeText?.(text);
     }
-    onChangeText?.(text);
   };
 
   return (

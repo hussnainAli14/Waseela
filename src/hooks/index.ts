@@ -10,3 +10,5 @@ export {
   useMainRoute,
 } from './useNavigation';
 
+export { useDebounce, useDebouncedCallback } from './useDebounce';
+

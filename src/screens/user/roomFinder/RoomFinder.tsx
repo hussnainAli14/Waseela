@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
@@ -9,15 +9,18 @@ import { colors } from '@/theme';
 import { styles } from './styles';
 import { RoomItem } from '@/navigation/types';
 import { MainStackParamList } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchRooms, resetRooms } from '@/store/slices/roomsSlice';
+import type { Room } from '@/types/firestore';
 
 type RoomType = 'all' | 'single' | 'double' | 'studio' | 'shared';
 
 const cityOptions = [
   { label: 'All Cities', value: 'all' },
-  { label: 'London', value: 'London' },
-  { label: 'Birmingham', value: 'Birmingham' },
-  { label: 'Manchester', value: 'Manchester' },
-  { label: 'Leeds', value: 'Leeds' },
+  { label: 'London', value: 'london' },
+  { label: 'Birmingham', value: 'birmingham' },
+  { label: 'Manchester', value: 'manchester' },
+  { label: 'Leeds', value: 'leeds' },
 ];
 
 const rentOptions = [
@@ -34,103 +37,26 @@ const roomTypeFilters: { key: RoomType; label: string }[] = [
   { key: 'shared', label: 'Shared' },
 ];
 
-const rooms: RoomItem[] = [
-  {
-    id: 'r1',
-    title: 'Cozy Single Room near UCL',
-    city: 'London',
-    type: 'single',
-    price: 650,
-    priceLabel: '£650/mo',
-    image:
-      'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=600&q=80',
-    billsIncluded: true,
-    locationLine1: 'Camden, London',
-    locationLine2: 'Near UCL',
-    description:
-      'Bright single room in a friendly shared house. Close to UCL campus, 5 min walk to tube station. Fully furnished with desk and wardrobe.',
-    amenities: ['WiFi', 'Kitchen', 'Washing Machine', 'Garden'],
-    availableFrom: '1st March 2025',
-    landlordName: 'Fatima K.',
-    postedAt: '2 days ago',
-  },
-  {
-    id: 'r2',
-    title: 'Double Room - University of Birmingham',
-    city: 'Birmingham',
-    type: 'double',
-    price: 800,
-    priceLabel: '£800/mo',
-    image:
-      'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=600&q=80',
-    billsIncluded: true,
-    locationLine1: 'Selly Oak, Birmingham',
-    locationLine2: 'Near University of Birmingham',
-    description:
-      'Spacious double room in a modern shared house. Perfect for students. Close to university campus and local amenities.',
-    amenities: ['WiFi', 'Kitchen', 'Washing Machine'],
-    availableFrom: '15th February 2025',
-    landlordName: 'Ahmed M.',
-    postedAt: '1 day ago',
-  },
-  {
-    id: 'r3',
-    title: 'Studio Apartment - Manchester City Centre',
-    city: 'Manchester',
-    type: 'studio',
-    price: 950,
-    priceLabel: '£950/mo',
-    image:
-      'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=600&q=80',
-    billsIncluded: true,
-    locationLine1: 'City Centre, Manchester',
-    locationLine2: 'Near University of Manchester',
-    description:
-      'Modern studio apartment in the heart of Manchester. Fully furnished with all amenities. Perfect for professionals or students.',
-    amenities: ['WiFi', 'Kitchen', 'Washing Machine', 'Garden'],
-    availableFrom: '1st April 2025',
-    landlordName: 'Sarah L.',
-    postedAt: '3 days ago',
-  },
-  {
-    id: 'r4',
-    title: 'Shared Room - Leeds University',
-    city: 'Leeds',
-    type: 'shared',
-    price: 400,
-    priceLabel: '£400/mo',
-    image:
-      'https://images.unsplash.com/photo-1521783593447-5702f2b77f71?auto=format&fit=crop&w=600&q=80',
-    billsIncluded: true,
-    locationLine1: 'Hyde Park, Leeds',
-    locationLine2: 'Near University of Leeds',
-    description:
-      'Affordable shared room in a friendly student house. Great location near university and public transport.',
-    amenities: ['WiFi', 'Kitchen', 'Washing Machine'],
-    availableFrom: '1st March 2025',
-    landlordName: 'Mohammed A.',
-    postedAt: '5 days ago',
-  },
-  {
-    id: 'r5',
-    title: 'Bright Double Room near City Campus',
-    city: 'Birmingham',
-    type: 'double',
-    price: 720,
-    priceLabel: '£720/mo',
-    image:
-      'https://images.unsplash.com/photo-1523755231516-e43fd2e8dca5?auto=format&fit=crop&w=600&q=80',
-    billsIncluded: true,
-    locationLine1: 'City Centre, Birmingham',
-    locationLine2: 'Close to amenities',
-    description:
-      'Bright and airy double room in a well-maintained property. Close to city center and all amenities.',
-    amenities: ['WiFi', 'Kitchen', 'Washing Machine', 'Garden'],
-    availableFrom: '20th February 2025',
-    landlordName: 'Aisha K.',
-    postedAt: '1 week ago',
-  },
-];
+// Helper function to convert Room to RoomItem
+const convertRoomToRoomItem = (room: Room): RoomItem => {
+  return {
+    id: room.id,
+    title: room.title,
+    city: room.city,
+    type: room.type,
+    price: room.price,
+    priceLabel: room.priceLabel,
+    image: room.images[0] || 'https://via.placeholder.com/600',
+    billsIncluded: room.billsIncluded,
+    locationLine1: room.locationLine1,
+    locationLine2: room.locationLine2 || '',
+    description: room.description,
+    amenities: room.amenities,
+    availableFrom: typeof room.availableFrom === 'string' 
+      ? new Date(room.availableFrom).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+      : room.availableFrom?.toDate?.().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) || '',
+  };
+};
 
 const RoomFinder = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -138,22 +64,137 @@ const RoomFinder = () => {
   const [selectedMaxRent, setSelectedMaxRent] = useState<number | null>(null);
   const [selectedType, setSelectedType] = useState<RoomType>('all');
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+  const dispatch = useAppDispatch();
 
+  // Get rooms from Redux
+  const { rooms: allRooms, isLoading } = useAppSelector(state => state.rooms);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Helper function to apply filters and fetch rooms
+  const applyFiltersAndFetch = useCallback(
+    (city: string, roomType: RoomType, maxRent: number | null, searchTerm?: string) => {
+      const filterObj: any = {};
+
+      if (city && city !== 'all') {
+        // Capitalize city name to match database format
+        filterObj.city = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+      }
+
+      if (roomType && roomType !== 'all') {
+        filterObj.type = roomType;
+      }
+
+      if (maxRent) {
+        filterObj.maxPrice = maxRent;
+      }
+
+      // Add search term to filters if provided
+      if (searchTerm && searchTerm.trim()) {
+        filterObj.search = searchTerm.trim();
+      }
+
+      console.log('🔍 RoomFinder: Applying filters:', { city, roomType, maxRent, searchTerm, filterObj });
+      dispatch(resetRooms());
+      dispatch(fetchRooms({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
+    },
+    [dispatch],
+  );
+
+  // Fetch all rooms on initial mount
+  useEffect(() => {
+    console.log('🔍 RoomFinder: Initial fetch - loading all rooms');
+    dispatch(resetRooms());
+    dispatch(fetchRooms({ filters: {}, limit: 20 }));
+  }, [dispatch]);
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      console.log('🔄 RoomFinder: Refreshing data...');
+      dispatch(resetRooms());
+      const filterObj: any = {};
+
+      if (selectedCity && selectedCity !== 'all') {
+        filterObj.city = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1).toLowerCase();
+      }
+
+      if (selectedType && selectedType !== 'all') {
+        filterObj.type = selectedType;
+      }
+
+      if (selectedMaxRent) {
+        filterObj.maxPrice = selectedMaxRent;
+      }
+
+      if (searchValue && searchValue.trim()) {
+        filterObj.search = searchValue.trim();
+      }
+
+      await dispatch(fetchRooms({ filters: filterObj, limit: 50 })).unwrap();
+    } catch (error) {
+      console.error('Error refreshing rooms:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch, selectedCity, selectedType, selectedMaxRent, searchValue]);
+
+  // Handle search input change (debouncing is handled by SearchBar component)
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchValue(text);
+      applyFiltersAndFetch(selectedCity, selectedType, selectedMaxRent, text);
+    },
+    [selectedCity, selectedType, selectedMaxRent, applyFiltersAndFetch],
+  );
+
+  // Handle city selection change
+  const handleCityChange = useCallback(
+    (city: string | undefined) => {
+      const cityValue = city || 'all';
+      setSelectedCity(cityValue);
+      applyFiltersAndFetch(cityValue, selectedType, selectedMaxRent, searchValue);
+    },
+    [selectedType, selectedMaxRent, searchValue, applyFiltersAndFetch],
+  );
+
+  // Handle room type selection change
+  const handleTypeChange = useCallback(
+    (type: RoomType) => {
+      setSelectedType(type);
+      applyFiltersAndFetch(selectedCity, type, selectedMaxRent, searchValue);
+    },
+    [selectedCity, selectedMaxRent, searchValue, applyFiltersAndFetch],
+  );
+
+  // Handle max rent selection change
+  const handleMaxRentChange = useCallback(
+    (maxRent: number | null) => {
+      setSelectedMaxRent(maxRent);
+      applyFiltersAndFetch(selectedCity, selectedType, maxRent, searchValue);
+    },
+    [selectedCity, selectedType, searchValue, applyFiltersAndFetch],
+  );
+
+  // Filter rooms by search term (client-side filtering)
   const filteredRooms = useMemo(() => {
-    return rooms.filter(room => {
-      const matchesCity =
-        selectedCity === 'all' || room.city.toLowerCase() === selectedCity.toLowerCase();
-      const matchesType = selectedType === 'all' || room.type === selectedType;
-      const matchesRent =
-        selectedMaxRent == null || room.price <= selectedMaxRent;
-      const matchesSearch =
-        !searchValue ||
-        room.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-        room.locationLine1.toLowerCase().includes(searchValue.toLowerCase());
+    // Convert Room[] to RoomItem[]
+    let roomItems = allRooms.map(convertRoomToRoomItem);
 
-      return matchesCity && matchesType && matchesRent && matchesSearch;
-    });
-  }, [selectedCity, selectedType, selectedMaxRent, searchValue]);
+    // Apply client-side search filtering
+    if (searchValue && searchValue.trim()) {
+      const searchLower = searchValue.toLowerCase().trim();
+      roomItems = roomItems.filter(room => {
+        const nameMatch = room.title?.toLowerCase().includes(searchLower);
+        const locationMatch = room.locationLine1?.toLowerCase().includes(searchLower);
+        const descriptionMatch = room.description?.toLowerCase().includes(searchLower);
+        
+        return nameMatch || locationMatch || descriptionMatch;
+      });
+    }
+
+    return roomItems;
+  }, [allRooms, searchValue]);
 
   const handleRoomPress = useCallback(
     (room: RoomItem) => {
@@ -161,6 +202,8 @@ const RoomFinder = () => {
     },
     [navigation],
   );
+
+  const renderSeparator = useCallback(() => <View style={styles.listSeparator} />, []);
 
   const renderRoomCard = useCallback(
     ({ item }: { item: RoomItem }) => (
@@ -235,7 +278,7 @@ const RoomFinder = () => {
           <SearchBar
             placeholder="Search rooms or areas..."
             value={searchValue}
-            onChangeText={setSearchValue}
+            onChangeText={handleSearchChange}
           />
           <TouchableOpacity
             style={styles.postButton}
@@ -257,6 +300,14 @@ const RoomFinder = () => {
         data={filteredRooms}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary[500]]}
+            tintColor={colors.primary[500]}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.filtersSection}>
             <View style={styles.filterBlock}>
@@ -266,7 +317,7 @@ const RoomFinder = () => {
               <Dropdown
                 options={cityOptions}
                 selectedValue={selectedCity}
-                onSelect={setSelectedCity}
+                onSelect={handleCityChange}
                 buttonStyle={styles.cityDropdown}
               />
             </View>
@@ -286,11 +337,9 @@ const RoomFinder = () => {
                         isActive && styles.rentChipActive,
                       ]}
                       activeOpacity={0.85}
-                      onPress={() =>
-                        setSelectedMaxRent(prev =>
-                          prev === option.value ? null : option.value,
-                        )
-                      }>
+                      onPress={() => handleMaxRentChange(
+                        selectedMaxRent === option.value ? null : option.value
+                      )}>
                       <Text
                         variant="md-medium"
                         style={[
@@ -320,7 +369,7 @@ const RoomFinder = () => {
                         isActive && styles.typeChipActive,
                       ]}
                       activeOpacity={0.85}
-                      onPress={() => setSelectedType(filter.key)}>
+                      onPress={() => handleTypeChange(filter.key)}>
                       <Text
                         variant="md-medium"
                         style={[
@@ -341,8 +390,28 @@ const RoomFinder = () => {
           </View>
         }
         renderItem={renderRoomCard}
-        ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
+        ItemSeparatorComponent={renderSeparator}
         showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          isLoading && !refreshing ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={colors.primary[500]} />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          !isLoading && !refreshing ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Ionicons name="home-outline" size={48} color={colors.text.secondary} />
+              <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+                No rooms found
+              </Text>
+              <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+                Try adjusting your filters
+              </Text>
+            </View>
+          ) : null
+        }
       />
     </SafeAreaView>
   );

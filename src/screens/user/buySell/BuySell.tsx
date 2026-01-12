@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
@@ -8,6 +8,9 @@ import { Card, SearchBar } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { MainStackParamList, MarketItem } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchProducts, resetProducts } from '@/store/slices/productsSlice';
+import type { Product } from '@/types/firestore';
 
 type CategoryItem = { key: string; label: string };
 
@@ -19,104 +22,55 @@ const categoryItems: CategoryItem[] = [
   { key: 'books', label: 'Books' },
 ];
 
-const itemsForSale: MarketItem[] = [
-  {
-    id: 'm1',
-    title: 'Modern Dining Table Set',
-    price: '£250',
-    location: 'London',
-    condition: 'Good',
-    category: 'Furniture',
-    image:
-      'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=600&q=80',
-    safetyTips: [
-      'Meet in a public place',
-      'Check the item before paying',
-      'Never share sensitive information',
-    ],
-  },
-  {
-    id: 'm2',
-    title: 'iPhone 13 Pro - 256GB',
-    price: '£450',
-    location: 'Birmingham',
-    condition: 'Like New',
-    category: 'Electronics',
-    image:
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80',
-    safetyTips: [
-      'Meet in a public place',
-      'Check the phone’s IMEI and condition before paying',
-      'Never share sensitive information',
-    ],
-  },
-  {
-    id: 'm3',
-    title: 'Designer Abaya Collection',
-    price: '£80',
-    location: 'Manchester',
-    condition: 'New',
-    category: 'Clothing',
-    image:
-      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=600&q=80',
-    safetyTips: [
-      'Meet in a public place',
-      'Check sizes and quality before paying',
-      'Never share sensitive information',
-    ],
-  },
-  {
-    id: 'm4',
-    title: 'Islamic Books Collection',
-    price: '£40',
-    location: 'Leeds',
-    condition: 'Good',
-    category: 'Books',
-    image:
-      'https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=600&q=80',
-    safetyTips: [
-      'Meet in a public place',
-      'Check book condition before paying',
-      'Never share sensitive information',
-    ],
-  },
-  {
-    id: 'm5',
-    title: 'Prayer Mat Set',
-    price: '£25',
-    location: 'London',
-    condition: 'New',
-    category: 'Home',
-    image:
-      'https://images.unsplash.com/photo-1611074679981-2b8eab0f5f75?auto=format&fit=crop&w=600&q=80',
-    safetyTips: [
-      'Meet in a public place',
-      'Check fabric quality before paying',
-      'Never share sensitive information',
-    ],
-  },
-  {
-    id: 'm6',
-    title: 'Kids Study Desk',
-    price: '£60',
-    location: 'Birmingham',
-    condition: 'Good',
-    category: 'Furniture',
-    image:
-      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
-    safetyTips: [
-      'Meet in a public place',
-      'Check for any damages before paying',
-      'Never share sensitive information',
-    ],
-  },
-];
-
 const BuySell = () => {
+  const dispatch = useAppDispatch();
+  const { products, isLoading } = useAppSelector(state => state.products);
   const [searchValue, setSearchValue] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSold, setShowSold] = useState(false);
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+
+  // Fetch products on mount
+  useEffect(() => {
+    dispatch(resetProducts());
+    dispatch(
+      fetchProducts({
+        filters: {
+          status: 'approved', // Only show approved products
+        },
+        limit: 50,
+      })
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Convert Product to MarketItem format
+  const convertProductToMarketItem = useCallback((product: Product): MarketItem => {
+    // Format condition for display
+    const conditionMap: Record<string, string> = {
+      'new': 'New',
+      'like-new': 'Like New',
+      'good': 'Good',
+      'fair': 'Fair',
+      'needs-repair': 'Needs Repair',
+    };
+
+    return {
+      id: product.id,
+      title: product.title,
+      price: `£${product.price}`,
+      location: product.city,
+      condition: conditionMap[product.condition] || product.condition,
+      category: product.category,
+      image: product.images[0] || 'https://via.placeholder.com/600',
+      description: product.description,
+      safetyTips: [
+        'Meet in a public place',
+        'Check the item before paying',
+        'Never share sensitive information',
+      ],
+    };
+  }, []);
 
   const renderCategory = ({ item }: { item: CategoryItem }) => (
     <TouchableOpacity
@@ -137,7 +91,34 @@ const BuySell = () => {
     </TouchableOpacity>
   );
 
-  const filteredItems = useMemo(() => itemsForSale, []);
+  // Filter products based on category and search
+  const filteredItems = useMemo(() => {
+    let filtered = products
+      .filter((product: Product) => product.status === 'approved') // Only show approved products
+      .map(convertProductToMarketItem);
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter((item: MarketItem) => {
+        const categoryLower = item.category.toLowerCase();
+        const selectedLower = selectedCategory.toLowerCase();
+        return categoryLower === selectedLower || categoryLower.includes(selectedLower);
+      });
+    }
+
+    // Filter by search
+    if (searchValue.trim()) {
+      const searchLower = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (item: MarketItem) =>
+          item.title.toLowerCase().includes(searchLower) ||
+          item.description?.toLowerCase().includes(searchLower) ||
+          item.location.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }, [products, selectedCategory, searchValue, convertProductToMarketItem]);
 
   const handlePressItem = useCallback(
     (item: MarketItem) => {
@@ -212,7 +193,10 @@ const BuySell = () => {
             value={searchValue}
             onChangeText={setSearchValue}
           />
-          <TouchableOpacity style={styles.sellButton} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.sellButton}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('SellItem')}>
             <Ionicons
               name="add"
               size={20}
@@ -253,22 +237,40 @@ const BuySell = () => {
             {filteredItems.length} items for sale
           </Text>
         </View>
-        <FlatList
-          data={filteredItems}
-          keyExtractor={item => item.id}
-          renderItem={renderItemCard}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
-          ItemSeparatorComponent={renderSeparator}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-        />
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary[500]} />
+            <Text variant="sm-normal" style={styles.loadingText}>
+              Loading products...
+            </Text>
+          </View>
+        ) : filteredItems.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="bag-outline" size={48} color={colors.text.secondary} />
+            <Text variant="md-semibold" style={styles.emptyTitle}>
+              No products found
+            </Text>
+            <Text variant="sm-normal" style={styles.emptySubtitle}>
+              {searchValue || selectedCategory !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Be the first to list an item!'}
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredItems}
+            keyExtractor={item => item.id}
+            renderItem={renderItemCard}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
+            ItemSeparatorComponent={renderSeparator}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
 };
 
 export default BuySell;
-
-
-

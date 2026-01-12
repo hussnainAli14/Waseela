@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Business, BusinessFormData, ListingFilters } from '@/types/firestore';
 import * as businessesService from '@/services/firestore/businesses';
-import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 interface BusinessesState {
     businesses: Business[];
@@ -14,7 +13,7 @@ interface BusinessesState {
     error: string | null;
     filters: ListingFilters;
     hasMore: boolean;
-    lastDoc: FirebaseFirestoreTypes.DocumentSnapshot | null;
+    lastDocId: string | null; // Store only document ID instead of DocumentSnapshot for serialization
 }
 
 const initialState: BusinessesState = {
@@ -28,7 +27,7 @@ const initialState: BusinessesState = {
     error: null,
     filters: {},
     hasMore: true,
-    lastDoc: null,
+    lastDocId: null,
 };
 
 // Async thunks
@@ -37,12 +36,12 @@ export const fetchBusinesses = createAsyncThunk(
     async ({ filters, limit = 20 }: { filters?: ListingFilters; limit?: number }, { getState, rejectWithValue }) => {
         try {
             const state = getState() as { businesses: BusinessesState };
-            const { businesses, lastDoc } = await businessesService.getBusinesses(
+            const { businesses, lastDocId } = await businessesService.getBusinesses(
                 filters || state.businesses.filters,
                 limit,
-                state.businesses.lastDoc || undefined
+                state.businesses.lastDocId || undefined
             );
-            return { businesses, lastDoc, isLoadMore: !!state.businesses.lastDoc };
+            return { businesses, lastDocId, isLoadMore: !!state.businesses.lastDocId };
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -148,12 +147,12 @@ const businessesSlice = createSlice({
     reducers: {
         setFilters: (state, action: PayloadAction<ListingFilters>) => {
             state.filters = action.payload;
-            state.lastDoc = null; // Reset pagination when filters change
+            state.lastDocId = null; // Reset pagination when filters change
             state.hasMore = true;
         },
         clearFilters: state => {
             state.filters = {};
-            state.lastDoc = null;
+            state.lastDocId = null;
             state.hasMore = true;
         },
         clearError: state => {
@@ -161,7 +160,7 @@ const businessesSlice = createSlice({
         },
         resetBusinesses: state => {
             state.businesses = [];
-            state.lastDoc = null;
+            state.lastDocId = null;
             state.hasMore = true;
         },
         setSelectedBusiness: (state, action: PayloadAction<Business | null>) => {
@@ -182,7 +181,7 @@ const businessesSlice = createSlice({
                 } else {
                     state.businesses = action.payload.businesses;
                 }
-                state.lastDoc = action.payload.lastDoc;
+                state.lastDocId = action.payload.lastDocId;
                 state.hasMore = action.payload.businesses.length > 0;
             })
             .addCase(fetchBusinesses.rejected, (state, action) => {

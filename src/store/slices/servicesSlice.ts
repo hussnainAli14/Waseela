@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { Service, ServiceFormData, ListingFilters } from '@/types/firestore';
 import * as servicesService from '@/services/firestore/services';
-import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 interface ServicesState {
     services: Service[];
@@ -14,7 +13,7 @@ interface ServicesState {
     error: string | null;
     filters: ListingFilters & { serviceType?: string };
     hasMore: boolean;
-    lastDoc: FirebaseFirestoreTypes.DocumentSnapshot | null;
+    lastDocId: string | null; // Store only document ID instead of DocumentSnapshot for serialization
 }
 
 const initialState: ServicesState = {
@@ -28,7 +27,7 @@ const initialState: ServicesState = {
     error: null,
     filters: {},
     hasMore: true,
-    lastDoc: null,
+    lastDocId: null,
 };
 
 export const fetchServices = createAsyncThunk(
@@ -36,12 +35,12 @@ export const fetchServices = createAsyncThunk(
     async ({ filters, limit = 20 }: { filters?: ListingFilters & { serviceType?: string }; limit?: number }, { getState, rejectWithValue }) => {
         try {
             const state = getState() as { services: ServicesState };
-            const { services, lastDoc } = await servicesService.getServices(
+            const { services, lastDocId } = await servicesService.getServices(
                 filters || state.services.filters,
                 limit,
-                state.services.lastDoc || undefined
+                state.services.lastDocId || undefined
             );
-            return { services, lastDoc, isLoadMore: !!state.services.lastDoc };
+            return { services, lastDocId, isLoadMore: !!state.services.lastDocId };
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -147,12 +146,12 @@ const servicesSlice = createSlice({
     reducers: {
         setFilters: (state, action: PayloadAction<ListingFilters & { serviceType?: string }>) => {
             state.filters = action.payload;
-            state.lastDoc = null;
+            state.lastDocId = null;
             state.hasMore = true;
         },
         clearFilters: state => {
             state.filters = {};
-            state.lastDoc = null;
+            state.lastDocId = null;
             state.hasMore = true;
         },
         clearError: state => {
@@ -160,7 +159,7 @@ const servicesSlice = createSlice({
         },
         resetServices: state => {
             state.services = [];
-            state.lastDoc = null;
+            state.lastDocId = null;
             state.hasMore = true;
         },
         setSelectedService: (state, action: PayloadAction<Service | null>) => {
@@ -180,7 +179,7 @@ const servicesSlice = createSlice({
                 } else {
                     state.services = action.payload.services;
                 }
-                state.lastDoc = action.payload.lastDoc;
+                state.lastDocId = action.payload.lastDocId;
                 state.hasMore = action.payload.services.length > 0;
             })
             .addCase(fetchServices.rejected, (state, action) => {

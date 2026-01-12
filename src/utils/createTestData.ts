@@ -336,6 +336,185 @@ export const createTestRooms = async () => {
     console.log('✓ All rooms created!');
 };
 
+export const createTestProfessionals = async () => {
+    const userId = getCurrentUserId();
+
+    const professionals = [
+        {
+            fullName: 'Dr. Ahmed Hassan',
+            profession: 'Senior Software Engineer',
+            company: 'Google',
+            industry: 'technology',
+            location: 'London',
+            bio: 'Experienced software engineer with 12+ years in the tech industry. Passionate about mentoring aspiring developers and helping them navigate their career paths in technology.',
+            skills: ['Software Development', 'System Design', 'Mentorship', 'Career Guidance'],
+            experience: '12 years',
+            education: 'PhD in Computer Science, Imperial College London',
+            profilePhoto: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=80',
+            linkedIn: 'https://linkedin.com/in/ahmed-hassan',
+            email: 'ahmed.hassan@example.com',
+            phone: '+447700900001',
+            verified: true,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Dr. Fatima Ali',
+            profession: 'Consultant Cardiologist',
+            company: 'NHS - Royal London Hospital',
+            industry: 'healthcare',
+            location: 'London',
+            bio: 'Healthcare professional with deep experience in cardiology. Passionate about mentoring junior doctors and medical students, helping them navigate the complexities of medical training and career development.',
+            skills: ['Cardiology', 'Clinical Training', 'NHS Career Path', 'Interview Preparation'],
+            experience: '15 years',
+            education: 'MBBS, MD Cardiology',
+            profilePhoto: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=300&q=80',
+            linkedIn: 'https://linkedin.com/in/fatima-ali',
+            email: 'fatima.ali@example.com',
+            phone: '+447700900002',
+            verified: true,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Zahra Hussain',
+            profession: 'Investment Banking Analyst',
+            company: 'JPMorgan Chase',
+            industry: 'finance',
+            location: 'London',
+            bio: 'Finance professional with expertise in investment banking. Keen to help students and young professionals interested in finance careers, offering guidance on breaking into the industry.',
+            skills: ['Investment Banking', 'Financial Analysis', 'Finance Career Path', 'Interview Preparation'],
+            experience: '6 years',
+            education: 'BSc Economics, LSE',
+            profilePhoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+            linkedIn: 'https://linkedin.com/in/zahra-hussain',
+            email: 'zahra.hussain@example.com',
+            verified: true,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Mohammed Khan',
+            profession: 'Head of Mathematics',
+            company: 'Sixth Form College Birmingham',
+            industry: 'education',
+            location: 'Birmingham',
+            bio: 'Experienced educator passionate about mathematics and helping students achieve their academic goals. Available for career guidance in education sector.',
+            skills: ['Mathematics', 'Teaching', 'Curriculum Development', 'Student Mentoring'],
+            experience: '10 years',
+            education: 'MSc Mathematics, University of Birmingham',
+            profilePhoto: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
+            email: 'mohammed.khan@example.com',
+            phone: '+447700900003',
+            verified: false,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Sarah Rahman',
+            profession: 'Data Scientist',
+            company: 'Amazon',
+            industry: 'technology',
+            location: 'Manchester',
+            bio: 'Data scientist specializing in machine learning and AI. Happy to mentor those interested in data science careers and provide guidance on technical skills development.',
+            skills: ['Machine Learning', 'Python', 'Data Analysis', 'Career Mentorship'],
+            experience: '8 years',
+            education: 'PhD in Data Science, University of Manchester',
+            profilePhoto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
+            linkedIn: 'https://linkedin.com/in/sarah-rahman',
+            website: 'https://sarahrahman.dev',
+            email: 'sarah.rahman@example.com',
+            verified: true,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Ali Raza',
+            profession: 'General Practitioner',
+            company: 'NHS - Leeds Medical Centre',
+            industry: 'healthcare',
+            location: 'Leeds',
+            bio: 'GP with experience in primary care and community health. Interested in supporting medical students and junior doctors in their career journey.',
+            skills: ['General Practice', 'Primary Care', 'Patient Care', 'Medical Training'],
+            experience: '9 years',
+            education: 'MBBS, MRCGP',
+            profilePhoto: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=300&q=80',
+            email: 'ali.raza@example.com',
+            phone: '+447700900004',
+            verified: true,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Amina Patel',
+            profession: 'Financial Advisor',
+            company: 'Barclays Wealth Management',
+            industry: 'finance',
+            location: 'Birmingham',
+            bio: 'Financial advisor helping clients with wealth management and financial planning. Open to mentoring those interested in financial services careers.',
+            skills: ['Wealth Management', 'Financial Planning', 'Client Relations', 'Career Guidance'],
+            experience: '7 years',
+            education: 'BSc Finance, University of Birmingham',
+            profilePhoto: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?auto=format&fit=crop&w=300&q=80',
+            linkedIn: 'https://linkedin.com/in/amina-patel',
+            email: 'amina.patel@example.com',
+            verified: false,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+        {
+            fullName: 'Hassan Malik',
+            profession: 'Senior Lecturer in Engineering',
+            company: 'University of Leeds',
+            industry: 'education',
+            location: 'Leeds',
+            bio: 'Engineering lecturer and researcher with focus on sustainable energy systems. Passionate about inspiring the next generation of engineers.',
+            skills: ['Engineering', 'Research', 'Teaching', 'Sustainable Energy'],
+            experience: '11 years',
+            education: 'PhD in Mechanical Engineering, University of Leeds',
+            profilePhoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+            linkedIn: 'https://linkedin.com/in/hassan-malik',
+            website: 'https://hassanmalik.ac.uk',
+            email: 'hassan.malik@example.com',
+            phone: '+447700900005',
+            verified: true,
+            status: 'approved',
+            userId,
+            connections: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+    ];
+
+    console.log('Creating test professionals...');
+    for (const professional of professionals) {
+        await firebaseFirestore.collection('professionals').add(professional);
+        console.log(`✓ Created: ${professional.fullName}`);
+    }
+    console.log('✓ All professionals created!');
+};
+
 export const createAllTestData = async () => {
     try {
         console.log('🚀 Starting test data creation...\n');
@@ -352,12 +531,16 @@ export const createAllTestData = async () => {
         await createTestRooms();
         console.log('');
 
+        await createTestProfessionals();
+        console.log('');
+
         console.log('✅ All test data created successfully!');
         console.log('\nYou can now:');
         console.log('- View businesses in Directory');
         console.log('- View services in Services');
         console.log('- View marketplace items in Buy & Sell');
         console.log('- View rooms in Room Finder');
+        console.log('- View professionals in Professional Network');
 
         return true;
     } catch (error) {
@@ -373,4 +556,5 @@ export default {
     createTestServices,
     createTestMarketplaceItems,
     createTestRooms,
+    createTestProfessionals,
 };

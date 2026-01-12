@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -15,8 +16,14 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
-import DocumentPicker, { type DocumentPickerResponse } from '@react-native-documents/picker';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const DocumentPicker = require('@react-native-documents/picker');
+import type { DocumentPickerResponse } from '@react-native-documents/picker';
 import { launchImageLibrary, ImageLibraryOptions, Asset } from 'react-native-image-picker';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { createBusiness } from '@/store/slices/businessesSlice';
+import { createService } from '@/store/slices/servicesSlice';
+import type { BusinessFormData, ServiceFormData } from '@/types/firestore';
 
 type ListingType = 'business' | 'service';
 
@@ -30,6 +37,18 @@ const listingCategories = [
   { label: 'Trades', value: 'trades' },
   { label: 'Other', value: 'other' },
 ];
+
+// Map UI category keys to database category values
+const categoryMap: Record<string, string> = {
+  food: 'Food',
+  retail: 'Retail',
+  legal: 'Legal',
+  healthcare: 'Healthcare',
+  beauty: 'Beauty',
+  education: 'Education',
+  trades: 'Trades',
+  other: 'Other',
+};
 
 const serviceCategories = [
   { label: 'Tutor', value: 'tutor' },
@@ -46,9 +65,24 @@ type Navigation = NativeStackNavigationProp<MainStackParamList, 'SubmitListing'>
 
 const SubmitListing: React.FC = () => {
   const navigation = useNavigation<Navigation>();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth);
+  const { isLoading: isBusinessLoading } = useAppSelector(state => state.businesses);
+  const { isLoading: isServiceLoading } = useAppSelector(state => state.services);
+
   const [listingType, setListingType] = useState<ListingType>('business');
+  const [name, setName] = useState('');
+  const [tagline, setTagline] = useState('');
   const [category, setCategory] = useState('');
   const [city, setCity] = useState('');
+  const [description, setDescription] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [website, setWebsite] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [openingHours, setOpeningHours] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [confirm, setConfirm] = useState(false);
@@ -56,6 +90,8 @@ const SubmitListing: React.FC = () => {
   const [document, setDocument] = useState<DocumentPickerResponse | null>(null);
   const [areaInput, setAreaInput] = useState('');
   const [areas, setAreas] = useState<string[]>([]);
+
+  const isLoading = isBusinessLoading || isServiceLoading;
 
   const tagsRemaining = useMemo(() => 5 - tags.length, [tags.length]);
 
@@ -85,11 +121,211 @@ const SubmitListing: React.FC = () => {
     setAreas(prev => prev.filter(area => area !== value));
   };
 
-  const handleSubmit = () => {
-    Alert.alert(
-      'Submitted for review',
-      'Thanks for sharing your listing. Our team will review it within 24-48 hours.',
-    );
+  const validateForm = (): boolean => {
+    if (!name.trim()) {
+      Alert.alert('Validation Error', `Please enter ${listingType === 'business' ? 'a business name' : 'your name'}.`);
+      return false;
+    }
+    if (!category) {
+      Alert.alert('Validation Error', `Please select ${listingType === 'business' ? 'a category' : 'a service type'}.`);
+      return false;
+    }
+    if (!city.trim()) {
+      Alert.alert('Validation Error', 'Please enter the city.');
+      return false;
+    }
+    if (!description.trim()) {
+      Alert.alert('Validation Error', 'Please enter a description.');
+      return false;
+    }
+    if (!contactPerson.trim()) {
+      Alert.alert('Validation Error', 'Please enter the contact person name.');
+      return false;
+    }
+    if (!whatsapp.trim()) {
+      Alert.alert('Validation Error', 'Please enter a WhatsApp number.');
+      return false;
+    }
+    if (!email.trim()) {
+      Alert.alert('Validation Error', 'Please enter an email address.');
+      return false;
+    }
+    if (!confirm) {
+      Alert.alert('Validation Error', 'Please confirm that all information is accurate.');
+      return false;
+    }
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to submit a listing.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Double-check user is authenticated
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to submit a listing.');
+      return;
+    }
+
+    try {
+      // Use dummy images for now (as requested for rooms)
+      const dummyImages = [
+        'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=600&q=80',
+      ];
+
+      if (listingType === 'business') {
+        // Map category to database format
+        const categoryValue = categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+        // Prepare business form data
+        const formData: BusinessFormData = {
+          name: name.trim(),
+          category: categoryValue,
+          description: description.trim(),
+          city: city.trim(),
+          contactPerson: contactPerson.trim(),
+          whatsapp: whatsapp.trim(),
+          email: email.trim(),
+          tags: tags,
+        };
+
+        // Add optional fields only if they have values
+        if (tagline.trim()) {
+          formData.tagline = tagline.trim();
+        }
+        if (phone.trim()) {
+          formData.phone = phone.trim();
+        }
+        if (website.trim()) {
+          formData.website = website.trim();
+        }
+        if (instagram.trim()) {
+          formData.instagram = instagram.trim();
+        }
+        if (openingHours.trim()) {
+          formData.openingHours = openingHours.trim();
+        }
+
+        // Dispatch the create business action
+        const result = await dispatch(
+          createBusiness({
+            data: formData,
+            userId: user.uid,
+            images: dummyImages,
+          })
+        ).unwrap();
+
+        if (result) {
+          Alert.alert(
+            'Success!',
+            'Your business listing has been submitted for review. Our team will review it within 24-48 hours.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Reset form
+                  setName('');
+                  setTagline('');
+                  setCategory('');
+                  setCity('');
+                  setDescription('');
+                  setContactPerson('');
+                  setWhatsapp('');
+                  setEmail('');
+                  setPhone('');
+                  setWebsite('');
+                  setInstagram('');
+                  setOpeningHours('');
+                  setTags([]);
+                  setTagInput('');
+                  setAreas([]);
+                  setAreaInput('');
+                  setConfirm(false);
+                  setLogo(null);
+                  setDocument(null);
+                  navigation.goBack();
+                },
+              },
+            ]
+          );
+        }
+      } else {
+        // Capitalize service type to match database format
+        const serviceTypeValue = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+
+        // Prepare service form data
+        const formData: ServiceFormData = {
+          name: name.trim(),
+          serviceType: serviceTypeValue,
+          description: description.trim(),
+          city: city.trim(),
+          areasCovered: areas,
+          whatsapp: whatsapp.trim(),
+          email: email.trim(),
+          tags: tags,
+        };
+
+        // Add optional fields only if they have values
+        if (phone.trim()) {
+          formData.phone = phone.trim();
+        }
+
+        // Dispatch the create service action
+        const result = await dispatch(
+          createService({
+            data: formData,
+            userId: user.uid,
+            images: dummyImages,
+          })
+        ).unwrap();
+
+        if (result) {
+          Alert.alert(
+            'Success!',
+            'Your service listing has been submitted for review. Our team will review it within 24-48 hours.',
+            [
+              {
+                text: 'OK',
+                onPress: () => {
+                  // Reset form
+                  setName('');
+                  setTagline('');
+                  setCategory('');
+                  setCity('');
+                  setDescription('');
+                  setContactPerson('');
+                  setWhatsapp('');
+                  setEmail('');
+                  setPhone('');
+                  setWebsite('');
+                  setInstagram('');
+                  setOpeningHours('');
+                  setTags([]);
+                  setTagInput('');
+                  setAreas([]);
+                  setAreaInput('');
+                  setConfirm(false);
+                  setLogo(null);
+                  setDocument(null);
+                  navigation.goBack();
+                },
+              },
+            ]
+          );
+        }
+      }
+    } catch (error: any) {
+      console.error('Error creating listing:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to submit listing. Please try again.',
+      );
+    }
   };
 
   const pickLogo = async () => {
@@ -177,17 +413,25 @@ const SubmitListing: React.FC = () => {
                 ? 'e.g., Al-Zahra Restaurant'
                 : 'e.g., Fatima Ahmed'
             }
+            value={name}
+            onChangeText={setName}
             containerStyle={styles.inputSpacing}
           />
-          <TextField
-            label="Short Tagline (Optional)"
-            placeholder="e.g., Authentic Middle Eastern flavors"
-            containerStyle={styles.inputSpacing}
-            maxLength={60}
-          />
-          <Text variant="sm-normal" style={styles.helperText}>
-            Max 60 characters
-          </Text>
+          {listingType === 'business' && (
+            <>
+              <TextField
+                label="Short Tagline (Optional)"
+                placeholder="e.g., Authentic Middle Eastern flavors"
+                value={tagline}
+                onChangeText={setTagline}
+                containerStyle={styles.inputSpacing}
+                maxLength={60}
+              />
+              <Text variant="sm-normal" style={styles.helperText}>
+                Max 60 characters
+              </Text>
+            </>
+          )}
         </View>
 
         <View style={styles.fieldGroup}>
@@ -219,6 +463,8 @@ const SubmitListing: React.FC = () => {
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+            value={description}
+            onChangeText={setDescription}
           />
         </View>
 
@@ -226,6 +472,8 @@ const SubmitListing: React.FC = () => {
           <TextField
             label="Contact Person Name"
             placeholder="e.g., Ahmed Khan"
+            value={contactPerson}
+            onChangeText={setContactPerson}
             containerStyle={styles.inputSpacing}
           />
           <Text variant="xl-semibold" style={styles.labelSpacing}>
@@ -235,18 +483,24 @@ const SubmitListing: React.FC = () => {
             label="WhatsApp Number"
             placeholder="+44 7XXX XXXXXX"
             keyboardType="phone-pad"
+            value={whatsapp}
+            onChangeText={setWhatsapp}
             containerStyle={styles.inputSpacing}
           />
           <TextField
             label="Email Address"
             placeholder="contact@example.com"
             keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
             containerStyle={styles.inputSpacing}
           />
           <TextField
             label="Phone Number (Optional)"
             placeholder="+44 20 XXXX XXXX"
             keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
           />
         </View>
 
@@ -437,11 +691,17 @@ const SubmitListing: React.FC = () => {
         </View>
 
         <Button
-          title="Submit for Review"
+          title={isLoading ? 'Submitting...' : 'Submit for Review'}
           fullWidth
           onPress={handleSubmit}
+          disabled={isLoading}
           containerStyle={styles.submitButton}
         />
+        {isLoading && (
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <ActivityIndicator size="small" color={colors.primary[500]} />
+          </View>
+        )}
 
         <Text variant="sm-normal" style={styles.reviewNote}>
           Your listing will be reviewed within 24-48 hours

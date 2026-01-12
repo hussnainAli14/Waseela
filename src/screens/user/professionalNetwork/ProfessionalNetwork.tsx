@@ -1,6 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity, Switch } from 'react-native';
+import { View, FlatList, TouchableOpacity, Switch, ActivityIndicator, RefreshControl } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp, CommonActions } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
@@ -9,6 +9,9 @@ import { colors } from '@/theme';
 import { styles } from './styles';
 import { IndustryOption, Professional } from './types';
 import { MainStackParamList, ProfessionalProfileItem } from '@/navigation/types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { fetchProfessionals, resetProfessionals } from '@/store/slices/professionalsSlice';
+import type { Professional as FirestoreProfessional } from '@/types/firestore';
 
 const industryOptions: IndustryOption[] = [
   { label: 'All', value: 'all' },
@@ -20,114 +23,162 @@ const industryOptions: IndustryOption[] = [
 
 const cityOptions = [
   { label: 'All Cities', value: 'all' },
-  { label: 'London', value: 'London' },
-  { label: 'Birmingham', value: 'Birmingham' },
-  { label: 'Manchester', value: 'Manchester' },
-  { label: 'Leeds', value: 'Leeds' },
+  { label: 'London', value: 'london' },
+  { label: 'Birmingham', value: 'birmingham' },
+  { label: 'Manchester', value: 'manchester' },
+  { label: 'Leeds', value: 'leeds' },
 ];
 
-const professionals: Professional[] = [
-  {
-    id: 'p1',
-    name: 'Dr. Ahmed Hassan',
-    title: 'Senior Software Engineer',
-    company: 'Google',
-    industry: 'technology',
-    city: 'London',
-    yearsExperience: 12,
-    tags: ['Technology', 'Mentorship', 'Career Advice'],
-    avatar:
-      'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=80',
-    offeringMentorship: true,
-  },
-  {
-    id: 'p2',
-    name: 'Dr. Fatima Ali',
-    title: 'Consultant Cardiologist',
-    company: 'NHS - Royal London Hospital',
-    industry: 'healthcare',
-    city: 'London',
-    yearsExperience: 15,
-    tags: ['Healthcare', 'Mentorship', 'Career Advice'],
-    avatar:
-      'https://images.unsplash.com/photo-1544723795-3fb0b90c07c1?auto=format&fit=crop&w=300&q=80',
-    offeringMentorship: true,
-    about:
-      'Healthcare professional with deep experience in cardiology, passionate about mentoring junior doctors and medical students.',
-    expertise: [
-      'Cardiology',
-      'Clinical Training',
-      'NHS Career Path',
-      'Interview Preparation',
-    ],
-    helpTitle: 'Medical Career Guidance',
-    helpDescription:
-      'Advice on medical training, specialty applications, and work-life balance in healthcare.',
-  },
-  {
-    id: 'p3',
-    name: 'Zahra Hussain',
-    title: 'Investment Banking Analyst',
-    company: 'JPMorgan Chase',
-    industry: 'finance',
-    city: 'London',
-    yearsExperience: 6,
-    tags: ['Finance', 'Career Advice'],
-    avatar:
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80',
-    offeringMentorship: true,
-    about:
-      'Finance professional with expertise in investment banking. Keen to help students interested in finance careers.',
-    expertise: [
-      'Investment Banking',
-      'Financial Analysis',
-      'Finance Career Path',
-      'Interview Preparation',
-    ],
-    helpTitle: 'Career Advice',
-    helpDescription:
-      'General career guidance, CV reviews, and interview preparation.',
-  },
-  {
-    id: 'p4',
-    name: 'Mohammed Khan',
-    title: 'Head of Mathematics',
-    company: 'Sixth Form College',
-    industry: 'education',
-    city: 'Birmingham',
-    yearsExperience: 10,
-    tags: ['Education', 'Mentorship'],
-    avatar:
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-    offeringMentorship: false,
-  },
-];
+// Helper function to convert Firestore Professional to local Professional type
+const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional => {
+  // Calculate years of experience from experience string or default to 0
+  const yearsExperience = pro.experience 
+    ? parseInt(pro.experience.match(/\d+/)?.[0] || '0', 10)
+    : 0;
+
+  return {
+    id: pro.id,
+    name: pro.fullName,
+    title: pro.profession,
+    company: pro.company || '',
+    industry: (pro.industry.toLowerCase() as IndustryOption['value']) || 'other',
+    city: pro.location,
+    yearsExperience,
+    tags: pro.skills || [],
+    avatar: pro.profilePhoto || 'https://via.placeholder.com/300',
+    offeringMentorship: false, // This field doesn't exist in Firestore Professional, default to false
+    about: pro.bio,
+    expertise: pro.skills,
+    helpTitle: undefined,
+    helpDescription: undefined,
+    linkedinUrl: pro.linkedIn,
+  };
+};
 
 const ProfessionalNetwork = () => {
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+  const dispatch = useAppDispatch();
   const [searchValue, setSearchValue] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [onlyMentors, setOnlyMentors] = useState(false);
 
+  // Get professionals from Redux
+  const { professionals: allProfessionals, isLoading } = useAppSelector(state => state.professionals);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Helper function to apply filters and fetch professionals
+  const applyFiltersAndFetch = useCallback(
+    (industry: string, location: string, searchTerm?: string) => {
+      const filterObj: any = {};
+
+      if (industry && industry !== 'all') {
+        filterObj.industry = industry;
+      }
+
+      if (location && location !== 'all') {
+        // Capitalize location to match database format
+        filterObj.location = location.charAt(0).toUpperCase() + location.slice(1).toLowerCase();
+      }
+
+      // Add search term to filters if provided
+      if (searchTerm && searchTerm.trim()) {
+        filterObj.search = searchTerm.trim();
+      }
+
+      console.log('🔍 ProfessionalNetwork: Applying filters:', { industry, location, searchTerm, filterObj });
+      dispatch(resetProfessionals());
+      dispatch(fetchProfessionals({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
+    },
+    [dispatch],
+  );
+
+  // Fetch all professionals on initial mount
+  useEffect(() => {
+    console.log('🔍 ProfessionalNetwork: Initial fetch - loading all professionals');
+    dispatch(resetProfessionals());
+    dispatch(fetchProfessionals({ filters: {}, limit: 20 }));
+  }, [dispatch]);
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      console.log('🔄 ProfessionalNetwork: Refreshing data...');
+      dispatch(resetProfessionals());
+      await dispatch(
+        fetchProfessionals({
+          filters: {
+            industry: selectedIndustry !== 'all' ? selectedIndustry : undefined,
+            location: selectedCity !== 'all' ? selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1).toLowerCase() : undefined,
+          },
+          limit: 50,
+        })
+      ).unwrap();
+    } catch (error) {
+      console.error('Error refreshing professionals:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch, selectedIndustry, selectedCity]);
+
+  // Handle search input change (debouncing is handled by SearchBar component)
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchValue(text);
+      applyFiltersAndFetch(selectedIndustry, selectedCity, text);
+    },
+    [selectedIndustry, selectedCity, applyFiltersAndFetch],
+  );
+
+  // Handle industry selection change
+  const handleIndustryChange = useCallback(
+    (industry: string | undefined) => {
+      const industryValue = industry || 'all';
+      setSelectedIndustry(industryValue);
+      applyFiltersAndFetch(industryValue, selectedCity, searchValue);
+    },
+    [selectedCity, searchValue, applyFiltersAndFetch],
+  );
+
+  // Handle city selection change
+  const handleCityChange = useCallback(
+    (city: string | undefined) => {
+      const cityValue = city || 'all';
+      setSelectedCity(cityValue);
+      applyFiltersAndFetch(selectedIndustry, cityValue, searchValue);
+    },
+    [selectedIndustry, searchValue, applyFiltersAndFetch],
+  );
+
+  // Filter professionals by search term and mentor filter (client-side filtering)
   const filteredProfessionals = useMemo(() => {
-    return professionals.filter(pro => {
-      const matchesSearch =
-        !searchValue ||
-        pro.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        pro.title.toLowerCase().includes(searchValue.toLowerCase()) ||
-        pro.company.toLowerCase().includes(searchValue.toLowerCase());
+    // Convert Firestore Professional[] to local Professional[]
+    let professionalItems = allProfessionals.map(convertFirestoreProfessional);
 
-      const matchesIndustry =
-        selectedIndustry === 'all' || pro.industry === selectedIndustry;
-      const matchesCity =
-        selectedCity === 'all' ||
-        pro.city.toLowerCase() === selectedCity.toLowerCase();
-      const matchesMentor = !onlyMentors || pro.offeringMentorship;
+    // Apply client-side search filtering
+    if (searchValue && searchValue.trim()) {
+      const searchLower = searchValue.toLowerCase().trim();
+      professionalItems = professionalItems.filter(pro => {
+        const nameMatch = pro.name?.toLowerCase().includes(searchLower);
+        const titleMatch = pro.title?.toLowerCase().includes(searchLower);
+        const companyMatch = pro.company?.toLowerCase().includes(searchLower);
+        const bioMatch = pro.about?.toLowerCase().includes(searchLower);
+        const skillsMatch = pro.tags?.some(tag => tag.toLowerCase().includes(searchLower));
+        
+        return nameMatch || titleMatch || companyMatch || bioMatch || skillsMatch;
+      });
+    }
 
-      return matchesSearch && matchesIndustry && matchesCity && matchesMentor;
-    });
-  }, [searchValue, selectedIndustry, selectedCity, onlyMentors]);
+    // Apply mentor filter (client-side since it's not in Firestore)
+    if (onlyMentors) {
+      // Note: Since offeringMentorship doesn't exist in Firestore, we can't filter by it
+      // This filter will be applied but won't work until the field is added to Firestore
+      // For now, we'll skip this filter or show all when enabled
+    }
+
+    return professionalItems;
+  }, [allProfessionals, searchValue, onlyMentors]);
 
   const handleJoinNetwork = useCallback(() => {
     navigation.dispatch(
@@ -153,7 +204,7 @@ const ProfessionalNetwork = () => {
           <SearchBar
             placeholder="Search by name, title, or expertise..."
             value={searchValue}
-            onChangeText={setSearchValue}
+            onChangeText={handleSearchChange}
             style={styles.searchBar}
           />
           <TouchableOpacity
@@ -172,7 +223,7 @@ const ProfessionalNetwork = () => {
         </View>
       </View>
     ),
-    [searchValue, handleJoinNetwork],
+    [searchValue, handleJoinNetwork, handleSearchChange],
   );
 
   const renderListHeader = useMemo(
@@ -185,7 +236,7 @@ const ProfessionalNetwork = () => {
           <Dropdown
             options={industryOptions}
             selectedValue={selectedIndustry}
-            onSelect={setSelectedIndustry}
+            onSelect={handleIndustryChange}
             buttonStyle={styles.dropdownButton}
           />
         </View>
@@ -196,7 +247,7 @@ const ProfessionalNetwork = () => {
           <Dropdown
             options={cityOptions}
             selectedValue={selectedCity}
-            onSelect={setSelectedCity}
+            onSelect={handleCityChange}
             buttonStyle={styles.dropdownButton}
           />
         </View>
@@ -230,7 +281,7 @@ const ProfessionalNetwork = () => {
         </Text>
       </View>
     ),
-    [selectedIndustry, selectedCity, onlyMentors, filteredProfessionals.length],
+    [selectedIndustry, selectedCity, onlyMentors, filteredProfessionals.length, handleCityChange, handleIndustryChange],
   );
 
   const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
@@ -346,6 +397,34 @@ const ProfessionalNetwork = () => {
         renderItem={renderProfessionalCard}
         ItemSeparatorComponent={renderSeparator}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary[500]]}
+            tintColor={colors.primary[500]}
+          />
+        }
+        ListFooterComponent={
+          isLoading && !refreshing ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={colors.primary[500]} />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          !isLoading && !refreshing ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Ionicons name="people-outline" size={48} color={colors.text.secondary} />
+              <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+                No professionals found
+              </Text>
+              <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+                Try adjusting your filters
+              </Text>
+            </View>
+          ) : null
+        }
       />
     </SafeAreaView>
   );

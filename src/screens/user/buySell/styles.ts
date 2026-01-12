@@ -154,6 +154,26 @@ export const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 24,
   },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: colors.text.secondary,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    marginTop: 10,
+    color: colors.text.primary,
+  },
+  emptySubtitle: {
+    marginTop: 5,
+    color: colors.text.secondary,
+  },
 });
 
 

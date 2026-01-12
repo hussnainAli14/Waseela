@@ -6,6 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -18,6 +21,10 @@ import {
   type Asset,
   type ImageLibraryOptions,
 } from 'react-native-image-picker';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { createRoom } from '@/store/slices/roomsSlice';
+import type { RoomFormData } from '@/types/firestore';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const roomTypes = [
   { label: 'Single Room', value: 'single' },
@@ -38,18 +45,25 @@ const defaultAmenities = [
 ];
 
 const PostRoom: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth);
+  const { isLoading } = useAppSelector(state => state.rooms);
+
   const [photos, setPhotos] = useState<Asset[]>([]);
   const [roomType, setRoomType] = useState('');
   const [rent, setRent] = useState('');
   const [city, setCity] = useState('');
   const [area, setArea] = useState('');
   const [nearUni, setNearUni] = useState('');
-  const [availableFrom, setAvailableFrom] = useState('');
+  const [postcode, setPostcode] = useState('');
+  const [availableFrom, setAvailableFrom] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [description, setDescription] = useState('');
   const [amenities, setAmenities] = useState<string[]>([]);
   const [customAmenity, setCustomAmenity] = useState('');
   const [billsIncluded, setBillsIncluded] = useState(false);
-  const [name, setName] = useState('');
+  const [roomTitle, setRoomTitle] = useState('');
+  const [yourName, setYourName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -85,11 +99,188 @@ const PostRoom: React.FC = () => {
     setCustomAmenity('');
   };
 
-  const handleSubmit = () => {
-    Alert.alert(
-      'Listing posted',
-      'Your listing will be visible to students looking for accommodation.',
-    );
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      setAvailableFrom(selectedDate);
+      if (Platform.OS === 'ios') {
+        // On iOS, keep the picker open until user confirms
+      }
+    }
+  };
+
+  const formatDate = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const validateForm = (): boolean => {
+    if (!roomTitle.trim()) {
+      Alert.alert('Validation Error', 'Please enter a room title.');
+      return false;
+    }
+    if (!roomType) {
+      Alert.alert('Validation Error', 'Please select a room type.');
+      return false;
+    }
+    if (!rent.trim()) {
+      Alert.alert('Validation Error', 'Please enter the monthly rent.');
+      return false;
+    }
+    const rentNumber = parseFloat(rent);
+    if (isNaN(rentNumber) || rentNumber <= 0) {
+      Alert.alert('Validation Error', 'Please enter a valid rent amount.');
+      return false;
+    }
+    if (!city) {
+      Alert.alert('Validation Error', 'Please select a city.');
+      return false;
+    }
+    if (!area.trim()) {
+      Alert.alert('Validation Error', 'Please enter the area.');
+      return false;
+    }
+    if (!availableFrom) {
+      Alert.alert('Validation Error', 'Please select the available from date.');
+      return false;
+    }
+    if (!description.trim()) {
+      Alert.alert('Validation Error', 'Please enter a description.');
+      return false;
+    }
+    if (amenities.length === 0) {
+      Alert.alert('Validation Error', 'Please select at least one amenity.');
+      return false;
+    }
+    if (!phone.trim()) {
+      Alert.alert('Validation Error', 'Please enter your contact number.');
+      return false;
+    }
+    if (!confirm) {
+      Alert.alert('Validation Error', 'Please confirm that all information is accurate.');
+      return false;
+    }
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to post a room.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Double-check user is authenticated
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to post a room.');
+      return;
+    }
+
+    try {
+      // Ensure availableFrom date is set
+      if (!availableFrom) {
+        Alert.alert('Validation Error', 'Please select the available from date.');
+        return;
+      }
+
+      // Parse rent to number
+      const rentNumber = parseFloat(rent);
+      if (isNaN(rentNumber) || rentNumber <= 0) {
+        Alert.alert('Validation Error', 'Please enter a valid rent amount.');
+        return;
+      }
+
+      // Capitalize city name to match database format
+      const cityValue = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+
+      // Prepare form data
+      const formData: RoomFormData = {
+        title: roomTitle.trim(),
+        type: roomType as any,
+        price: rentNumber,
+        city: cityValue,
+        locationLine1: area.trim(),
+        description: description.trim(),
+        billsIncluded,
+        availableFrom: availableFrom,
+        amenities,
+        whatsapp: phone.trim(),
+      };
+
+      // Add optional fields only if they have values
+      if (nearUni.trim()) {
+        formData.locationLine2 = nearUni.trim();
+      }
+      if (postcode.trim()) {
+        formData.postcode = postcode.trim();
+      }
+      if (email.trim()) {
+        formData.email = email.trim();
+      }
+      if (phone.trim()) {
+        formData.phone = phone.trim();
+      }
+
+      // Use dummy images for now (as requested)
+      const dummyImages = [
+        'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80',
+      ];
+
+      // Dispatch the create room action
+      const result = await dispatch(
+        createRoom({
+          data: formData,
+          posterId: user.uid,
+          images: dummyImages,
+        })
+      ).unwrap();
+
+      if (result) {
+        Alert.alert(
+          'Success!',
+          'Your room listing has been posted and will be visible to students looking for accommodation.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Reset form
+                setPhotos([]);
+                setRoomType('');
+                setRent('');
+                setCity('');
+                setArea('');
+                setNearUni('');
+                setPostcode('');
+                setAvailableFrom(null);
+                setDescription('');
+                setAmenities([]);
+                setCustomAmenity('');
+                setBillsIncluded(false);
+                setRoomTitle('');
+                setYourName('');
+                setPhone('');
+                setEmail('');
+                setConfirm(false);
+              },
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error('Error creating room listing:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to create room listing. Please try again.',
+      );
+    }
   };
 
   return (
@@ -102,8 +293,8 @@ const PostRoom: React.FC = () => {
           <TextField
             label="Room Title"
             placeholder="e.g., Cozy Single Room near UCL"
-            value={name}
-            onChangeText={setName}
+            value={roomTitle}
+            onChangeText={setRoomTitle}
           />
           <Text variant="md-semibold" style={styles.label}>Room Type</Text>
           <Dropdown
@@ -149,12 +340,77 @@ const PostRoom: React.FC = () => {
             onChangeText={setNearUni}
           />
           <TextField
-            label="Available From"
-            placeholder="mm/dd/yyyy"
-            value={availableFrom}
-            onChangeText={setAvailableFrom}
-            rightIcon={<Ionicons name="calendar-outline" size={18} color={colors.text.secondary} />}
+            label="Postcode (Optional)"
+            placeholder="e.g., E1 4NS"
+            value={postcode}
+            onChangeText={setPostcode}
           />
+          <Text variant="md-semibold" style={styles.label}>Available From</Text>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.datePickerButton}>
+            <Text
+              variant="md-normal"
+              style={[
+                styles.datePickerText,
+                !availableFrom && { color: colors.text.secondary },
+              ]}>
+              {availableFrom ? formatDate(availableFrom) : 'Select date'}
+            </Text>
+            <Ionicons name="calendar-outline" size={18} color={colors.text.secondary} />
+          </TouchableOpacity>
+          {showDatePicker && (
+            <>
+              {Platform.OS === 'ios' ? (
+                <Modal
+                  visible={showDatePicker}
+                  transparent
+                  animationType="slide"
+                  onRequestClose={() => setShowDatePicker(false)}>
+                  <View style={styles.datePickerModal}>
+                    <View style={styles.datePickerModalContent}>
+                      <View style={styles.datePickerHeader}>
+                        <TouchableOpacity
+                          onPress={() => setShowDatePicker(false)}
+                          style={styles.datePickerCancelButton}>
+                          <Text variant="md-medium" style={styles.datePickerCancelText}>
+                            Cancel
+                          </Text>
+                        </TouchableOpacity>
+                        <Text variant="md-semibold" style={styles.datePickerTitle}>
+                          Select Date
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setShowDatePicker(false);
+                          }}
+                          style={styles.datePickerDoneButton}>
+                          <Text variant="md-medium" style={styles.datePickerDoneText}>
+                            Done
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <DateTimePicker
+                        value={availableFrom || new Date()}
+                        mode="date"
+                        display="spinner"
+                        onChange={handleDateChange}
+                        minimumDate={new Date()}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+              ) : (
+                <DateTimePicker
+                  value={availableFrom || new Date()}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                  minimumDate={new Date()}
+                />
+              )}
+            </>
+          )}
           <TextField
             label="Description"
             placeholder="Describe the room, house environment, transport links, and any special features..."
@@ -214,8 +470,8 @@ const PostRoom: React.FC = () => {
           <TextField
             label="Your Name"
             placeholder="e.g., Fatima Khan"
-            value={name}
-            onChangeText={setName}
+            value={yourName}
+            onChangeText={setYourName}
           />
           <TextField
             label="Contact Number"
@@ -267,11 +523,17 @@ const PostRoom: React.FC = () => {
             </Text>
           </View>
           <Button
-            title="Post Room Listing"
+            title={isLoading ? 'Posting...' : 'Post Room Listing'}
             fullWidth
             onPress={handleSubmit}
+            disabled={isLoading}
             containerStyle={styles.postButton}
           />
+          {isLoading && (
+            <View style={{ alignItems: 'center', marginTop: 10 }}>
+              <ActivityIndicator size="small" color={colors.primary[500]} />
+            </View>
+          )}
           <Text variant="sm-normal" style={styles.infoText}>
             Your listing will be visible to students looking for accommodation
           </Text>

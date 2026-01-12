@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text } from '@/components/atoms';
 import { SearchBar, ListingCard, Dropdown } from '@/components/molecules';
@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchServices, setFilters, resetServices } from '@/store/slices/servicesSlice';
+import { fetchServices, resetServices } from '@/store/slices/servicesSlice';
 
 type ServiceTypeItem = { key: string; label: string; icon: string };
 
@@ -39,44 +39,93 @@ const Services = () => {
   const dispatch = useAppDispatch();
 
   // Get services from Redux
-  const { services, isLoading, hasMore } = useAppSelector(state => state.services);
+  const { services: allServices, isLoading, hasMore } = useAppSelector(state => state.services);
+
+  // Helper function to apply filters and fetch services
+  const applyFiltersAndFetch = useCallback(
+    (city: string | undefined, serviceType: string, searchTerm?: string) => {
+      const filterObj: any = {};
+
+      if (city && city !== 'all') {
+        // Capitalize city name to match database format
+        filterObj.city = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
+      }
+
+      if (serviceType) {
+        // Capitalize service type to match database format
+        filterObj.serviceType = serviceType.charAt(0).toUpperCase() + serviceType.slice(1).toLowerCase();
+      }
+
+      // Add search term to filters if provided
+      if (searchTerm && searchTerm.trim()) {
+        filterObj.search = searchTerm.trim();
+      }
+
+      console.log('🔍 Services: Applying filters:', { city, serviceType, searchTerm, filterObj });
+      dispatch(resetServices());
+      dispatch(fetchServices({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
+    },
+    [dispatch],
+  );
 
   // Fetch all services on initial mount
   useEffect(() => {
     console.log('🔍 Services: Initial fetch - loading all services');
     dispatch(resetServices());
     dispatch(fetchServices({ filters: {}, limit: 20 }));
-  }, []);
+  }, [dispatch]);
 
-  // Apply filters when user changes them
-  useEffect(() => {
-    // Skip if this is the initial render (both filters are default)
-    if (selectedCity === 'all' && selectedServiceType === '') {
-      return;
+  // Handle search input change (debouncing is handled by SearchBar component)
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchValue(text);
+      applyFiltersAndFetch(selectedCity, selectedServiceType, text);
+    },
+    [selectedCity, selectedServiceType, applyFiltersAndFetch],
+  );
+
+  // Handle city selection change
+  const handleCityChange = useCallback(
+    (city: string | undefined) => {
+      setSelectedCity(city);
+      applyFiltersAndFetch(city, selectedServiceType, searchValue);
+    },
+    [selectedServiceType, searchValue, applyFiltersAndFetch],
+  );
+
+  // Handle service type selection change (toggle if same type clicked)
+  const handleServiceTypeChange = useCallback(
+    (serviceType: string) => {
+      const newServiceType = selectedServiceType === serviceType ? '' : serviceType;
+      setSelectedServiceType(newServiceType);
+      applyFiltersAndFetch(selectedCity, newServiceType, searchValue);
+    },
+    [selectedCity, selectedServiceType, searchValue, applyFiltersAndFetch],
+  );
+
+  // Filter services by search term (client-side filtering)
+  const services = useMemo(() => {
+    if (!searchValue || !searchValue.trim()) {
+      return allServices;
     }
 
-    console.log('🔍 Services: Applying filters:', { selectedCity, selectedServiceType });
-
-    const filterObj: any = {};
-
-    if (selectedCity && selectedCity !== 'all') {
-      filterObj.city = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1);
-    }
-
-    if (selectedServiceType) {
-      filterObj.serviceType = selectedServiceType.charAt(0).toUpperCase() + selectedServiceType.slice(1);
-    }
-
-    dispatch(resetServices());
-    dispatch(fetchServices({ filters: filterObj, limit: 20 }));
-  }, [selectedCity, selectedServiceType]);
+    const searchLower = searchValue.toLowerCase().trim();
+    return allServices.filter(service => {
+      const nameMatch = service.name?.toLowerCase().includes(searchLower);
+      const serviceTypeMatch = service.serviceType?.toLowerCase().includes(searchLower);
+      const descriptionMatch = service.description?.toLowerCase().includes(searchLower);
+      const cityMatch = service.city?.toLowerCase().includes(searchLower);
+      
+      return nameMatch || serviceTypeMatch || descriptionMatch || cityMatch;
+    });
+  }, [allServices, searchValue]);
 
   // Load more services
   const handleLoadMore = useCallback(() => {
-    if (hasMore && !isLoading) {
+    if (hasMore && !isLoading && allServices.length > 0) {
       dispatch(fetchServices({}));
     }
-  }, [dispatch, hasMore, isLoading]);
+  }, [dispatch, hasMore, isLoading, allServices.length]);
 
   const renderCategory = ({ item }: { item: ServiceTypeItem }) => (
     <TouchableOpacity
@@ -85,7 +134,7 @@ const Services = () => {
         item.key === selectedServiceType && styles.categoryCardActive,
       ]}
       activeOpacity={0.85}
-      onPress={() => setSelectedServiceType(item.key)}>
+      onPress={() => handleServiceTypeChange(item.key)}>
       <View
         style={[
           styles.categoryIconWrapper,
@@ -113,12 +162,12 @@ const Services = () => {
       <>
         <View style={styles.sectionHeader}>
           <Text variant="lg-semibold" style={styles.sectionTitle}>
-            {services.length} services founders found
+            {services.length} services found
           </Text>
         </View>
       </>
     ),
-    [],
+    [services.length],
   );
 
   const renderSeparator = useCallback(() => <View style={styles.separator} />, []);
@@ -150,12 +199,12 @@ const Services = () => {
           <SearchBar
             placeholder="Search service providers..."
             value={searchValue}
-            onChangeText={setSearchValue}
+            onChangeText={handleSearchChange}
           />
           <Dropdown
             options={cityOptions}
             selectedValue={selectedCity}
-            onSelect={setSelectedCity}
+            onSelect={handleCityChange}
             placeholder="All Cities"
             buttonStyle={styles.citySelector}
             buttonTextStyle={styles.citySelectorText}

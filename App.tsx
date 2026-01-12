@@ -9,11 +9,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from '@/store';
 import { RootNavigator, navigationRef } from '@/navigation';
 import { colors } from '@/theme';
 import { firebaseAuth } from '@/config/firebase';
 import { loadUser } from '@/store/slices/authSlice';
+import { persistor, store } from '@/store';
 
 function App() {
   useEffect(() => {

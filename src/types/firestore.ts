@@ -5,7 +5,7 @@ export type ListingStatus = 'pending' | 'approved' | 'rejected';
 export type ItemStatus = 'active' | 'sold' | 'removed';
 export type RoomStatus = 'available' | 'rented' | 'removed';
 export type RoomType = 'single' | 'double' | 'studio' | 'shared';
-export type ItemCondition = 'new' | 'like-new' | 'good' | 'fair';
+export type ItemCondition = 'new' | 'like-new' | 'good' | 'fair' | 'needs-repair';
 export type ContactMethod = 'whatsapp' | 'email' | 'phone';
 export type TargetType = 'business' | 'service' | 'professional';
 
@@ -95,6 +95,25 @@ export interface MarketplaceItem {
     email?: string;
     phone?: string;
     status: ItemStatus;
+    views: number;
+    createdAt: Timestamp | string;
+    updatedAt: Timestamp | string;
+}
+
+// Product type
+export interface Product {
+    id: string;
+    sellerId: string;
+    title: string;
+    description: string;
+    category: string;
+    condition: ItemCondition;
+    price: number;
+    location: string;
+    city: string;
+    images: string[];
+    verified: boolean;
+    status: ListingStatus;
     views: number;
     createdAt: Timestamp | string;
     updatedAt: Timestamp | string;
@@ -226,6 +245,16 @@ export interface MarketplaceFormData {
     whatsapp?: string;
     email?: string;
     phone?: string;
+}
+
+export interface ProductFormData {
+    title: string;
+    description: string;
+    category: string;
+    condition: ItemCondition;
+    price: number;
+    location: string;
+    city: string;
 }
 
 export interface RoomFormData {

@@ -9,5 +9,6 @@ export interface SearchBarProps extends Omit<TextInputProps, 'style'> {
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
   onPressRightIcon?: () => void;
+  debounceDelay?: number; // Delay in milliseconds for debouncing onChangeText (default: 500ms, set to 0 to disable)
 }
 

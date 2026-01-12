@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, ScrollView, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, Button, TextField } from '@/components/atoms';
@@ -11,6 +11,9 @@ import {
   type Asset,
   type ImageLibraryOptions,
 } from 'react-native-image-picker';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { createProduct } from '@/store/slices/productsSlice';
+import type { ProductFormData } from '@/types/firestore';
 
 const categoryOptions = [
   { label: 'Electronics', value: 'electronics' },
@@ -32,12 +35,17 @@ const conditionOptions = [
 ];
 
 const SellItem: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth);
+  const { isLoading } = useAppSelector(state => state.products);
+
   const [photos, setPhotos] = useState<Asset[]>([]);
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('');
   const [price, setPrice] = useState('');
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
+  const [city, setCity] = useState('');
   const [description, setDescription] = useState('');
 
   const handlePickPhotos = async () => {
@@ -56,11 +64,120 @@ const SellItem: React.FC = () => {
     }
   };
 
-  const handleSubmit = () => {
-    Alert.alert(
-      'Item posted',
-      'Your item has been posted. Interested buyers will be able to contact you soon.',
-    );
+  const validateForm = (): boolean => {
+    if (!title.trim()) {
+      Alert.alert('Validation Error', 'Please enter a title for your item.');
+      return false;
+    }
+    if (!category) {
+      Alert.alert('Validation Error', 'Please select a category.');
+      return false;
+    }
+    if (!condition) {
+      Alert.alert('Validation Error', 'Please select the condition.');
+      return false;
+    }
+    if (!price.trim()) {
+      Alert.alert('Validation Error', 'Please enter the price.');
+      return false;
+    }
+    const priceNumber = parseFloat(price);
+    if (isNaN(priceNumber) || priceNumber <= 0) {
+      Alert.alert('Validation Error', 'Please enter a valid price.');
+      return false;
+    }
+    if (!location.trim()) {
+      Alert.alert('Validation Error', 'Please enter the location.');
+      return false;
+    }
+    if (!city.trim()) {
+      Alert.alert('Validation Error', 'Please enter the city.');
+      return false;
+    }
+    if (!description.trim()) {
+      Alert.alert('Validation Error', 'Please enter a description.');
+      return false;
+    }
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to post an item.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Double-check user is authenticated
+    if (!user?.uid) {
+      Alert.alert('Authentication Error', 'You must be logged in to post an item.');
+      return;
+    }
+
+    try {
+      // Parse price to number
+      const priceNumber = parseFloat(price);
+      if (isNaN(priceNumber) || priceNumber <= 0) {
+        Alert.alert('Validation Error', 'Please enter a valid price.');
+        return;
+      }
+
+      // Prepare form data
+      const formData: ProductFormData = {
+        title: title.trim(),
+        description: description.trim(),
+        category: category,
+        condition: condition as any,
+        price: priceNumber,
+        location: location.trim(),
+        city: city.trim(),
+      };
+
+      // Use dummy images for now (as requested)
+      const dummyImages = [
+        'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=600&q=80',
+      ];
+
+      // Dispatch the create product action
+      const result = await dispatch(
+        createProduct({
+          data: formData,
+          sellerId: user.uid,
+          images: dummyImages,
+        })
+      ).unwrap();
+
+      if (result) {
+        Alert.alert(
+          'Success!',
+          'Your item has been posted and will be reviewed. Interested buyers will be able to contact you soon.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Reset form
+                setPhotos([]);
+                setCategory('');
+                setCondition('');
+                setPrice('');
+                setTitle('');
+                setLocation('');
+                setCity('');
+                setDescription('');
+              },
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error('Error creating product:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to post item. Please try again.',
+      );
+    }
   };
 
   return (
@@ -148,9 +265,16 @@ const SellItem: React.FC = () => {
         <View style={styles.card}>
           <TextField
             label="Location"
-            placeholder="e.g., London"
+            placeholder="e.g., East London, Zone 2"
             value={location}
             onChangeText={setLocation}
+            containerStyle={{ marginBottom: 12 }}
+          />
+          <TextField
+            label="City"
+            placeholder="e.g., London"
+            value={city}
+            onChangeText={setCity}
             containerStyle={{ marginBottom: 12 }}
           />
           <TextField
@@ -184,11 +308,17 @@ const SellItem: React.FC = () => {
         </View>
 
         <Button
-          title="Post Item"
+          title={isLoading ? 'Posting...' : 'Post Item'}
           fullWidth
           onPress={handleSubmit}
+          disabled={isLoading}
           containerStyle={[styles.buttonSpacing, styles.postButton]}
         />
+        {isLoading && (
+          <View style={{ alignItems: 'center', marginTop: 10 }}>
+            <ActivityIndicator size="small" color={colors.primary[500]} />
+          </View>
+        )}
         </ScrollView>
       </View>
     </SafeAreaView>

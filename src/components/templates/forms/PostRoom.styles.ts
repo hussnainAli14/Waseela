@@ -147,6 +147,62 @@ export const styles = StyleSheet.create({
   dropdownText: {
     color: colors.text.primary,
   },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background.lightSecondary,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginTop: 6,
+  },
+  datePickerText: {
+    color: colors.text.primary,
+    fontFamily: 'Outfit-Regular',
+  },
+  datePickerModal: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  datePickerModalContent: {
+    backgroundColor: colors.common.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+  },
+  datePickerTitle: {
+    color: colors.text.primary,
+    fontFamily: 'Outfit-SemiBold',
+  },
+  datePickerCancelButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  datePickerCancelText: {
+    color: colors.text.secondary,
+    fontFamily: 'Outfit-Medium',
+  },
+  datePickerDoneButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  datePickerDoneText: {
+    color: colors.primary[500],
+    fontFamily: 'Outfit-Medium',
+  },
 });
 
 
