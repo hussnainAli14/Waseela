@@ -11,7 +11,7 @@ import { IndustryOption, Professional } from './types';
 import { MainStackParamList, ProfessionalProfileItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProfessionals, resetProfessionals } from '@/store/slices/professionalsSlice';
-import type { Professional as FirestoreProfessional } from '@/types/firestore';
+import type { ProfessionalProfile as FirestoreProfessional } from '@/types/firestore';
 
 const industryOptions: IndustryOption[] = [
   { label: 'All', value: 'all' },
@@ -24,7 +24,7 @@ const industryOptions: IndustryOption[] = [
 // Helper function to convert Firestore Professional to local Professional type
 const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional => {
   // Calculate years of experience from experience string or default to 0
-  const yearsExperience = pro.experience 
+  const yearsExperience = pro.experience
     ? parseInt(pro.experience.match(/\d+/)?.[0] || '0', 10)
     : 0;
 
@@ -158,7 +158,7 @@ const ProfessionalNetwork = () => {
         const companyMatch = pro.company?.toLowerCase().includes(searchLower);
         const bioMatch = pro.about?.toLowerCase().includes(searchLower);
         const skillsMatch = pro.tags?.some(tag => tag.toLowerCase().includes(searchLower));
-        
+
         return nameMatch || titleMatch || companyMatch || bioMatch || skillsMatch;
       });
     }
@@ -309,81 +309,81 @@ const ProfessionalNetwork = () => {
           onPress={() =>
             navigation.navigate('ProfessionalProfile', { professional: profileData })
           }>
-        <View style={styles.cardHeader}>
-          <View style={styles.avatarWrapper}>
-            <Image
-              source={{ uri: item.avatar }}
-              resizeMode="cover"
-              containerStyle={styles.avatar}
-              borderRadius={999}
-            />
-          </View>
-          <View style={styles.cardHeaderText}>
-            <Text variant="md-semibold" style={styles.nameText}>
-              {item.name}
-            </Text>
-            <Text variant="sm-normal" style={styles.titleText}>
-              {item.title}
-            </Text>
-            <Text variant="sm-normal" style={styles.companyText}>
-              {item.company}
-            </Text>
-            <View style={styles.tagRow}>
-          {item.tags.map((tag, index) => {
-            const isPrimary = index === 0;
-            return (
-              <View
-                key={tag}
-                style={[
-                  styles.tagChip,
-                  isPrimary ? styles.tagChipPrimary : styles.tagChipSecondary,
-                ]}>
-                <Text
-                  variant="sm-medium"
-                  style={[
-                    styles.tagChipText,
-                    isPrimary
-                      ? styles.tagChipPrimaryText
-                      : styles.tagChipSecondaryText,
-                  ]}>
-                  {tag}
-                </Text>
+          <View style={styles.cardHeader}>
+            <View style={styles.avatarWrapper}>
+              <Image
+                source={{ uri: item.avatar }}
+                resizeMode="cover"
+                containerStyle={styles.avatar}
+                borderRadius={999}
+              />
+            </View>
+            <View style={styles.cardHeaderText}>
+              <Text variant="md-semibold" style={styles.nameText}>
+                {item.name}
+              </Text>
+              <Text variant="sm-normal" style={styles.titleText}>
+                {item.title}
+              </Text>
+              <Text variant="sm-normal" style={styles.companyText}>
+                {item.company}
+              </Text>
+              <View style={styles.tagRow}>
+                {item.tags.map((tag, index) => {
+                  const isPrimary = index === 0;
+                  return (
+                    <View
+                      key={tag}
+                      style={[
+                        styles.tagChip,
+                        isPrimary ? styles.tagChipPrimary : styles.tagChipSecondary,
+                      ]}>
+                      <Text
+                        variant="sm-medium"
+                        style={[
+                          styles.tagChipText,
+                          isPrimary
+                            ? styles.tagChipPrimaryText
+                            : styles.tagChipSecondaryText,
+                        ]}>
+                        {tag}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
-            );
-          })}
-        </View>
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Ionicons
-              name="location-outline"
-              size={14}
-              color={colors.text.secondary}
-            />
-            <Text variant="sm-medium" style={styles.metaText}>
-              {item.city}
-            </Text>
+              <View style={styles.metaRow}>
+                <View style={styles.metaItem}>
+                  <Ionicons
+                    name="location-outline"
+                    size={14}
+                    color={colors.text.secondary}
+                  />
+                  <Text variant="sm-medium" style={styles.metaText}>
+                    {item.city}
+                  </Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Ionicons
+                    name="person-outline"
+                    size={14}
+                    color={colors.text.secondary}
+                  />
+                  <Text variant="sm-medium" style={styles.metaText}>
+                    {item.yearsExperience} years exp.
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
-          <View style={styles.metaItem}>
-            <Ionicons
-              name="person-outline"
-              size={14}
-              color={colors.text.secondary}
-            />
-            <Text variant="sm-medium" style={styles.metaText}>
-              {item.yearsExperience} years exp.
-            </Text>
-          </View>
-        </View>
-          </View>
-        </View>
-      </Card>
+        </Card>
       );
     },
     [navigation],
   );
 
   return (
-    <View style={[styles.container,{paddingTop: insets.top}]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {renderHeader}
       <FlatList
         data={filteredProfessionals}

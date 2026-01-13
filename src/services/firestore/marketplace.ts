@@ -1,27 +1,53 @@
 import { firebaseFirestore } from '@/config/firebase';
 import type { MarketplaceItem, MarketplaceFormData, MarketplaceFilters, ItemStatus } from '@/types/firestore';
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
+import { toMilliseconds } from '@/utils/dateUtils';
 
 const COLLECTION = 'marketplace';
+
+import { uploadListingImages } from '@/services/storage/imageUpload';
 
 export const createMarketplaceItem = async (
     data: MarketplaceFormData,
     sellerId: string,
-    images: string[] = []
+    imageUris: string[] = []
 ): Promise<string> => {
-    const itemData: Omit<MarketplaceItem, 'id'> = {
-        ...data,
-        sellerId,
-        images,
-        currency: 'GBP',
-        status: 'active' as ItemStatus,
-        views: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
+    try {
+        // 1. Generate ID first
+        const docRef = firebaseFirestore.collection(COLLECTION).doc();
+        const itemId = docRef.id;
 
-    const docRef = await firebaseFirestore.collection(COLLECTION).add(itemData);
-    return docRef.id;
+        // 2. Upload images in parallel (if any)
+        let imageUrls: string[] = [];
+        if (imageUris.length > 0) {
+            imageUrls = await uploadListingImages(
+                imageUris,
+                sellerId,
+                itemId,
+                'marketplace'
+            );
+        }
+
+        // 3. Build item data object
+        const itemData: MarketplaceItem = {
+            id: itemId,
+            ...data,
+            sellerId,
+            images: imageUrls,
+            currency: 'GBP',
+            status: 'active' as ItemStatus,
+            views: 0,
+            createdAt: toMilliseconds(new Date().toISOString()),
+            updatedAt: toMilliseconds(new Date().toISOString()),
+        } as MarketplaceItem;
+
+        await docRef.set(itemData);
+        return itemId;
+    } catch (error) {
+        console.error('Error creating marketplace item:', error);
+        throw error;
+    }
 };
 
 export const getMarketplaceItem = async (itemId: string): Promise<MarketplaceItem | null> => {
@@ -115,12 +141,12 @@ export const markAsSold = async (itemId: string): Promise<void> => {
     });
 };
 
-export const incrementViews = async (itemId: string): Promise<void> => {
-    const doc = await firebaseFirestore.collection(COLLECTION).doc(itemId).get();
-    const currentViews = (doc.data()?.views || 0) as number;
 
+
+export const incrementViews = async (itemId: string): Promise<void> => {
+    // Use atomic increment to avoid concurrency issues and save a read operation
     await firebaseFirestore.collection(COLLECTION).doc(itemId).update({
-        views: currentViews + 1,
+        views: firestore.FieldValue.increment(1),
     });
 };
 
@@ -141,4 +167,35 @@ export const searchMarketplaceItems = async (
         id: doc.id,
         ...doc.data(),
     })) as MarketplaceItem[];
+};
+
+/**
+ * Get related marketplace items by category
+ */
+export const getRelatedMarketplaceItems = async (
+    category: string,
+    currentId: string,
+    limit: number = 3
+): Promise<MarketplaceItem[]> => {
+    try {
+        const snapshot = await firebaseFirestore
+            .collection(COLLECTION)
+            .where('category', '==', category)
+            .where('status', '==', 'active')
+            .limit(limit + 2)
+            .get();
+
+        const items = snapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as MarketplaceItem[];
+
+        return items
+            .filter(i => i.id !== currentId)
+            .slice(0, limit);
+    } catch (error) {
+        console.error('Error fetching related marketplace items:', error);
+        return [];
+    }
 };

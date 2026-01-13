@@ -9,6 +9,19 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   backRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -19,6 +32,11 @@ export const styles = StyleSheet.create({
   },
   backText: {
     color: colors.text.primary,
+  },
+  bookmarkButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: colors.background.light,
   },
   hero: {
     position: 'relative',
@@ -110,6 +128,66 @@ export const styles = StyleSheet.create({
   relatedListItem: {
     marginBottom: 12,
   },
+  // Review styles
+  reviewsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  writeReviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.secondary[500],
+  },
+  writeReviewText: {
+    color: colors.secondary[500],
+  },
+  pendingReviewCard: {
+    backgroundColor: colors.accent.orangeLight + '20',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.accent.orange + '30',
+  },
+  pendingReviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: colors.accent.orange + '20',
+    borderRadius: 6,
+  },
+  pendingBadgeText: {
+    color: colors.accent.orange,
+  },
+  pendingReviewComment: {
+    color: colors.text.primary,
+    marginBottom: 12,
+  },
+  pendingReviewActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  editReviewText: {
+    color: colors.secondary[500],
+  },
+  deleteReviewText: {
+    color: colors.status.errorDark,
+  },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: colors.secondary[100],
@@ -120,7 +198,7 @@ export const styles = StyleSheet.create({
   badgeText: {
     color: colors.secondary[500],
   },
-  title:{
+  title: {
     fontFamily: 'Outfit-SemiBold',
   }
 });

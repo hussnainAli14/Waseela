@@ -66,14 +66,20 @@ export const isItemSaved = async (
     userId: string,
     itemId: string
 ): Promise<boolean> => {
-    const doc = await firebaseFirestore
-        .collection('savedListings')
-        .doc(userId)
-        .collection('items')
-        .doc(itemId)
-        .get();
+    try {
+        const doc = await firebaseFirestore
+            .collection('savedListings')
+            .doc(userId)
+            .collection('items')
+            .doc(itemId)
+            .get();
 
-    return doc.exists;
+        // Explicitly convert to boolean to ensure serialization
+        return Boolean(doc.exists);
+    } catch (error) {
+        console.error('Error checking if item is saved:', error);
+        return false;
+    }
 };
 
 export const getSavedCount = async (userId: string): Promise<number> => {

@@ -49,8 +49,8 @@ export interface Business {
     reviewCount: number;
     verified: boolean;
     status: ListingStatus;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Service type
@@ -73,8 +73,8 @@ export interface Service {
     reviewCount: number;
     verified: boolean;
     status: ListingStatus;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Marketplace item type
@@ -96,8 +96,8 @@ export interface MarketplaceItem {
     phone?: string;
     status: ItemStatus;
     views: number;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Product type
@@ -115,8 +115,8 @@ export interface Product {
     verified: boolean;
     status: ListingStatus;
     views: number;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Room type
@@ -133,7 +133,7 @@ export interface Room {
     price: number;
     priceLabel: string;
     billsIncluded: boolean;
-    availableFrom: Timestamp | string;
+    availableFrom: Timestamp | string | number;
     images: string[];
     amenities: string[];
     whatsapp: string;
@@ -141,12 +141,12 @@ export interface Room {
     phone?: string;
     status: RoomStatus;
     views: number;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Professional type
-export interface Professional {
+export interface ProfessionalProfile {
     id: string;
     userId: string;
     fullName: string;
@@ -166,8 +166,8 @@ export interface Professional {
     connections: number;
     verified: boolean;
     status: ListingStatus;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Review type
@@ -181,15 +181,15 @@ export interface Review {
     rating: number;
     comment: string;
     helpful: number;
-    createdAt: Timestamp | string;
-    updatedAt: Timestamp | string;
+    createdAt: Timestamp | string | number;
+    updatedAt: Timestamp | string | number;
 }
 
 // Saved listing type
 export interface SavedListing {
     itemType: 'business' | 'service' | 'marketplace' | 'room';
     itemId: string;
-    savedAt: Timestamp | string;
+    savedAt: Timestamp | string | number;
 }
 
 // Category type

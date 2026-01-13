@@ -31,6 +31,7 @@ export type MainStackParamList = {
   JoinProfessionalNetwork: undefined;
   UserProfessionalProfiles: undefined;
   CommunityGuidelines: undefined;
+  MyReports: undefined;
   Details: {
     listing: ListingItem;
   };
@@ -65,6 +66,11 @@ export type ListingItem = {
   timings?: string;
   phone?: string;
   email?: string;
+  ownerId?: string;
+  // Optional fields for type inference in Details screen
+  price?: number;
+  priceLabel?: string;
+  condition?: string;
 };
 
 export type MarketItem = {
@@ -136,7 +142,7 @@ export type MainScreenProps<T extends keyof MainStackParamList> = {
 // Declare global types for navigation
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }
 

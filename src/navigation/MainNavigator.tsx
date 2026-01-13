@@ -27,6 +27,7 @@ import {
   ProfessionalNetwork,
   UserProfessionalProfiles,
   BuySell,
+  MyReports,
 } from '@/screens';
 import { colors } from '@/theme';
 import { BottomNavigator } from '@/components/organisms/BottomNavigator';
@@ -150,6 +151,11 @@ const ProfileStackNavigator = () => (
       name="CommunityGuidelines"
       component={ProfileCommunityGuidelines}
       options={{ headerShown: true, title: 'Community Guidelines' }}
+    />
+    <ProfileStack.Screen
+      name="MyReports"
+      component={MyReports}
+      options={{ headerShown: false }}
     />
     <ProfileStack.Screen name="SubmitListing" component={SubmitListing} />
     <ProfileStack.Screen name="Details" component={Details} />

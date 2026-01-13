@@ -25,8 +25,8 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 16,
     backgroundColor: colors.common.white,
-    width:'90%',
-    alignSelf:'center',
+    width: '90%',
+    alignSelf: 'center',
     borderRadius: 18,
   },
   avatarCircleLarge: {
@@ -63,7 +63,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileCard: {
-    position:'absolute',
+    position: 'absolute',
     width: '100%',
     backgroundColor: colors.background.light,
     borderRadius: 18,
@@ -82,7 +82,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
- 
+
   avatarCircle: {
     width: 56,
     height: 56,
@@ -169,7 +169,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 70,
   },
-  itemsRow:{
+  itemsRow: {
     marginTop: 20,
     flexDirection: 'row',
     gap: 12,
@@ -471,6 +471,12 @@ export const styles = StyleSheet.create({
   billsIncludedText: {
     color: colors.status.success,
     fontFamily: 'Outfit-Medium',
+  },
+  savedDateText: {
+    color: colors.text.secondary,
+    fontFamily: 'Outfit-Normal',
+    fontSize: 12,
+    marginLeft: 4,
   },
 });
 

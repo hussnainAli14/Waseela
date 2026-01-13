@@ -1,47 +1,69 @@
 import { firebaseFirestore } from '@/config/firebase';
 import type { Service, ServiceFormData, ListingFilters, ListingStatus } from '@/types/firestore';
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { toMilliseconds } from '@/utils/dateUtils';
 
 const COLLECTION = 'services';
 
 /**
  * Create a new service listing
  */
+import { uploadListingImages } from '@/services/storage/imageUpload';
+
+/**
+ * Create a new service listing
+ * Optimizes image upload by running in parallel and ensures listing ID is available for storage path
+ */
 export const createService = async (
     data: ServiceFormData,
     providerId: string,
-    images: string[] = []
+    imageUris: string[] = []
 ): Promise<string> => {
-    // Build service data object, only including defined values
-    const serviceData: any = {
-        name: data.name,
-        serviceType: data.serviceType,
-        description: data.description,
-        city: data.city,
-        areasCovered: data.areasCovered || [],
-        whatsapp: data.whatsapp,
-        email: data.email,
-        tags: data.tags || [],
-        providerId,
-        images: images.length > 0 ? images : [],
-        rating: 0,
-        reviewCount: 0,
-        verified: false,
-        status: 'pending' as ListingStatus,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
+    try {
+        // 1. Generate ID first
+        const docRef = firebaseFirestore.collection(COLLECTION).doc();
+        const serviceId = docRef.id;
 
-    // Only add optional fields if they have values (not undefined)
-    if (data.phone) {
-        serviceData.phone = data.phone;
-    }
-    if (data.experience) {
-        serviceData.experience = data.experience;
-    }
+        // 2. Upload images in parallel (if any)
+        let imageUrls: string[] = [];
+        if (imageUris.length > 0) {
+            imageUrls = await uploadListingImages(
+                imageUris,
+                providerId,
+                serviceId,
+                'service'
+            );
+        }
 
-    const docRef = await firebaseFirestore.collection(COLLECTION).add(serviceData);
-    return docRef.id;
+        // 3. Build service data object
+        const serviceData: Service = {
+            id: serviceId,
+            name: data.name,
+            serviceType: data.serviceType,
+            description: data.description,
+            city: data.city,
+            areasCovered: data.areasCovered || [],
+            whatsapp: data.whatsapp,
+            email: data.email,
+            phone: data.phone,
+            experience: data.experience,
+            tags: data.tags || [],
+            providerId,
+            images: imageUrls,
+            rating: 0,
+            reviewCount: 0,
+            verified: false,
+            status: 'pending' as ListingStatus,
+            createdAt: toMilliseconds(new Date().toISOString()),
+            updatedAt: toMilliseconds(new Date().toISOString()),
+        } as Service;
+
+        await docRef.set(serviceData);
+        return serviceId;
+    } catch (error) {
+        console.error('Error creating service:', error);
+        throw error;
+    }
 };
 
 /**
@@ -72,7 +94,7 @@ export const getServices = async (
     // Start with base collection query - only filter by status if explicitly requested
     // This allows services without status field to be included
     let query: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
-    
+
     // Only filter by status if explicitly provided in filters
     if (filters.status !== undefined) {
         query = query.where('status', '==', filters.status);
@@ -101,13 +123,13 @@ export const getServices = async (
     // When filtering by serviceType, city, or verified, we need a composite index
     // If index doesn't exist, we'll skip orderBy and sort in memory instead
     const hasFiltersRequiringIndex = !!(filters.serviceType || filters.city || filters.verified !== undefined);
-    
+
     // Only use orderBy if we don't have filters that require an index, or if pagination is not needed
     // This avoids index errors - we'll sort in memory as fallback
     if (!hasFiltersRequiringIndex) {
         query = query.orderBy('createdAt', 'desc');
     }
-    
+
     // Fetch more results if we need to sort in memory (to account for potential filtering during sort)
     const queryLimit = hasFiltersRequiringIndex ? limit * 2 : limit;
     query = query.limit(queryLimit);
@@ -128,7 +150,7 @@ export const getServices = async (
     try {
         const snapshot = await query.get();
         console.log('✅ Firestore: Query returned', snapshot.docs.length, 'services');
-        
+
         // Log sample data to help debug filter issues
         if (snapshot.docs.length === 0 && (filters.serviceType || filters.city)) {
             console.warn('⚠️ Firestore: No results found with filters:', filters);
@@ -143,8 +165,8 @@ export const getServices = async (
         // If we couldn't use orderBy due to filters requiring index, sort in memory
         if (hasFiltersRequiringIndex) {
             services = services.sort((a, b) => {
-                const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt as any)?.toMillis?.() || 0;
-                const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt as any)?.toMillis?.() || 0;
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
                 return dateB - dateA; // Descending order
             });
             // Limit to requested amount after sorting
@@ -162,7 +184,7 @@ export const getServices = async (
             try {
                 // Retry query without orderBy
                 let fallbackQuery: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
-                
+
                 if (filters.status !== undefined) {
                     fallbackQuery = fallbackQuery.where('status', '==', filters.status);
                 }
@@ -178,10 +200,10 @@ export const getServices = async (
                 if (filters.minRating) {
                     fallbackQuery = fallbackQuery.where('rating', '>=', filters.minRating);
                 }
-                
+
                 // Get more results to account for sorting in memory, then limit
                 const fallbackSnapshot = await fallbackQuery.limit(limit * 2).get();
-                
+
                 let fallbackServices: Service[] = fallbackSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
@@ -189,8 +211,8 @@ export const getServices = async (
 
                 // Sort by createdAt in memory
                 fallbackServices = fallbackServices.sort((a, b) => {
-                    const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt as any)?.toMillis?.() || 0;
-                    const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt as any)?.toMillis?.() || 0;
+                    const dateA = toMilliseconds(a.createdAt);
+                    const dateB = toMilliseconds(b.createdAt);
                     return dateB - dateA; // Descending order
                 });
 
@@ -198,17 +220,17 @@ export const getServices = async (
                 fallbackServices = fallbackServices.slice(0, limit);
 
                 const lastDocId = fallbackServices.length > 0 ? fallbackServices[fallbackServices.length - 1].id : null;
-                
+
                 console.log('✅ Firestore: Fallback query returned', fallbackServices.length, 'services (sorted in memory)');
                 console.warn('💡 Create Firestore indexes for better performance. Check Firebase Console.');
-                
+
                 return { services: fallbackServices, lastDocId };
             } catch (fallbackError: any) {
                 console.error('❌ Firestore: Fallback query also failed:', fallbackError);
                 throw fallbackError;
             }
         }
-        
+
         console.error('❌ Firestore: Error fetching services:', error);
         if (error.message?.includes('index')) {
             console.error('💡 Firestore index required. Check Firebase Console for index creation link.');
@@ -268,17 +290,17 @@ export const getServicesByProvider = async (providerId: string): Promise<Service
                 .collection(COLLECTION)
                 .where('providerId', '==', providerId)
                 .orderBy('createdAt', 'desc');
-            
+
             const snapshot = await query.get();
             const services = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             })) as Service[];
-            
+
             // Already sorted by Firestore, but ensure consistency
             return services.sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
                 return dateB - dateA;
             });
         } catch (error: any) {
@@ -289,15 +311,15 @@ export const getServicesByProvider = async (providerId: string): Promise<Service
                     .collection(COLLECTION)
                     .where('providerId', '==', providerId)
                     .get();
-                
+
                 const services = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
                 })) as Service[];
-                
+
                 return services.sort((a, b) => {
-                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    const dateA = toMilliseconds(a.createdAt);
+                    const dateB = toMilliseconds(b.createdAt);
                     return dateB - dateA;
                 });
             }
@@ -393,4 +415,35 @@ export const subscribeToServices = (
     });
 
     return unsubscribe;
+};
+
+/**
+ * Get related services by service type
+ */
+export const getRelatedServices = async (
+    serviceType: string,
+    currentId: string,
+    limit: number = 3
+): Promise<Service[]> => {
+    try {
+        const snapshot = await firebaseFirestore
+            .collection(COLLECTION)
+            .where('serviceType', '==', serviceType)
+            .where('status', '==', 'approved')
+            .limit(limit + 2)
+            .get();
+
+        const services = snapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Service[];
+
+        return services
+            .filter(s => s.id !== currentId)
+            .slice(0, limit);
+    } catch (error) {
+        console.error('Error fetching related services:', error);
+        return [];
+    }
 };

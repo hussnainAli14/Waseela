@@ -9,6 +9,8 @@ import savedListingsReducer from './slices/savedListingsSlice';
 import roomsReducer from './slices/roomsSlice';
 import professionalsReducer from './slices/professionalsSlice';
 import productsReducer from './slices/productsSlice';
+import reviewsReducer from './slices/reviewsSlice';
+import reportsReducer from './slices/reportsSlice';
 
 // Persist configuration
 const persistConfig = {
@@ -28,6 +30,8 @@ const rootReducer = combineReducers({
     rooms: roomsReducer,
     professionals: professionalsReducer,
     products: productsReducer,
+    reviews: reviewsReducer,
+    reports: reportsReducer,
 });
 
 // Create persisted reducer

@@ -1,37 +1,67 @@
 import { firebaseFirestore } from '@/config/firebase';
 import type { Product, ProductFormData, ListingStatus } from '@/types/firestore';
+import { toMilliseconds } from '@/utils/dateUtils';
+import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 const COLLECTION = 'products';
 
 /**
  * Create a new product listing
  */
+import { uploadListingImages } from '@/services/storage/imageUpload';
+
+/**
+ * Create a new product listing
+ * Optimizes image upload by running in parallel and ensures listing ID is available for storage path
+ */
 export const createProduct = async (
     data: ProductFormData,
     sellerId: string,
-    images: string[] = []
+    imageUris: string[] = []
 ): Promise<string> => {
-    // Build product data object, only including defined values
-    const productData: any = {
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        condition: data.condition,
-        price: data.price,
-        location: data.location,
-        city: data.city,
-        sellerId,
-        images: images.length > 0 ? images : [],
-        verified: false,
-        status: 'pending' as ListingStatus,
-        views: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
+    try {
+        // 1. Generate ID first
+        const docRef = firebaseFirestore.collection(COLLECTION).doc();
+        const productId = docRef.id;
 
-    const docRef = await firebaseFirestore.collection(COLLECTION).add(productData);
-    return docRef.id;
+        // 2. Upload images in parallel (if any)
+        let imageUrls: string[] = [];
+        if (imageUris.length > 0) {
+            imageUrls = await uploadListingImages(
+                imageUris,
+                sellerId,
+                productId,
+                'product'
+            );
+        }
+
+        // 3. Build product data object
+        const productData: Product = {
+            id: productId,
+            title: data.title,
+            description: data.description,
+            category: data.category,
+            condition: data.condition,
+            price: data.price,
+            location: data.location,
+            city: data.city,
+            sellerId,
+            images: imageUrls,
+            verified: false,
+            status: 'pending' as ListingStatus,
+            views: 0,
+            createdAt: toMilliseconds(new Date().toISOString()),
+            updatedAt: toMilliseconds(new Date().toISOString()),
+        } as Product;
+
+        await docRef.set(productData);
+        return productId;
+    } catch (error) {
+        console.error('Error creating product:', error);
+        throw error;
+    }
 };
+
 
 /**
  * Get a single product by ID
@@ -106,7 +136,7 @@ export const getProducts = async (
     if (startAfterDocId && !hasFiltersRequiringIndex) {
         try {
             const lastDoc = await firebaseFirestore.collection(COLLECTION).doc(startAfterDocId).get();
-            if (lastDoc.exists && lastDoc.data()) {
+            if (lastDoc.exists() && lastDoc.data()) {
                 query = query.startAfter(lastDoc);
             }
         } catch (error) {
@@ -118,7 +148,7 @@ export const getProducts = async (
         const snapshot = await query.get();
         console.log('✅ Firestore: Query returned', snapshot.docs.length, 'products');
 
-        let products: Product[] = snapshot.docs.map(doc => ({
+        let products: Product[] = snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
             id: doc.id,
             ...doc.data(),
         })) as Product[];
@@ -126,9 +156,9 @@ export const getProducts = async (
         // If we couldn't use orderBy due to filters requiring index, sort in memory
         if (hasFiltersRequiringIndex) {
             products = products.sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return dateB - dateA; // Descending order (newest first)
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
+                return dateB - dateA;
             });
             // Limit to requested amount after sorting
             products = products.slice(0, limit);
@@ -155,17 +185,17 @@ export const getProductsBySeller = async (sellerId: string): Promise<Product[]> 
                 .collection(COLLECTION)
                 .where('sellerId', '==', sellerId)
                 .orderBy('createdAt', 'desc');
-            
+
             const snapshot = await query.get();
             const products = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             })) as Product[];
-            
+
             // Already sorted by Firestore, but ensure consistency
             return products.sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
                 return dateB - dateA;
             });
         } catch (error: any) {
@@ -176,15 +206,15 @@ export const getProductsBySeller = async (sellerId: string): Promise<Product[]> 
                     .collection(COLLECTION)
                     .where('sellerId', '==', sellerId)
                     .get();
-                
+
                 const products = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
                 })) as Product[];
-                
+
                 return products.sort((a, b) => {
-                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    const dateA = toMilliseconds(a.createdAt);
+                    const dateB = toMilliseconds(b.createdAt);
                     return dateB - dateA;
                 });
             }
@@ -221,4 +251,45 @@ export const updateProduct = async (
  */
 export const deleteProduct = async (productId: string): Promise<void> => {
     await firebaseFirestore.collection(COLLECTION).doc(productId).delete();
+};
+
+/**
+ * Mark a product as sold
+ */
+export const markAsSold = async (productId: string): Promise<void> => {
+    await firebaseFirestore.collection(COLLECTION).doc(productId).update({
+        status: 'sold' as ListingStatus,
+        updatedAt: new Date().toISOString(),
+    });
+};
+
+/**
+ * Get related products by category
+ */
+export const getRelatedProducts = async (
+    category: string,
+    currentId: string,
+    limit: number = 3
+): Promise<Product[]> => {
+    try {
+        const snapshot = await firebaseFirestore
+            .collection(COLLECTION)
+            .where('category', '==', category)
+            .where('status', '==', 'approved')
+            .limit(limit + 2)
+            .get();
+
+        const products = snapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Product[];
+
+        return products
+            .filter(p => p.id !== currentId)
+            .slice(0, limit);
+    } catch (error) {
+        console.error('Error fetching related products:', error);
+        return [];
+    }
 };

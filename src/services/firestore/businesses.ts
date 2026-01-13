@@ -1,31 +1,57 @@
 import { firebaseFirestore } from '@/config/firebase';
 import type { Business, BusinessFormData, ListingFilters, ListingStatus } from '@/types/firestore';
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { toMilliseconds } from '@/utils/dateUtils';
 
 const COLLECTION = 'businesses';
 
+import { uploadListingImages } from '@/services/storage/imageUpload';
+
 /**
  * Create a new business listing
+ * Optimizes image upload by running in parallel and ensures listing ID is available for storage path
  */
 export const createBusiness = async (
     data: BusinessFormData,
     ownerId: string,
-    images: string[] = []
+    imageUris: string[] = []
 ): Promise<string> => {
-    const businessData: Omit<Business, 'id'> = {
-        ...data,
-        ownerId,
-        images,
-        rating: 0,
-        reviewCount: 0,
-        verified: false,
-        status: 'pending' as ListingStatus,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
+    try {
+        // 1. Generate ID first
+        const docRef = firebaseFirestore.collection(COLLECTION).doc();
+        const businessId = docRef.id;
 
-    const docRef = await firebaseFirestore.collection(COLLECTION).add(businessData);
-    return docRef.id;
+        // 2. Upload images in parallel (if any)
+        let imageUrls: string[] = [];
+        if (imageUris.length > 0) {
+            imageUrls = await uploadListingImages(
+                imageUris,
+                ownerId,
+                businessId,
+                'business'
+            );
+        }
+
+        // 3. Create document with real image URLs
+        const businessData: Business = {
+            id: businessId,
+            ...data,
+            ownerId,
+            images: imageUrls,
+            rating: 0,
+            reviewCount: 0,
+            verified: false,
+            status: 'pending' as ListingStatus,
+            createdAt: toMilliseconds(new Date().toISOString()), // Store as number for consistency
+            updatedAt: toMilliseconds(new Date().toISOString()), // Store as number for consistency
+        } as Business; // Cast to satisfy strict typing if needed
+
+        await docRef.set(businessData);
+        return businessId;
+    } catch (error) {
+        console.error('Error creating business:', error);
+        throw error;
+    }
 };
 
 /**
@@ -56,7 +82,7 @@ export const getBusinesses = async (
     // Start with base collection query - only filter by status if explicitly requested
     // This allows businesses without status field to be included
     let query: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
-    
+
     // Only filter by status if explicitly provided in filters
     if (filters.status !== undefined) {
         query = query.where('status', '==', filters.status);
@@ -85,13 +111,13 @@ export const getBusinesses = async (
     // When filtering by category, city, or verified, we need a composite index
     // If index doesn't exist, we'll skip orderBy and sort in memory instead
     const hasFiltersRequiringIndex = !!(filters.category || filters.city || filters.verified !== undefined);
-    
+
     // Only use orderBy if we don't have filters that require an index, or if pagination is not needed
     // This avoids index errors - we'll sort in memory as fallback
     if (!hasFiltersRequiringIndex) {
         query = query.orderBy('createdAt', 'desc');
     }
-    
+
     // Fetch more results if we need to sort in memory (to account for potential filtering during sort)
     const queryLimit = hasFiltersRequiringIndex ? limit * 2 : limit;
     query = query.limit(queryLimit);
@@ -112,7 +138,7 @@ export const getBusinesses = async (
     try {
         const snapshot = await query.get();
         console.log('✅ Firestore: Query returned', snapshot.docs.length, 'businesses');
-        
+
         // Log sample data to help debug filter issues
         if (snapshot.docs.length === 0 && (filters.category || filters.city)) {
             console.warn('⚠️ Firestore: No results found with filters:', filters);
@@ -127,8 +153,8 @@ export const getBusinesses = async (
         // If we couldn't use orderBy due to filters requiring index, sort in memory
         if (hasFiltersRequiringIndex) {
             businesses = businesses.sort((a, b) => {
-                const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt as any)?.toMillis?.() || 0;
-                const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt as any)?.toMillis?.() || 0;
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
                 return dateB - dateA; // Descending order
             });
             // Limit to requested amount after sorting
@@ -146,7 +172,7 @@ export const getBusinesses = async (
             try {
                 // Retry query without orderBy
                 let fallbackQuery: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
-                
+
                 if (filters.status !== undefined) {
                     fallbackQuery = fallbackQuery.where('status', '==', filters.status);
                 }
@@ -162,10 +188,10 @@ export const getBusinesses = async (
                 if (filters.minRating) {
                     fallbackQuery = fallbackQuery.where('rating', '>=', filters.minRating);
                 }
-                
+
                 // Get more results to account for sorting in memory, then limit
                 const fallbackSnapshot = await fallbackQuery.limit(limit * 2).get();
-                
+
                 let fallbackBusinesses: Business[] = fallbackSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
@@ -173,26 +199,26 @@ export const getBusinesses = async (
 
                 // Sort by createdAt in memory
                 fallbackBusinesses = fallbackBusinesses.sort((a, b) => {
-                    const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt as any)?.toMillis?.() || 0;
-                    const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt as any)?.toMillis?.() || 0;
-                    return dateB - dateA; // Descending order
+                    const dateA = toMilliseconds(a.createdAt);
+                    const dateB = toMilliseconds(b.createdAt);
+                    return dateB - dateA;
                 });
 
                 // Limit to requested amount
                 fallbackBusinesses = fallbackBusinesses.slice(0, limit);
 
                 const lastDocId = fallbackBusinesses.length > 0 ? fallbackBusinesses[fallbackBusinesses.length - 1].id : null;
-                
+
                 console.log('✅ Firestore: Fallback query returned', fallbackBusinesses.length, 'businesses (sorted in memory)');
                 console.warn('💡 Create Firestore indexes for better performance. Check Firebase Console.');
-                
+
                 return { businesses: fallbackBusinesses, lastDocId };
             } catch (fallbackError: any) {
                 console.error('❌ Firestore: Fallback query also failed:', fallbackError);
                 throw fallbackError;
             }
         }
-        
+
         console.error('❌ Firestore: Error fetching businesses:', error);
         if (error.message?.includes('index')) {
             console.error('💡 Firestore index required. Check Firebase Console for index creation link.');
@@ -254,17 +280,17 @@ export const getBusinessesByOwner = async (ownerId: string): Promise<Business[]>
                 .collection(COLLECTION)
                 .where('ownerId', '==', ownerId)
                 .orderBy('createdAt', 'desc');
-            
+
             const snapshot = await query.get();
             const businesses = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data(),
             })) as Business[];
-            
+
             // Already sorted by Firestore, but ensure consistency
             return businesses.sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
                 return dateB - dateA;
             });
         } catch (error: any) {
@@ -275,15 +301,15 @@ export const getBusinessesByOwner = async (ownerId: string): Promise<Business[]>
                     .collection(COLLECTION)
                     .where('ownerId', '==', ownerId)
                     .get();
-                
+
                 const businesses = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
                 })) as Business[];
-                
+
                 return businesses.sort((a, b) => {
-                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    const dateA = toMilliseconds(a.createdAt);
+                    const dateB = toMilliseconds(b.createdAt);
                     return dateB - dateA;
                 });
             }
@@ -379,4 +405,35 @@ export const subscribeToBusinesses = (
     });
 
     return unsubscribe;
+};
+
+/**
+ * Get related businesses by category
+ */
+export const getRelatedBusinesses = async (
+    category: string,
+    currentId: string,
+    limit: number = 3
+): Promise<Business[]> => {
+    try {
+        const snapshot = await firebaseFirestore
+            .collection(COLLECTION)
+            .where('category', '==', category)
+            .where('status', '==', 'approved')
+            .limit(limit + 2)
+            .get();
+
+        const businesses = snapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Business[];
+
+        return businesses
+            .filter(b => b.id !== currentId)
+            .slice(0, limit);
+    } catch (error) {
+        console.error('Error fetching related businesses:', error);
+        return [];
+    }
 };

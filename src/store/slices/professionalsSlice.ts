@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { Professional, ProfessionalFormData } from '@/types/firestore';
+import type { ProfessionalProfile, ProfessionalFormData } from '@/types/firestore';
 import * as professionalsService from '@/services/firestore/professionals';
 
 interface ProfessionalsFilters {
@@ -10,10 +10,10 @@ interface ProfessionalsFilters {
 }
 
 interface ProfessionalsState {
-    professionals: Professional[];
-    userProfessional: Professional | null;
-    userProfessionals: Professional[]; // All professional profiles for the current user
-    selectedProfessional: Professional | null;
+    professionals: ProfessionalProfile[];
+    userProfessional: ProfessionalProfile | null;
+    userProfessionals: ProfessionalProfile[]; // All professional profiles for the current user
+    selectedProfessional: ProfessionalProfile | null;
     isLoading: boolean;
     isUserProfessionalLoading: boolean;
     isUserProfessionalsLoading: boolean;
@@ -145,7 +145,7 @@ const professionalsSlice = createSlice({
             state.lastDocId = null;
             state.hasMore = true;
         },
-        setSelectedProfessional: (state, action: PayloadAction<Professional | null>) => {
+        setSelectedProfessional: (state, action: PayloadAction<ProfessionalProfile | null>) => {
             state.selectedProfessional = action.payload;
         },
     },

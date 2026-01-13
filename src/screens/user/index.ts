@@ -15,4 +15,5 @@ export * from './submitListing';
 export * from './sellItem';
 export * from './postRoom';
 export * from './joinProfessionalNetwork';
-export * from './userProfessionalProfiles';
+export { default as UserProfessionalProfiles } from './userProfessionalProfiles/UserProfessionalProfiles';
+export { default as MyReports } from './myReports/MyReports';

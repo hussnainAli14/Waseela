@@ -1,6 +1,7 @@
 import { firebaseFirestore } from '@/config/firebase';
-import type { Professional, ProfessionalFormData, ListingStatus } from '@/types/firestore';
+import type { ProfessionalProfile, ProfessionalFormData, ListingFilters, ListingStatus } from '@/types/firestore';
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { toMilliseconds } from '@/utils/dateUtils';
 
 const COLLECTION = 'professionals';
 
@@ -53,7 +54,7 @@ export const createProfessional = async (
     return docRef.id;
 };
 
-export const getProfessional = async (professionalId: string): Promise<Professional | null> => {
+export const getProfessional = async (professionalId: string): Promise<ProfessionalProfile | null> => {
     const doc = await firebaseFirestore.collection(COLLECTION).doc(professionalId).get();
 
     if (!doc.exists) {
@@ -63,10 +64,10 @@ export const getProfessional = async (professionalId: string): Promise<Professio
     return {
         id: doc.id,
         ...doc.data(),
-    } as Professional;
+    } as ProfessionalProfile;
 };
 
-export const getProfessionalByUserId = async (userId: string): Promise<Professional | null> => {
+export const getProfessionalByUserId = async (userId: string): Promise<ProfessionalProfile | null> => {
     const snapshot = await firebaseFirestore
         .collection(COLLECTION)
         .where('userId', '==', userId)
@@ -81,13 +82,13 @@ export const getProfessionalByUserId = async (userId: string): Promise<Professio
     return {
         id: doc.id,
         ...doc.data(),
-    } as Professional;
+    } as ProfessionalProfile;
 };
 
 /**
  * Get all professional profiles for a user
  */
-export const getProfessionalsByUserId = async (userId: string): Promise<Professional[]> => {
+export const getProfessionalsByUserId = async (userId: string): Promise<ProfessionalProfile[]> => {
     try {
         const snapshot = await firebaseFirestore
             .collection(COLLECTION)
@@ -97,7 +98,7 @@ export const getProfessionalsByUserId = async (userId: string): Promise<Professi
         return snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
-        })) as Professional[];
+        })) as ProfessionalProfile[];
     } catch (error: any) {
         console.error('❌ Firestore: Error fetching professionals by user ID:', error);
         throw error;
@@ -105,14 +106,14 @@ export const getProfessionalsByUserId = async (userId: string): Promise<Professi
 };
 
 export const getProfessionals = async (
-    filters: { industry?: string; location?: string; verified?: boolean } = {},
+    filters: ListingFilters & { industry?: string; location?: string } = {},
     limit: number = 20,
     startAfterDocId?: string
-): Promise<{ professionals: Professional[]; lastDocId: string | null }> => {
+): Promise<{ professionals: ProfessionalProfile[]; lastDocId: string | null }> => {
     console.log('🔥 Firestore: getProfessionals called with filters:', filters);
     // Start with base collection query
     let query: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
-    
+
     // Filter by approved status
     query = query.where('status', '==', 'approved');
 
@@ -133,14 +134,14 @@ export const getProfessionals = async (
 
     // Determine if we have any filters beyond status that would require a composite index with orderBy
     const hasAdditionalFilters = !!(filters.industry || filters.location || filters.verified !== undefined);
-    
+
     // Only use orderBy if we don't have additional filters (status + orderBy works without composite index)
     let shouldSortInMemory = hasAdditionalFilters;
-    
+
     if (!shouldSortInMemory) {
         query = query.orderBy('createdAt', 'desc');
     }
-    
+
     // Fetch more results if we need to sort in memory
     const queryLimit = shouldSortInMemory ? limit * 2 : limit;
     query = query.limit(queryLimit);
@@ -161,23 +162,23 @@ export const getProfessionals = async (
     try {
         const snapshot = await query.get();
         console.log('✅ Firestore: Query returned', snapshot.docs.length, 'professionals');
-        
+
         // Log sample data to help debug filter issues
         if (snapshot.docs.length === 0 && (filters.industry || filters.location)) {
             console.warn('⚠️ Firestore: No results found with filters:', filters);
             console.log('💡 Tip: Check if industry/location values match exactly (case-sensitive)');
         }
 
-        let professionals: Professional[] = snapshot.docs.map(doc => ({
+        let professionals: ProfessionalProfile[] = snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
             id: doc.id,
             ...doc.data(),
-        })) as Professional[];
+        })) as ProfessionalProfile[];
 
         // If we skipped orderBy due to filters requiring index, sort in memory
         if (shouldSortInMemory) {
             professionals = professionals.sort((a, b) => {
-                const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt as any)?.toMillis?.() || 0;
-                const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt as any)?.toMillis?.() || 0;
+                const dateA = toMilliseconds(a.createdAt);
+                const dateB = toMilliseconds(b.createdAt);
                 return dateB - dateA; // Descending order
             });
             // Limit to requested amount after sorting
@@ -195,7 +196,7 @@ export const getProfessionals = async (
             try {
                 // Retry query without orderBy
                 let fallbackQuery: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
-                
+
                 fallbackQuery = fallbackQuery.where('status', '==', 'approved');
                 if (filters.industry) {
                     fallbackQuery = fallbackQuery.where('industry', '==', filters.industry);
@@ -206,19 +207,19 @@ export const getProfessionals = async (
                 if (filters.verified !== undefined) {
                     fallbackQuery = fallbackQuery.where('verified', '==', filters.verified);
                 }
-                
+
                 // Get more results to account for sorting in memory, then limit
                 const fallbackSnapshot = await fallbackQuery.limit(limit * 2).get();
-                
-                let fallbackProfessionals: Professional[] = fallbackSnapshot.docs.map(doc => ({
+
+                let fallbackProfessionals: ProfessionalProfile[] = fallbackSnapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
                     id: doc.id,
                     ...doc.data(),
-                })) as Professional[];
+                })) as ProfessionalProfile[];
 
                 // Sort by createdAt in memory
                 fallbackProfessionals = fallbackProfessionals.sort((a, b) => {
-                    const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : (a.createdAt as any)?.toMillis?.() || 0;
-                    const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : (b.createdAt as any)?.toMillis?.() || 0;
+                    const dateA = toMilliseconds(a.createdAt);
+                    const dateB = toMilliseconds(b.createdAt);
                     return dateB - dateA; // Descending order
                 });
 
@@ -226,17 +227,17 @@ export const getProfessionals = async (
                 fallbackProfessionals = fallbackProfessionals.slice(0, limit);
 
                 const lastDocId = fallbackProfessionals.length > 0 ? fallbackProfessionals[fallbackProfessionals.length - 1].id : null;
-                
+
                 console.log('✅ Firestore: Fallback query returned', fallbackProfessionals.length, 'professionals (sorted in memory)');
                 console.warn('💡 Create Firestore indexes for better performance. Check Firebase Console.');
-                
+
                 return { professionals: fallbackProfessionals, lastDocId };
             } catch (fallbackError: any) {
                 console.error('❌ Firestore: Fallback query also failed:', fallbackError);
                 throw fallbackError;
             }
         }
-        
+
         console.error('❌ Firestore: Error fetching professionals:', error);
         if (error.message?.includes('index') || error.code === 'failed-precondition') {
             console.error('💡 Firestore index required. Check Firebase Console for index creation link.');
@@ -289,7 +290,7 @@ export const incrementConnections = async (professionalId: string): Promise<void
 export const searchProfessionals = async (
     searchTerm: string,
     limit: number = 20
-): Promise<Professional[]> => {
+): Promise<ProfessionalProfile[]> => {
     const snapshot = await firebaseFirestore
         .collection(COLLECTION)
         .where('status', '==', 'approved')
@@ -299,8 +300,8 @@ export const searchProfessionals = async (
         .limit(limit)
         .get();
 
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
         id: doc.id,
         ...doc.data(),
-    })) as Professional[];
+    })) as ProfessionalProfile[];
 };

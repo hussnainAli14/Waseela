@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, ScrollView, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { toMilliseconds } from '@/utils/dateUtils';
 import { Text } from '@/components/atoms';
 import { ExpandableDashboardSection } from '@/components/molecules';
 import { colors } from '@/theme';
@@ -20,6 +21,8 @@ import { fetchUserProfessional, fetchUserProfessionals } from '@/store/slices/pr
 import { firebaseFirestore } from '@/config/firebase';
 import type { Product, Room } from '@/types/firestore';
 import { getSavedItems } from '@/services/firestore/savedListings';
+import { fetchSavedListings } from '@/store/slices/savedListingsSlice';
+import { fetchFullSavedListings, formatSavedDate, type FullSavedListing } from '@/utils/savedListingsHelper';
 
 type ListingStatus = 'approved' | 'pending';
 
@@ -61,10 +64,11 @@ const Profile = () => {
     isLoading: isProfessionalLoading,
     isUserProfessionalsLoading,
   } = useAppSelector(state => state.professionals);
+  const { items: savedListingsFromRedux } = useAppSelector(state => state.savedListings);
 
   // Debug: Log Redux state
   useEffect(() => {
-      console.log('📦 Profile: Redux state:', {
+    console.log('📦 Profile: Redux state:', {
       userBusinesses: userBusinesses.length,
       userServices: userServices.length,
       userProducts: userProducts.length,
@@ -98,8 +102,10 @@ const Profile = () => {
   // Local state
   const [userProfile, setUserProfile] = useState<{ location?: string; phone?: string }>({});
   const [savedListings, setSavedListings] = useState<SavedListing[]>([]);
+  const [fullSavedListings, setFullSavedListings] = useState<FullSavedListing[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isCreatingTestData, setIsCreatingTestData] = useState(false);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
 
   // Use user data from Redux, fallback to default values
   const displayName = user?.displayName || 'User';
@@ -124,7 +130,7 @@ const Profile = () => {
         dispatch(fetchUserProfessional(user.uid)),
         dispatch(fetchUserProfessionals(user.uid)),
       ]);
-      
+
       console.log('✅ Profile: Fetch results:', {
         businesses: results[0].status === 'fulfilled' ? 'Success' : results[0].reason,
         services: results[1].status === 'fulfilled' ? 'Success' : results[1].reason,
@@ -138,7 +144,7 @@ const Profile = () => {
       results.forEach((result, index) => {
         if (result.status === 'rejected') {
           const names = ['businesses', 'services', 'products', 'rooms', 'professional', 'professionalProfiles'];
-          console.error(`❌ Profile: Error fetching ${names[index]}:`, result.reason);
+          console.error(`❌ Profile: Error fetching ${names[index]}: `, result.reason);
         }
       });
 
@@ -151,16 +157,19 @@ const Profile = () => {
             location: userData.location || '',
             phone: userData.phone || '',
           });
+          // Set profile photo URL
+          setProfilePhotoUrl(userData.photoURL || null);
         }
       } catch (error) {
         console.warn('Error fetching user profile:', error);
       }
 
-      // Fetch saved listings (simplified - just get count for now)
+      // Fetch saved listings using Redux and get full data
       try {
-        await getSavedItems(user.uid);
-        // For now, we'll just show the count. Full implementation would require fetching each item
-        setSavedListings([]);
+        const savedItems = await dispatch(fetchSavedListings(user.uid)).unwrap();
+        // Fetch full listing data for each saved item
+        const fullListings = await fetchFullSavedListings(savedItems);
+        setFullSavedListings(fullListings);
       } catch (error) {
         console.warn('Error fetching saved listings:', error);
       }
@@ -223,7 +232,7 @@ const Profile = () => {
     return userProducts.map((product: Product): MarketItem => ({
       id: product.id,
       title: product.title,
-      price: `£${product.price}`,
+      price: `£${product.price} `,
       location: product.city,
       condition: conditionMap[product.condition] || product.condition,
       category: product.category,
@@ -245,9 +254,8 @@ const Profile = () => {
     });
 
     const mapped = userRooms.map((room: Room): RoomItem => {
-      const availableFromDate = typeof room.availableFrom === 'string'
-        ? new Date(room.availableFrom)
-        : (room.availableFrom && typeof room.availableFrom.toDate === 'function' ? room.availableFrom.toDate() : new Date());
+      const ms = toMilliseconds(room.availableFrom) || Date.now();
+      const availableFromDate = new Date(ms);
 
       return {
         id: room.id,
@@ -329,6 +337,7 @@ const Profile = () => {
         reviews: originalBusiness.reviewCount || 0,
         verified: originalBusiness.verified || false,
         image: originalBusiness.images[0] || originalBusiness.logoUrl || 'https://via.placeholder.com/600',
+        ownerId: originalBusiness.ownerId,
       };
     } else if (originalService) {
       return {
@@ -340,6 +349,7 @@ const Profile = () => {
         reviews: originalService.reviewCount || 0,
         verified: originalService.verified || false,
         image: originalService.images[0] || originalService.profilePhoto || 'https://via.placeholder.com/600',
+        ownerId: originalService.providerId,
       };
     }
 
@@ -419,33 +429,61 @@ const Profile = () => {
     );
   };
 
-  const renderSavedListingItem = ({ item }: { item: SavedListing }) => (
-    <View style={styles.listingCard}>
-      <Image
-        source={{ uri: item.image || 'https://via.placeholder.com/150' }}
-        resizeMode="cover"
-        style={styles.listingImagePlaceholder}
-      />
-      <View style={styles.listingInfo}>
-        <Text variant="md-semibold" style={styles.listingTitle}>
-          {item.title}
-        </Text>
-        <Text variant="sm-normal" style={styles.listingSubtitle}>
-          {item.category}
-        </Text>
-        <View style={styles.listingMetaRow}>
-          <Ionicons
-            name="location-outline"
-            size={14}
-            color={colors.text.secondary}
-          />
-          <Text variant="sm-medium" style={styles.listingSubtitle}>
-            {item.location}
+  const renderSavedListingItem = ({ item }: { item: FullSavedListing }) => {
+    const displayName = item.name || item.title || 'Untitled';
+    const displayLocation = item.location || item.city || 'Unknown';
+
+    const handlePress = () => {
+      // Navigate to details based on type
+      const listingForDetails = buildListingItem({
+        id: item.id,
+        title: displayName,
+        category: item.category,
+        status: 'approved',
+        image: item.image,
+        type: (item.savedType === 'marketplace' || item.savedType === 'room' ? 'business' : item.savedType) as 'business' | 'service',
+      });
+      navigation.navigate('Details', { listing: listingForDetails });
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.listingCard}
+        onPress={handlePress}
+        activeOpacity={0.9}
+      >
+        <Image
+          source={{ uri: item.image || 'https://via.placeholder.com/150' }}
+          resizeMode="cover"
+          style={styles.listingImagePlaceholder}
+        />
+        <View style={styles.listingInfo}>
+          <View style={styles.listingHeaderRow}>
+            <Text variant="md-semibold" style={styles.listingTitle}>
+              {displayName}
+            </Text>
+            <Ionicons name="bookmark" size={16} color={colors.secondary[500]} />
+          </View>
+          <Text variant="sm-normal" style={styles.listingSubtitle}>
+            {item.category}
           </Text>
+          <View style={styles.listingMetaRow}>
+            <Ionicons
+              name="location-outline"
+              size={14}
+              color={colors.text.secondary}
+            />
+            <Text variant="sm-medium" style={styles.listingSubtitle}>
+              {displayLocation}
+            </Text>
+            <Text variant="xs-normal" style={styles.savedDateText}>
+              • Saved {formatSavedDate(item.savedAt)}
+            </Text>
+          </View>
         </View>
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderBuySellItem = ({ item }: { item: MarketItem }) => (
     <TouchableOpacity
@@ -618,11 +656,19 @@ const Profile = () => {
 
         <View style={styles.profileSection}>
           <View style={styles.avatarCircleLarge}>
-            <Ionicons
-              name="person-outline"
-              size={40}
-              color={colors.common.white}
-            />
+            {profilePhotoUrl ? (
+              <Image
+                source={{ uri: profilePhotoUrl }}
+                style={{ width: 100, height: 100, borderRadius: 50 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Ionicons
+                name="person-outline"
+                size={40}
+                color={colors.common.white}
+              />
+            )}
           </View>
           <Text variant="lg-semibold" style={styles.nameTextCentered}>
             {displayName}
@@ -817,29 +863,18 @@ const Profile = () => {
           </View>
         </View>
         <View style={styles.sectionWrapper}>
-          <View style={styles.sectionHeaderRow}>
-            <Ionicons
-              name="heart-outline"
-              size={18}
-              color={colors.accent.purple}
-            />
-            <Text variant="md-semibold" style={styles.sectionTitle}>
-              Saved Listings
-            </Text>
-            <Text variant="md-medium" style={styles.sectionBadgeText}>
-              {savedListings.length}
-            </Text>
-          </View>
-
-          <FlatList
-            data={savedListings}
-            keyExtractor={item => item.id}
+          <ExpandableDashboardSection
+            title="Saved Listings"
+            subtitle={`${fullSavedListings.length} item${fullSavedListings.length !== 1 ? 's' : ''}`}
+            iconName="heart-outline"
+            iconColor={colors.accent.purple}
+            iconBackgroundColor={colors.accent.purple + '20'}
+            data={fullSavedListings}
             renderItem={renderSavedListingItem}
-            scrollEnabled={false}
-            ItemSeparatorComponent={ListingSeparator}
+            keyExtractor={item => item.id}
+            emptyMessage="No saved listings yet"
           />
         </View>
-
         <View style={styles.sectionWrapper}>
           <View style={styles.sectionHeaderRow}>
             <Ionicons
@@ -862,6 +897,20 @@ const Profile = () => {
             />
             <Text variant="sm-medium" style={styles.safetyItemText}>
               Community Guidelines
+            </Text>
+            <Ionicons name="eye-outline" size={18} color={colors.text.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.safetyItem}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('MyReports')}>
+            <Ionicons
+              name="flag-outline"
+              size={18}
+              color={colors.text.primary}
+            />
+            <Text variant="sm-medium" style={styles.safetyItemText}>
+              My Reports
             </Text>
             <Ionicons name="eye-outline" size={18} color={colors.text.secondary} />
           </TouchableOpacity>

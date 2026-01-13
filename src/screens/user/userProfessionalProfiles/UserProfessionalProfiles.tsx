@@ -10,11 +10,11 @@ import { styles } from './styles';
 import { MainStackParamList, ProfessionalProfileItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchUserProfessionals } from '@/store/slices/professionalsSlice';
-import type { Professional as FirestoreProfessional } from '@/types/firestore';
+import type { ProfessionalProfile as FirestoreProfessional } from '@/types/firestore';
 
 // Helper function to convert Firestore Professional to ProfessionalProfileItem
 const convertToProfileItem = (pro: FirestoreProfessional): ProfessionalProfileItem => {
-  const yearsExperience = pro.experience 
+  const yearsExperience = pro.experience
     ? parseInt(pro.experience.match(/\d+/)?.[0] || '0', 10)
     : 0;
 
