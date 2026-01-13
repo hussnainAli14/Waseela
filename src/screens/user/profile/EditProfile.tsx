@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, ScrollView, TouchableOpacity, Switch, Image } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Switch, Image, Alert, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, TextField } from '@/components/atoms';
-import { Dropdown } from '@/components/molecules';
+import { CityDropdown, Dropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './EditProfile.styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { firebaseFirestore, firebaseAuth } from '@/config/firebase';
+import { launchImageLibrary, type Asset, type ImageLibraryOptions } from 'react-native-image-picker';
+import { uploadProfilePhoto } from '@/services/storage/imageUpload';
+import { useSignOut } from '@/hooks/useSignOut';
+import { loadUser } from '@/store/slices/authSlice';
 
 type EditProfileScreenNavigation = NativeStackNavigationProp<any>;
 
@@ -27,23 +33,6 @@ const serviceCategoryOptions = [
   { label: 'Cleaning', value: 'Cleaning' },
 ];
 
-const cityOptions = [
-  { label: 'London', value: 'London' },
-  { label: 'Birmingham', value: 'Birmingham' },
-  { label: 'Manchester', value: 'Manchester' },
-  { label: 'Liverpool', value: 'Liverpool' },
-  { label: 'Leeds', value: 'Leeds' },
-  { label: 'Sheffield', value: 'Sheffield' },
-  { label: 'Bristol', value: 'Bristol' },
-  { label: 'Newcastle', value: 'Newcastle' },
-  { label: 'Leicester', value: 'Leicester' },
-  { label: 'Nottingham', value: 'Nottingham' },
-  { label: 'Cardiff', value: 'Cardiff' },
-  { label: 'Glasgow', value: 'Glasgow' },
-  { label: 'Edinburgh', value: 'Edinburgh' },
-  { label: 'Bradford', value: 'Bradford' },
-  { label: 'Southampton', value: 'Southampton' },
-];
 
 const pricingStyleOptions = [
   { label: 'Quote / Estimate', value: 'Quote / Estimate' },
@@ -104,11 +93,20 @@ const ExpandableSection: React.FC<ExpandableSectionProps> = ({
 
 const EditProfile = () => {
   const navigation = useNavigation<EditProfileScreenNavigation>();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector(state => state.auth);
+  const { handleSignOut } = useSignOut();
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [profilePhoto, setProfilePhoto] = useState<Asset | null>(null);
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
-    fullName: 'Ali Hassan',
-    email: 'ali.hassan@example.com',
-    phoneNumber: '+44 7700 900000',
-    city: 'London',
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    city: '',
   });
 
   const [privacySettings, setPrivacySettings] = useState({
@@ -118,13 +116,13 @@ const EditProfile = () => {
   });
 
   const [serviceProviderData, setServiceProviderData] = useState({
-    serviceTitle: 'Professional Plumbing Services',
-    serviceCategory: 'Plumber',
-    serviceDescription: 'Experienced plumber offering residential and commercial services.',
-    availability: 'Mon-Fri, 9am-6pm',
-    emergencyService: true,
-    pricingStyle: 'Quote / Estimate',
-    qualifications: 'City & Guilds Level 3 Plumbing',
+    serviceTitle: '',
+    serviceCategory: '',
+    serviceDescription: '',
+    availability: '',
+    emergencyService: false,
+    pricingStyle: '',
+    qualifications: '',
   });
 
   const [notificationSettings, setNotificationSettings] = useState({
@@ -132,6 +130,71 @@ const EditProfile = () => {
     emailUpdates: true,
     communityAnnouncements: true,
   });
+
+  // Fetch user data on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.uid) {
+        setIsLoadingData(false);
+        return;
+      }
+
+      try {
+        setIsLoadingData(true);
+        const userDoc = await firebaseFirestore.collection('users').doc(user.uid).get();
+        const userData = userDoc.data();
+
+        if (userData) {
+          setFormData({
+            fullName: userData.displayName || user?.displayName || '',
+            email: userData.email || user?.email || '',
+            phoneNumber: userData.phone || '',
+            city: userData.location || '',
+          });
+
+          setProfilePhotoUrl(userData.photoURL || user?.photoURL || null);
+
+          // Load privacy settings if they exist
+          if (userData.privacySettings) {
+            setPrivacySettings({
+              showPhonePublicly: userData.privacySettings.showPhonePublicly || false,
+              allowWhatsApp: userData.privacySettings.allowWhatsApp !== undefined ? userData.privacySettings.allowWhatsApp : true,
+              allowEmail: userData.privacySettings.allowEmail !== undefined ? userData.privacySettings.allowEmail : true,
+            });
+          }
+
+          // Load notification settings if they exist
+          if (userData.notificationSettings) {
+            setNotificationSettings({
+              appNotifications: userData.notificationSettings.appNotifications !== undefined ? userData.notificationSettings.appNotifications : true,
+              emailUpdates: userData.notificationSettings.emailUpdates !== undefined ? userData.notificationSettings.emailUpdates : true,
+              communityAnnouncements: userData.notificationSettings.communityAnnouncements !== undefined ? userData.notificationSettings.communityAnnouncements : true,
+            });
+          }
+
+          // Load service provider data if it exists
+          if (userData.serviceProviderData) {
+            setServiceProviderData({
+              serviceTitle: userData.serviceProviderData.serviceTitle || '',
+              serviceCategory: userData.serviceProviderData.serviceCategory || '',
+              serviceDescription: userData.serviceProviderData.serviceDescription || '',
+              availability: userData.serviceProviderData.availability || '',
+              emergencyService: userData.serviceProviderData.emergencyService || false,
+              pricingStyle: userData.serviceProviderData.pricingStyle || '',
+              qualifications: userData.serviceProviderData.qualifications || '',
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        Alert.alert('Error', 'Failed to load profile data. Please try again.');
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -148,6 +211,150 @@ const EditProfile = () => {
   const handleNotificationToggle = (field: string) => {
     setNotificationSettings(prev => ({ ...prev, [field]: !prev[field as keyof typeof prev] }));
   };
+
+  const handlePickPhoto = async () => {
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      selectionLimit: 1,
+      quality: 0.8,
+    };
+    try {
+      const result = await launchImageLibrary(options);
+      if (result.didCancel || !result.assets?.length) {
+        return;
+      }
+      setProfilePhoto(result.assets[0]);
+      setProfilePhotoUrl(result.assets[0].uri || null);
+    } catch (error: any) {
+      Alert.alert('Upload failed', error.message || 'Unable to select photo right now. Please try again.');
+    }
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.fullName.trim()) {
+      Alert.alert('Validation Error', 'Please enter your full name.');
+      return false;
+    }
+    if (!formData.email.trim()) {
+      Alert.alert('Validation Error', 'Please enter your email address.');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      Alert.alert('Validation Error', 'Please enter a valid email address.');
+      return false;
+    }
+    if (!formData.city.trim()) {
+      Alert.alert('Validation Error', 'Please select your city.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!user?.uid) {
+      Alert.alert('Error', 'User not authenticated. Please sign in again.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let photoUrl = profilePhotoUrl;
+
+      // Upload new profile photo if selected
+      if (profilePhoto?.uri) {
+        try {
+          photoUrl = await uploadProfilePhoto(profilePhoto.uri, user.uid);
+          setProfilePhotoUrl(photoUrl);
+        } catch (error) {
+          console.error('Error uploading profile photo:', error);
+          Alert.alert('Warning', 'Profile photo upload failed, but other changes will be saved.');
+        }
+      }
+
+      // Update Firebase Auth displayName if changed
+      const currentUser = firebaseAuth.currentUser;
+      if (currentUser && currentUser.displayName !== formData.fullName) {
+        try {
+          await currentUser.updateProfile({ displayName: formData.fullName });
+        } catch (error) {
+          console.error('Error updating auth displayName:', error);
+        }
+      }
+
+      // Update Firestore user document
+      const updateData: any = {
+        displayName: formData.fullName,
+        email: formData.email,
+        phone: formData.phoneNumber || null,
+        location: formData.city,
+        updatedAt: new Date().toISOString(),
+        privacySettings,
+        notificationSettings,
+        serviceProviderData,
+      };
+
+      if (photoUrl) {
+        updateData.photoURL = photoUrl;
+      }
+
+      await firebaseFirestore.collection('users').doc(user.uid).update(updateData);
+
+      // Also refresh auth user in Redux so Profile header shows latest name/photo
+      if (firebaseAuth.currentUser) {
+        try {
+          await dispatch(loadUser(firebaseAuth.currentUser)).unwrap();
+        } catch (e) {
+          console.warn('Failed to refresh auth user after profile update', e);
+        }
+      }
+
+      Alert.alert('Success', 'Profile updated successfully!', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    handleSignOut();
+  };
+
+  if (isLoadingData) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            activeOpacity={0.9}
+            onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.common.white} />
+          </TouchableOpacity>
+          <Text variant="xl-bold" style={styles.headerTitle}>
+            Edit Profile
+          </Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.secondary[500]} />
+          <Text variant="sm-normal" style={{ marginTop: 10, color: colors.text.secondary }}>
+            Loading profile...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -175,9 +382,21 @@ const EditProfile = () => {
           iconBackgroundColor={colors.secondary[50]}>
           <View style={styles.profilePictureSection}>
             <View style={styles.profilePictureContainer}>
-              <Ionicons name="person-outline" size={50} color={colors.common.white} />
+              {profilePhotoUrl ? (
+                <Image
+                  source={{ uri: profilePhotoUrl }}
+                  style={{ width: 120, height: 120, borderRadius: 60 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Ionicons name="person-outline" size={50} color={colors.common.white} />
+              )}
             </View>
-            <TouchableOpacity style={styles.changePhotoButton} activeOpacity={0.9}>
+            <TouchableOpacity
+              style={styles.changePhotoButton}
+              activeOpacity={0.9}
+              onPress={handlePickPhoto}
+              disabled={isLoading}>
               <Ionicons name="cloud-upload-outline" size={18} color={colors.secondary[500]} />
               <Text variant="sm-medium" style={styles.changePhotoText}>
                 Change Photo
@@ -202,6 +421,7 @@ const EditProfile = () => {
             onChangeText={value => handleInputChange('email', value)}
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={false}
             leftIcon={<Ionicons name="mail-outline" size={20} color={colors.text.secondary} />}
             rightIcon={
               <Ionicons name="checkmark-circle" size={20} color={colors.status.success} />
@@ -209,9 +429,9 @@ const EditProfile = () => {
             containerStyle={styles.inputField}
           />
           <View style={styles.emailVerificationNote}>
-            <Ionicons name="shield-checkmark-outline" size={14} color={colors.accent.blue} />
+            <Ionicons name="information-circle-outline" size={14} color={colors.accent.blue} />
             <Text variant="xs-normal" style={styles.emailVerificationText}>
-              Email changes require verification
+              Email cannot be changed from here. Contact support if needed.
             </Text>
           </View>
 
@@ -228,11 +448,12 @@ const EditProfile = () => {
             <Text variant="sm-medium" style={styles.dropdownLabel}>
               City / Town *
             </Text>
-            <Dropdown
-              options={cityOptions}
+            <CityDropdown
               selectedValue={formData.city}
               onSelect={value => handleInputChange('city', value)}
               placeholder="Select city"
+              includeAllOption={false}
+              valueFormat="capitalized"
               buttonStyle={styles.dropdownField}
               buttonTextStyle={styles.dropdownValue}
             />
@@ -500,7 +721,7 @@ const EditProfile = () => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionItem} activeOpacity={0.9}>
+          <TouchableOpacity style={styles.actionItem} activeOpacity={0.9} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={20} color={colors.text.primary} />
             <Text variant="md-medium" style={styles.actionItemText}>
               Log Out
@@ -542,16 +763,27 @@ const EditProfile = () => {
           <TouchableOpacity
             style={styles.cancelButton}
             activeOpacity={0.9}
-            onPress={() => navigation.goBack()}>
+            onPress={() => navigation.goBack()}
+            disabled={isLoading}>
             <Text variant="md-semibold" style={styles.cancelButtonText}>
               Cancel
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} activeOpacity={0.9}>
-            <Ionicons name="save-outline" size={18} color={colors.common.white} />
-            <Text variant="md-semibold" style={styles.saveButtonText}>
-              Save Changes
-            </Text>
+          <TouchableOpacity
+            style={[styles.saveButton, isLoading && { opacity: 0.6 }]}
+            activeOpacity={0.9}
+            onPress={handleSave}
+            disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.common.white} />
+            ) : (
+              <>
+                <Ionicons name="save-outline" size={18} color={colors.common.white} />
+                <Text variant="md-semibold" style={styles.saveButtonText}>
+                  Save Changes
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

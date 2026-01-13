@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text } from '@/components/atoms';
-import { SearchBar, ListingCard, Dropdown } from '@/components/molecules';
+import { SearchBar, ListingCard, CityDropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
@@ -32,14 +32,6 @@ const categoryMap: Record<string, string> = {
   education: 'Education',
   services: 'Services',
 };
-
-const cityOptions = [
-  { label: 'All Cities', value: 'all' },
-  { label: 'London', value: 'london' },
-  { label: 'Birmingham', value: 'birmingham' },
-  { label: 'Manchester', value: 'manchester' },
-  { label: 'Leeds', value: 'leeds' },
-];
 
 const Directory = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -212,11 +204,12 @@ const Directory = () => {
             value={searchValue}
             onChangeText={handleSearchChange}
           />
-          <Dropdown
-            options={cityOptions}
+          <CityDropdown
             selectedValue={selectedCity}
             onSelect={handleCityChange}
             placeholder="All Cities"
+            includeAllOption={true}
+            valueFormat="lowercase"
             buttonStyle={styles.citySelector}
             buttonTextStyle={styles.citySelectorText}
           />

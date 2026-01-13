@@ -247,16 +247,52 @@ export const getFeaturedBusinesses = async (limit: number = 10): Promise<Busines
  * Get businesses by owner
  */
 export const getBusinessesByOwner = async (ownerId: string): Promise<Business[]> => {
-    const snapshot = await firebaseFirestore
-        .collection(COLLECTION)
-        .where('ownerId', '==', ownerId)
-        .orderBy('createdAt', 'desc')
-        .get();
-
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Business[];
+    try {
+        // Try with orderBy first
+        try {
+            const query = firebaseFirestore
+                .collection(COLLECTION)
+                .where('ownerId', '==', ownerId)
+                .orderBy('createdAt', 'desc');
+            
+            const snapshot = await query.get();
+            const businesses = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Business[];
+            
+            // Already sorted by Firestore, but ensure consistency
+            return businesses.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+        } catch (error: any) {
+            // If orderBy fails (index missing), fetch without orderBy and sort in memory
+            if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+                console.warn('⚠️ Firestore: Index missing for getBusinessesByOwner, fetching without orderBy');
+                const snapshot = await firebaseFirestore
+                    .collection(COLLECTION)
+                    .where('ownerId', '==', ownerId)
+                    .get();
+                
+                const businesses = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as Business[];
+                
+                return businesses.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateB - dateA;
+                });
+            }
+            throw error;
+        }
+    } catch (error: any) {
+        console.error('❌ Firestore: Error fetching businesses by owner:', error);
+        throw error;
+    }
 };
 
 /**

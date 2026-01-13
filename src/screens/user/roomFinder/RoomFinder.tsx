@@ -4,7 +4,7 @@ import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } f
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
-import { Card, Dropdown, SearchBar } from '@/components/molecules';
+import { Card, CityDropdown, SearchBar } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { RoomItem } from '@/navigation/types';
@@ -14,14 +14,6 @@ import { fetchRooms, resetRooms } from '@/store/slices/roomsSlice';
 import type { Room } from '@/types/firestore';
 
 type RoomType = 'all' | 'single' | 'double' | 'studio' | 'shared';
-
-const cityOptions = [
-  { label: 'All Cities', value: 'all' },
-  { label: 'London', value: 'london' },
-  { label: 'Birmingham', value: 'birmingham' },
-  { label: 'Manchester', value: 'manchester' },
-  { label: 'Leeds', value: 'leeds' },
-];
 
 const rentOptions = [
   { label: '£500', value: 500 },
@@ -314,10 +306,11 @@ const RoomFinder = () => {
               <Text variant="md-medium" style={styles.filterLabel}>
                 City
               </Text>
-              <Dropdown
-                options={cityOptions}
+              <CityDropdown
                 selectedValue={selectedCity}
                 onSelect={handleCityChange}
+                includeAllOption={true}
+                valueFormat="lowercase"
                 buttonStyle={styles.cityDropdown}
               />
             </View>

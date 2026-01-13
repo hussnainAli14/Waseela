@@ -29,6 +29,7 @@ export type MainStackParamList = {
   SellItem: undefined;
   PostRoom: undefined;
   JoinProfessionalNetwork: undefined;
+  UserProfessionalProfiles: undefined;
   CommunityGuidelines: undefined;
   Details: {
     listing: ListingItem;

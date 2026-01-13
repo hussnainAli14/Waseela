@@ -261,16 +261,52 @@ export const getFeaturedServices = async (limit: number = 10): Promise<Service[]
  * Get services by provider
  */
 export const getServicesByProvider = async (providerId: string): Promise<Service[]> => {
-    const snapshot = await firebaseFirestore
-        .collection(COLLECTION)
-        .where('providerId', '==', providerId)
-        .orderBy('createdAt', 'desc')
-        .get();
-
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Service[];
+    try {
+        // Try with orderBy first
+        try {
+            const query = firebaseFirestore
+                .collection(COLLECTION)
+                .where('providerId', '==', providerId)
+                .orderBy('createdAt', 'desc');
+            
+            const snapshot = await query.get();
+            const services = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Service[];
+            
+            // Already sorted by Firestore, but ensure consistency
+            return services.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+        } catch (error: any) {
+            // If orderBy fails (index missing), fetch without orderBy and sort in memory
+            if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+                console.warn('⚠️ Firestore: Index missing for getServicesByProvider, fetching without orderBy');
+                const snapshot = await firebaseFirestore
+                    .collection(COLLECTION)
+                    .where('providerId', '==', providerId)
+                    .get();
+                
+                const services = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as Service[];
+                
+                return services.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateB - dateA;
+                });
+            }
+            throw error;
+        }
+    } catch (error: any) {
+        console.error('❌ Firestore: Error fetching services by provider:', error);
+        throw error;
+    }
 };
 
 /**

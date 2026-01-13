@@ -25,6 +25,7 @@ import {
   PostRoom,
   JoinProfessionalNetwork,
   ProfessionalNetwork,
+  UserProfessionalProfiles,
   BuySell,
 } from '@/screens';
 import { colors } from '@/theme';
@@ -55,6 +56,17 @@ const HomeStackNavigator = () => (
       options={{
         headerShown: true,
         title: 'Professional Profile',
+        headerTitleStyle: {
+          fontFamily: 'Outfit-Semibold',
+        },
+      }}
+    />
+    <HomeStack.Screen
+      name="UserProfessionalProfiles"
+      component={UserProfessionalProfiles}
+      options={{
+        headerShown: true,
+        title: 'My Professional Profiles',
         headerTitleStyle: {
           fontFamily: 'Outfit-Semibold',
         },
@@ -117,6 +129,22 @@ const ProfileStackNavigator = () => (
       name="ProfessionalNetwork"
       component={ProfessionalNetwork}
       options={{ headerShown: true, title: 'Professional Network' }}
+    />
+    <ProfileStack.Screen
+      name="UserProfessionalProfiles"
+      component={UserProfessionalProfiles}
+      options={{ headerShown: true, title: 'My Professional Profiles' }}
+    />
+    <ProfileStack.Screen
+      name="ProfessionalProfile"
+      component={ProfessionalProfile}
+      options={{
+        headerShown: true,
+        title: 'Professional Profile',
+        headerTitleStyle: {
+          fontFamily: 'Outfit-Semibold',
+        },
+      }}
     />
     <ProfileStack.Screen
       name="CommunityGuidelines"

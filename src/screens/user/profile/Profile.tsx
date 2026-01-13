@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, ScrollView, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -6,12 +6,20 @@ import { Text } from '@/components/atoms';
 import { ExpandableDashboardSection } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './styles';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ListingItem, MarketItem, RoomItem } from '@/navigation/types';
 import { useSignOut } from '@/hooks/useSignOut';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { createAllTestData } from '@/utils/createTestData';
+import { fetchUserBusinesses } from '@/store/slices/businessesSlice';
+import { fetchUserServices } from '@/store/slices/servicesSlice';
+import { fetchUserProducts } from '@/store/slices/productsSlice';
+import { fetchUserRooms } from '@/store/slices/roomsSlice';
+import { fetchUserProfessional, fetchUserProfessionals } from '@/store/slices/professionalsSlice';
+import { firebaseFirestore } from '@/config/firebase';
+import type { Product, Room } from '@/types/firestore';
+import { getSavedItems } from '@/services/firestore/savedListings';
 
 type ListingStatus = 'approved' | 'pending';
 
@@ -20,6 +28,8 @@ type Listing = {
   title: string;
   category: string;
   status: ListingStatus;
+  image?: string;
+  type: 'business' | 'service';
 };
 
 type SavedListing = {
@@ -30,65 +40,6 @@ type SavedListing = {
   image?: string;
 };
 
-const listings: Listing[] = [
-  {
-    id: '1',
-    title: 'My Halal Store',
-    category: 'Retail',
-    status: 'approved',
-  },
-  {
-    id: '2',
-    title: 'Ahmad Plumbing Services',
-    category: 'Plumber',
-    status: 'pending',
-  },
-];
-
-const savedListings: SavedListing[] = [
-  {
-    id: '1',
-    title: 'Al-Zahra Restaurant',
-    category: 'Food',
-    location: 'London',
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '2',
-    title: 'Fatima Ahmed',
-    category: 'Quran Tutor',
-    location: 'London',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
-  },
-];
-
-const buySellItems: MarketItem[] = [
-  {
-    id: 'bs1',
-    title: 'Modern Dining Table Set',
-    price: '£250',
-    location: 'London',
-    condition: 'Good',
-    category: 'Furniture',
-    image: 'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=600&q=80',
-  },
-];
-
-const roomListings: RoomItem[] = [
-  {
-    id: 'r1',
-    title: 'Cozy Single Room',
-    city: 'London',
-    type: 'single',
-    price: 450,
-    priceLabel: '£450/month',
-    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80',
-    billsIncluded: true,
-    locationLine1: 'Central London',
-    locationLine2: 'Zone 1',
-  },
-];
-
 type ProfileScreenNavigation = NativeStackNavigationProp<any>;
 
 const ListingSeparator = () => <View style={styles.listingSeparator} />;
@@ -97,13 +48,248 @@ const Profile = () => {
   const navigation = useNavigation<ProfileScreenNavigation>();
   const { handleSignOut } = useSignOut();
   const { user } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
+
+  // Redux state
+  const { userBusinesses, isUserBusinessesLoading } = useAppSelector(state => state.businesses);
+  const { userServices, isUserServicesLoading } = useAppSelector(state => state.services);
+  const { userProducts, isUserProductsLoading } = useAppSelector(state => state.products);
+  const { userRooms, isUserRoomsLoading } = useAppSelector(state => state.rooms);
+  const {
+    userProfessional,
+    userProfessionals,
+    isLoading: isProfessionalLoading,
+    isUserProfessionalsLoading,
+  } = useAppSelector(state => state.professionals);
+
+  // Debug: Log Redux state
+  useEffect(() => {
+      console.log('📦 Profile: Redux state:', {
+      userBusinesses: userBusinesses.length,
+      userServices: userServices.length,
+      userProducts: userProducts.length,
+      userRooms: userRooms.length,
+      userProfessional: userProfessional ? 'exists' : 'null',
+      userProfessionals: userProfessionals.length,
+      isLoading: {
+        businesses: isUserBusinessesLoading,
+        services: isUserServicesLoading,
+        products: isUserProductsLoading,
+        rooms: isUserRoomsLoading,
+        professional: isProfessionalLoading,
+        professionalProfiles: isUserProfessionalsLoading,
+      },
+    });
+  }, [
+    userBusinesses,
+    userServices,
+    userProducts,
+    userRooms,
+    userProfessional,
+    userProfessionals,
+    isUserBusinessesLoading,
+    isUserServicesLoading,
+    isUserProductsLoading,
+    isUserRoomsLoading,
+    isProfessionalLoading,
+    isUserProfessionalsLoading,
+  ]);
+
+  // Local state
+  const [userProfile, setUserProfile] = useState<{ location?: string; phone?: string }>({});
+  const [savedListings, setSavedListings] = useState<SavedListing[]>([]);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isCreatingTestData, setIsCreatingTestData] = useState(false);
 
   // Use user data from Redux, fallback to default values
   const displayName = user?.displayName || 'User';
-  const userLocation = 'London, UK'; // You can store this in Firestore user document
+  const userLocation = userProfile.location || 'London, UK';
 
-  // Dev: Test data creation
-  const [isCreatingTestData, setIsCreatingTestData] = useState(false);
+  // Fetch all user data function (reusable)
+  const fetchAllData = useCallback(async () => {
+    if (!user?.uid) {
+      console.log('❌ Profile: No user UID available');
+      return;
+    }
+
+    setIsLoadingProfile(true);
+    console.log('🔍 Profile: Fetching data for user:', user.uid);
+    try {
+      // Fetch user businesses, services, marketplace items, rooms, and professional profiles
+      const results = await Promise.allSettled([
+        dispatch(fetchUserBusinesses(user.uid)),
+        dispatch(fetchUserServices(user.uid)),
+        dispatch(fetchUserProducts(user.uid)),
+        dispatch(fetchUserRooms(user.uid)),
+        dispatch(fetchUserProfessional(user.uid)),
+        dispatch(fetchUserProfessionals(user.uid)),
+      ]);
+      
+      console.log('✅ Profile: Fetch results:', {
+        businesses: results[0].status === 'fulfilled' ? 'Success' : results[0].reason,
+        services: results[1].status === 'fulfilled' ? 'Success' : results[1].reason,
+        products: results[2].status === 'fulfilled' ? 'Success' : results[2].reason,
+        rooms: results[3].status === 'fulfilled' ? 'Success' : results[3].reason,
+        professional: results[4].status === 'fulfilled' ? 'Success' : results[4].reason,
+        professionalProfiles: results[5].status === 'fulfilled' ? 'Success' : results[5].reason,
+      });
+
+      // Log any errors
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const names = ['businesses', 'services', 'products', 'rooms', 'professional', 'professionalProfiles'];
+          console.error(`❌ Profile: Error fetching ${names[index]}:`, result.reason);
+        }
+      });
+
+      // Fetch user profile data from Firestore
+      try {
+        const userDoc = await firebaseFirestore.collection('users').doc(user.uid).get();
+        const userData = userDoc.data();
+        if (userData) {
+          setUserProfile({
+            location: userData.location || '',
+            phone: userData.phone || '',
+          });
+        }
+      } catch (error) {
+        console.warn('Error fetching user profile:', error);
+      }
+
+      // Fetch saved listings (simplified - just get count for now)
+      try {
+        await getSavedItems(user.uid);
+        // For now, we'll just show the count. Full implementation would require fetching each item
+        setSavedListings([]);
+      } catch (error) {
+        console.warn('Error fetching saved listings:', error);
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, [user?.uid, dispatch]);
+
+  // Fetch all user data on mount and when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchAllData();
+    }, [fetchAllData])
+  );
+
+  // Combine businesses and services into listings
+  const listings = useMemo(() => {
+    console.log('📊 Profile: Building listings from:', {
+      userBusinesses: userBusinesses.length,
+      userServices: userServices.length,
+      userBusinessesData: userBusinesses,
+      userServicesData: userServices,
+    });
+
+    const businessListings: Listing[] = userBusinesses.map(business => ({
+      id: business.id,
+      title: business.name,
+      category: business.category,
+      status: business.status === 'approved' ? 'approved' : 'pending',
+      image: business.images[0] || business.logoUrl || 'https://via.placeholder.com/150',
+      type: 'business' as const,
+    }));
+
+    const serviceListings: Listing[] = userServices.map(service => ({
+      id: service.id,
+      title: service.name,
+      category: service.serviceType || 'Service',
+      status: service.status === 'approved' ? 'approved' : 'pending',
+      image: service.images[0] || service.profilePhoto || 'https://via.placeholder.com/150',
+      type: 'service' as const,
+    }));
+
+    const combined = [...businessListings, ...serviceListings];
+    console.log('📋 Profile: Combined listings:', combined.length);
+    return combined;
+  }, [userBusinesses, userServices]);
+
+  // Convert products to MarketItem format
+  const buySellItems = useMemo(() => {
+    const conditionMap: Record<string, string> = {
+      'new': 'New',
+      'like-new': 'Like New',
+      'good': 'Good',
+      'fair': 'Fair',
+      'needs-repair': 'Needs Repair',
+    };
+
+    return userProducts.map((product: Product): MarketItem => ({
+      id: product.id,
+      title: product.title,
+      price: `£${product.price}`,
+      location: product.city,
+      condition: conditionMap[product.condition] || product.condition,
+      category: product.category,
+      image: product.images[0] || 'https://via.placeholder.com/600',
+      description: product.description,
+      safetyTips: [
+        'Meet in a public place',
+        'Check the item before paying',
+        'Never share sensitive information',
+      ],
+    }));
+  }, [userProducts]);
+
+  // Convert rooms to RoomItem format
+  const roomListings = useMemo(() => {
+    console.log('🏠 Profile: Converting rooms:', {
+      userRoomsCount: userRooms.length,
+      userRoomsData: userRooms,
+    });
+
+    const mapped = userRooms.map((room: Room): RoomItem => {
+      const availableFromDate = typeof room.availableFrom === 'string'
+        ? new Date(room.availableFrom)
+        : (room.availableFrom && typeof room.availableFrom.toDate === 'function' ? room.availableFrom.toDate() : new Date());
+
+      return {
+        id: room.id,
+        title: room.title,
+        city: room.city,
+        type: room.type,
+        price: room.price,
+        priceLabel: room.priceLabel || `£${room.price}/month`,
+        image: room.images[0] || 'https://via.placeholder.com/600',
+        billsIncluded: room.billsIncluded || false,
+        locationLine1: room.locationLine1,
+        locationLine2: room.locationLine2 || '',
+        description: room.description,
+        amenities: room.amenities || [],
+        availableFrom: availableFromDate.toLocaleDateString('en-GB', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+      };
+    });
+    console.log('🏠 Profile: Mapped roomListings:', mapped.length);
+    return mapped;
+  }, [userRooms]);
+
+  // Derived data: user's professional profiles (support multiple profiles)
+  const professionalProfiles = useMemo(() => {
+    if (userProfessionals && userProfessionals.length > 0) {
+      return userProfessionals;
+    }
+    return userProfessional ? [userProfessional] : [];
+  }, [userProfessional, userProfessionals]);
+
+  // Check if data is loading
+  const isLoading =
+    isUserBusinessesLoading ||
+    isUserServicesLoading ||
+    isUserProductsLoading ||
+    isUserRoomsLoading ||
+    isProfessionalLoading ||
+    isUserProfessionalsLoading ||
+    isLoadingProfile;
 
   const handleCreateTestData = async () => {
     Alert.alert(
@@ -129,82 +315,109 @@ const Profile = () => {
     );
   };
 
-  const buildListingItem = (item: Listing): ListingItem => ({
-    id: item.id,
-    name: item.title,
-    category: item.category,
-    location: 'London',
-    rating: item.id === '1' ? 4.8 : 4.5,
-    reviews: item.id === '1' ? 120 : 58,
-    verified: item.id === '1',
-    image:
-      item.id === '1'
-        ? 'https://images.unsplash.com/photo-1580915411954-282cb1c9c450?auto=format&fit=crop&w=600&q=80'
-        : 'https://images.unsplash.com/photo-1508873696983-2dfd5898f08b?auto=format&fit=crop&w=600&q=80',
-  });
+  const buildListingItem = useCallback((item: Listing): ListingItem => {
+    const originalBusiness = userBusinesses.find(b => b.id === item.id && item.type === 'business');
+    const originalService = userServices.find(s => s.id === item.id && item.type === 'service');
 
-  const handleViewListing = (item: Listing) => {
+    if (originalBusiness) {
+      return {
+        id: originalBusiness.id,
+        name: originalBusiness.name,
+        category: originalBusiness.category,
+        location: originalBusiness.city,
+        rating: originalBusiness.rating || 0,
+        reviews: originalBusiness.reviewCount || 0,
+        verified: originalBusiness.verified || false,
+        image: originalBusiness.images[0] || originalBusiness.logoUrl || 'https://via.placeholder.com/600',
+      };
+    } else if (originalService) {
+      return {
+        id: originalService.id,
+        name: originalService.name,
+        category: originalService.serviceType || 'Service',
+        location: originalService.city,
+        rating: originalService.rating || 0,
+        reviews: originalService.reviewCount || 0,
+        verified: originalService.verified || false,
+        image: originalService.images[0] || originalService.profilePhoto || 'https://via.placeholder.com/600',
+      };
+    }
+
+    // Fallback
+    return {
+      id: item.id,
+      name: item.title,
+      category: item.category,
+      location: 'London',
+      rating: 0,
+      reviews: 0,
+      verified: false,
+      image: item.image || 'https://via.placeholder.com/600',
+    };
+  }, [userBusinesses, userServices]);
+
+  const handleViewListing = useCallback((item: Listing) => {
     const listingForDetails = buildListingItem(item);
     navigation.navigate('Details', { listing: listingForDetails });
-  };
+  }, [navigation, buildListingItem]);
 
-  const renderListingItem = ({ item }: { item: Listing }) => (
-    <View style={styles.listingCard}>
-      <Image
-        source={{
-          uri: item.id === '1'
-            ? 'https://images.unsplash.com/photo-1580915411954-282cb1c9c450?auto=format&fit=crop&w=600&q=80'
-            : 'https://images.unsplash.com/photo-1508873696983-2dfd5898f08b?auto=format&fit=crop&w=600&q=80'
-        }}
-        resizeMode="cover"
-        style={styles.listingImagePlaceholder}
-      />
-      <View style={styles.listingInfo}>
-        <View style={styles.listingHeaderRow}>
-          <Text variant="md-semibold" style={styles.listingTitle}>
-            {item.title}
+  const renderListingItem = ({ item }: { item: Listing }) => {
+    return (
+      <View style={styles.listingCard}>
+        <Image
+          source={{
+            uri: item.image || 'https://via.placeholder.com/150'
+          }}
+          resizeMode="cover"
+          style={styles.listingImagePlaceholder}
+        />
+        <View style={styles.listingInfo}>
+          <View style={styles.listingHeaderRow}>
+            <Text variant="md-semibold" style={styles.listingTitle}>
+              {item.title}
+            </Text>
+            {item.status === 'approved' && (
+              <TouchableOpacity onPress={() => handleViewListing(item)}>
+                <Text variant="sm-medium" style={styles.listingActionText}>
+                  View
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <Text variant="sm-normal" style={styles.listingSubtitle}>
+            {item.category}
           </Text>
-          {item.status === 'approved' && (
-            <TouchableOpacity onPress={() => handleViewListing(item)}>
-              <Text variant="sm-medium" style={styles.listingActionText}>
-                View
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-        <Text variant="sm-normal" style={styles.listingSubtitle}>
-          {item.category}
-        </Text>
-        <View style={styles.listingStatusRow}>
-          <Ionicons
-            name={item.status === 'approved' ? 'checkmark-circle' : 'time-outline'}
-            size={14}
-            color={
-              item.status === 'approved'
-                ? colors.status.success
-                : colors.status.warning
-            }
-          />
-          <View
-            style={
-              item.status === 'approved'
-                ? styles.statusPillApproved
-                : styles.statusPillPending
-            }>
-            <Text
-              variant="sm-medium"
+          <View style={styles.listingStatusRow}>
+            <Ionicons
+              name={item.status === 'approved' ? 'checkmark-circle' : 'time-outline'}
+              size={14}
+              color={
+                item.status === 'approved'
+                  ? colors.status.success
+                  : colors.status.warning
+              }
+            />
+            <View
               style={
                 item.status === 'approved'
-                  ? styles.statusPillTextApproved
-                  : styles.statusPillTextPending
+                  ? styles.statusPillApproved
+                  : styles.statusPillPending
               }>
-              {item.status === 'approved' ? 'Approved' : 'Pending'}
-            </Text>
+              <Text
+                variant="sm-medium"
+                style={
+                  item.status === 'approved'
+                    ? styles.statusPillTextApproved
+                    : styles.statusPillTextPending
+                }>
+                {item.status === 'approved' ? 'Approved' : 'Pending'}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderSavedListingItem = ({ item }: { item: SavedListing }) => (
     <View style={styles.listingCard}>
@@ -301,6 +514,97 @@ const Profile = () => {
     </TouchableOpacity>
   );
 
+  const handleViewProfessionalProfile = useCallback(
+    (professional: any) => {
+      const yearsExperience = professional.experience
+        ? parseInt(professional.experience.match(/\d+/)?.[0] || '0', 10)
+        : 0;
+
+      const profileData = {
+        id: professional.id,
+        name: professional.fullName,
+        title: professional.profession,
+        company: professional.company || '',
+        industry: professional.industry,
+        city: professional.location,
+        yearsExperience,
+        tags: professional.skills || [],
+        avatar: professional.profilePhoto || 'https://via.placeholder.com/300',
+        about: professional.bio,
+        expertise: professional.skills,
+        helpTitle: undefined,
+        helpDescription: undefined,
+        linkedinUrl: professional.linkedIn,
+      };
+
+      navigation.navigate('ProfessionalProfile', { professional: profileData });
+    },
+    [navigation],
+  );
+
+  const renderProfessionalProfileItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.listingCard}
+      activeOpacity={0.9}
+      onPress={() => handleViewProfessionalProfile(item)}>
+      <View style={styles.listingInfo}>
+        <View style={styles.listingHeaderRow}>
+          <Text variant="md-semibold" style={styles.listingTitle}>
+            {item.fullName}
+          </Text>
+          <TouchableOpacity onPress={() => handleViewProfessionalProfile(item)}>
+            <Text variant="sm-medium" style={styles.listingActionText}>
+              View
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text variant="sm-normal" style={styles.listingSubtitle}>
+          {item.profession}
+        </Text>
+        <View style={styles.listingStatusRow}>
+          <Ionicons
+            name={item.status === 'approved' ? 'checkmark-circle' : 'time-outline'}
+            size={14}
+            color={
+              item.status === 'approved'
+                ? colors.status.success
+                : colors.status.warning
+            }
+          />
+          <View
+            style={
+              item.status === 'approved'
+                ? styles.statusPillApproved
+                : styles.statusPillPending
+            }>
+            <Text
+              variant="sm-medium"
+              style={
+                item.status === 'approved'
+                  ? styles.statusPillTextApproved
+                  : styles.statusPillTextPending
+              }>
+              {item.status === 'approved' ? 'Approved' : 'Pending'}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (isLoading && listings.length === 0 && buySellItems.length === 0 && roomListings.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.primary[500]} />
+          <Text variant="sm-normal" style={{ marginTop: 10, color: colors.text.secondary }}>
+            Loading profile...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView
@@ -391,11 +695,13 @@ const Profile = () => {
             renderItem={renderListingItem}
             keyExtractor={item => item.id}
             rightContent={
-              <View style={styles.pendingTag}>
-                <Text variant="xs-medium" style={styles.pendingTagText}>
-                  1 Pending
-                </Text>
-              </View>
+              listings.filter(l => l.status === 'pending').length > 0 ? (
+                <View style={styles.pendingTag}>
+                  <Text variant="xs-medium" style={styles.pendingTagText}>
+                    {listings.filter(l => l.status === 'pending').length} Pending
+                  </Text>
+                </View>
+              ) : null
             }
             emptyMessage="No business listings found"
           />
@@ -424,34 +730,17 @@ const Profile = () => {
             emptyMessage="No room listings found"
           />
 
-          <TouchableOpacity
-            style={styles.dashboardCard}
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate('ProfessionalNetwork')}>
-            <View style={[styles.dashboardCardIcon, { backgroundColor: colors.accent.purple + '20' }]}>
-              <Ionicons
-                name="briefcase-outline"
-                size={20}
-                color={colors.accent.purple}
-              />
-            </View>
-            <View style={styles.dashboardCardContent}>
-              <Text variant="md-semibold" style={styles.dashboardCardTitle}>
-                Professional Profile
-              </Text>
-              <Text variant="sm-normal" style={styles.dashboardCardSubtitle}>
-                45 connections
-              </Text>
-            </View>
-            <View style={styles.dashboardCardRight}>
-              <View style={styles.statusPillApproved}>
-                <Text variant="xs-medium" style={styles.statusPillTextApproved}>
-                  Approved
-                </Text>
-              </View>
-              <Ionicons name="eye-outline" size={18} color={colors.text.secondary} />
-            </View>
-          </TouchableOpacity>
+          <ExpandableDashboardSection
+            title="Professional Profiles"
+            subtitle={`${professionalProfiles.length} profile${professionalProfiles.length !== 1 ? 's' : ''}`}
+            iconName="briefcase-outline"
+            iconColor={colors.accent.purple}
+            iconBackgroundColor={colors.accent.purple + '20'}
+            data={professionalProfiles}
+            renderItem={renderProfessionalProfileItem}
+            keyExtractor={item => item.id}
+            emptyMessage="No professional profiles found"
+          />
         </View>
         <View style={styles.sectionWrapper}>
           <View style={styles.sectionHeaderRow}>

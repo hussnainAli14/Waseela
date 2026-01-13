@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, Button, Checkbox, TextField } from '@/components/atoms';
-import { Dropdown } from '@/components/molecules';
+import { Dropdown, CityDropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
@@ -130,8 +130,8 @@ const SubmitListing: React.FC = () => {
       Alert.alert('Validation Error', `Please select ${listingType === 'business' ? 'a category' : 'a service type'}.`);
       return false;
     }
-    if (!city.trim()) {
-      Alert.alert('Validation Error', 'Please enter the city.');
+    if (!city) {
+      Alert.alert('Validation Error', 'Please select a city.');
       return false;
     }
     if (!description.trim()) {
@@ -449,13 +449,18 @@ const SubmitListing: React.FC = () => {
         </View>
 
         <View style={styles.fieldGroup}>
-          <TextField
-            label="City"
-            placeholder="e.g., London, Birmingham, Leicester"
-            containerStyle={styles.inputSpacing}
-            value={city}
-            onChangeText={setCity}
-          />
+          <View style={styles.inputSpacing}>
+            <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
+              City *
+            </Text>
+            <CityDropdown
+              selectedValue={city}
+              onSelect={setCity}
+              placeholder="Select city"
+              includeAllOption={false}
+              valueFormat="capitalized"
+            />
+          </View>
           <TextField
             label="Description"
             placeholder="Describe what you offer, your experience, specialties, and what makes you unique..."

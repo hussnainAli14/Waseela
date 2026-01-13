@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, Button, Checkbox, TextField } from '@/components/atoms';
-import { Dropdown } from '@/components/molecules';
+import { Dropdown, CityDropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './PostRoom.styles';
 import {
@@ -317,11 +317,15 @@ const PostRoom: React.FC = () => {
           />
           <View style={[styles.row, { marginTop: 8 }]}>
             <View style={styles.halfInput}>
-              <TextField
-                label="City"
-                placeholder="e.g., London"
-                value={city}
-                onChangeText={setCity}
+              <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
+                City *
+              </Text>
+              <CityDropdown
+                selectedValue={city}
+                onSelect={setCity}
+                placeholder="Select city"
+                includeAllOption={false}
+                valueFormat="capitalized"
               />
             </View>
             <View style={styles.halfInput}>

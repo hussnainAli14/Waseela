@@ -4,16 +4,15 @@ import { colors } from '@/theme';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.common.white,
+    backgroundColor: colors.background.lightSecondary,
   },
   header: {
-    backgroundColor: colors.accent.blueDark,
+    backgroundColor: colors.accent.purple,
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 20,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    gap: 12,
   },
   headerTitle: {
     color: colors.common.white,
@@ -22,76 +21,25 @@ export const styles = StyleSheet.create({
   headerSubtitle: {
     color: colors.common.white,
     textAlign: 'center',
+    marginTop: 4,
+    opacity: 0.9,
   },
-  searchBlock: {
-    gap: 12,
-  },
-  searchBar: {
-    backgroundColor: colors.common.white,
-  },
-  joinButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    backgroundColor: colors.common.white,
-    borderRadius: 18,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  joinButtonText: {
-    color: colors.accent.blueDark,
-    fontFamily: 'Outfit-Medium',
-  },
-  filtersSection: {
-    paddingTop: 20,
-    paddingBottom: 12,
-    gap: 16,
-    backgroundColor: colors.common.white,
-  },
-  filterBlock: {
-    gap: 8,
-  },
-  filterLabel: {
-    color: colors.text.primary,
-  },
-  dropdownButton: {
-    backgroundColor: colors.background.light,
-  },
-  mentorToggleRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: colors.background.light,
   },
-  mentorToggleLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  mentorIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.background.lightSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleSubtitle: {
-    color: colors.text.secondary,
-  },
-  resultsText: {
+  loadingText: {
+    marginTop: 10,
     color: colors.text.secondary,
   },
   listContent: {
     paddingHorizontal: 16,
+    paddingTop: 20,
     paddingBottom: 24,
-    gap: 12,
   },
   separator: {
-    height: 4,
+    height: 12,
   },
   professionalCard: {
     borderRadius: 18,
@@ -106,7 +54,6 @@ export const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 8,
   },
   avatarWrapper: {
     width: 56,
@@ -135,6 +82,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+    marginTop: 8,
     marginBottom: 8,
   },
   tagChip: {
@@ -172,6 +120,56 @@ export const styles = StyleSheet.create({
   metaText: {
     color: colors.text.secondary,
   },
+  statusRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusPillApproved: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: colors.status.success + '20',
+    alignSelf: 'flex-start',
+  },
+  statusPillPending: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: colors.status.warning + '20',
+    alignSelf: 'flex-start',
+  },
+  statusPillTextApproved: {
+    color: colors.status.success,
+  },
+  statusPillTextPending: {
+    color: colors.status.warning,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    marginTop: 10,
+    color: colors.text.primary,
+  },
+  emptySubtitle: {
+    marginTop: 5,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  joinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent.purple,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 20,
+    gap: 8,
+  },
+  joinButtonText: {
+    color: colors.common.white,
+  },
 });
-
-

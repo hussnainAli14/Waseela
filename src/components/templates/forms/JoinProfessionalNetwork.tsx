@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, Button, Checkbox, TextField } from '@/components/atoms';
-import { Dropdown } from '@/components/molecules';
+import { Dropdown, CityDropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './JoinProfessionalNetwork.styles';
 import {
@@ -102,8 +102,8 @@ const JoinProfessionalNetwork: React.FC = () => {
       Alert.alert('Validation Error', 'Please select an industry.');
       return false;
     }
-    if (!location.trim()) {
-      Alert.alert('Validation Error', 'Please enter your location.');
+    if (!location) {
+      Alert.alert('Validation Error', 'Please select your location.');
       return false;
     }
     if (!bio.trim()) {
@@ -287,12 +287,18 @@ const JoinProfessionalNetwork: React.FC = () => {
               buttonStyle={styles.dropdownButton}
               buttonTextStyle={styles.dropdownText}
             />
-            <TextField
-              label="Location"
-              placeholder="e.g., London"
-              value={location}
-              onChangeText={setLocation}
-            />
+            <View style={{ marginBottom: 16 }}>
+              <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
+                Location *
+              </Text>
+              <CityDropdown
+                selectedValue={location}
+                onSelect={setLocation}
+                placeholder="Select city"
+                includeAllOption={false}
+                valueFormat="capitalized"
+              />
+            </View>
             <TextField
               label="Years of Experience"
               placeholder="e.g., 10"

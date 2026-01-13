@@ -3,7 +3,7 @@ import { Alert, Image, ScrollView, TouchableOpacity, View, ActivityIndicator } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, Button, TextField } from '@/components/atoms';
-import { Dropdown } from '@/components/molecules';
+import { Dropdown, CityDropdown } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './SellItem.styles';
 import {
@@ -90,8 +90,8 @@ const SellItem: React.FC = () => {
       Alert.alert('Validation Error', 'Please enter the location.');
       return false;
     }
-    if (!city.trim()) {
-      Alert.alert('Validation Error', 'Please enter the city.');
+    if (!city) {
+      Alert.alert('Validation Error', 'Please select a city.');
       return false;
     }
     if (!description.trim()) {
@@ -270,13 +270,18 @@ const SellItem: React.FC = () => {
             onChangeText={setLocation}
             containerStyle={{ marginBottom: 12 }}
           />
-          <TextField
-            label="City"
-            placeholder="e.g., London"
-            value={city}
-            onChangeText={setCity}
-            containerStyle={{ marginBottom: 12 }}
-          />
+          <View style={{ marginBottom: 12 }}>
+            <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
+              City *
+            </Text>
+            <CityDropdown
+              selectedValue={city}
+              onSelect={setCity}
+              placeholder="Select city"
+              includeAllOption={false}
+              valueFormat="capitalized"
+            />
+          </View>
           <TextField
             label="Description"
             placeholder="Describe your item, its condition, and any other relevant details..."

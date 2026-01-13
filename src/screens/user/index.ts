@@ -15,3 +15,4 @@ export * from './submitListing';
 export * from './sellItem';
 export * from './postRoom';
 export * from './joinProfessionalNetwork';
+export * from './userProfessionalProfiles';

@@ -12,9 +12,11 @@ interface ProfessionalsFilters {
 interface ProfessionalsState {
     professionals: Professional[];
     userProfessional: Professional | null;
+    userProfessionals: Professional[]; // All professional profiles for the current user
     selectedProfessional: Professional | null;
     isLoading: boolean;
     isUserProfessionalLoading: boolean;
+    isUserProfessionalsLoading: boolean;
     error: string | null;
     filters: ProfessionalsFilters;
     hasMore: boolean;
@@ -24,9 +26,11 @@ interface ProfessionalsState {
 const initialState: ProfessionalsState = {
     professionals: [],
     userProfessional: null,
+    userProfessionals: [],
     selectedProfessional: null,
     isLoading: false,
     isUserProfessionalLoading: false,
+    isUserProfessionalsLoading: false,
     error: null,
     filters: {},
     hasMore: true,
@@ -56,6 +60,18 @@ export const fetchUserProfessional = createAsyncThunk(
         try {
             const professional = await professionalsService.getProfessionalByUserId(userId);
             return professional;
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const fetchUserProfessionals = createAsyncThunk(
+    'professionals/fetchUserProfessionals',
+    async (userId: string, { rejectWithValue }) => {
+        try {
+            const professionals = await professionalsService.getProfessionalsByUserId(userId);
+            return professionals;
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -166,6 +182,20 @@ const professionalsSlice = createSlice({
             })
             .addCase(fetchUserProfessional.rejected, (state, action) => {
                 state.isUserProfessionalLoading = false;
+                state.error = action.payload as string;
+            });
+
+        // Fetch user professionals (all profiles)
+        builder
+            .addCase(fetchUserProfessionals.pending, state => {
+                state.isUserProfessionalsLoading = true;
+            })
+            .addCase(fetchUserProfessionals.fulfilled, (state, action) => {
+                state.isUserProfessionalsLoading = false;
+                state.userProfessionals = action.payload;
+            })
+            .addCase(fetchUserProfessionals.rejected, (state, action) => {
+                state.isUserProfessionalsLoading = false;
                 state.error = action.payload as string;
             });
 

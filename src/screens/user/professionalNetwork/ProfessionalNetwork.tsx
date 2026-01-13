@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, FlatList, TouchableOpacity, Switch, ActivityIndicator, RefreshControl } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp, CommonActions } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
-import { Card, Dropdown, SearchBar } from '@/components/molecules';
+import { Card, CityDropdown, Dropdown, SearchBar } from '@/components/molecules';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { IndustryOption, Professional } from './types';
@@ -19,14 +19,6 @@ const industryOptions: IndustryOption[] = [
   { label: 'Healthcare', value: 'healthcare' },
   { label: 'Finance', value: 'finance' },
   { label: 'Education', value: 'education' },
-];
-
-const cityOptions = [
-  { label: 'All Cities', value: 'all' },
-  { label: 'London', value: 'london' },
-  { label: 'Birmingham', value: 'birmingham' },
-  { label: 'Manchester', value: 'manchester' },
-  { label: 'Leeds', value: 'leeds' },
 ];
 
 // Helper function to convert Firestore Professional to local Professional type
@@ -58,6 +50,7 @@ const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional 
 const ProfessionalNetwork = () => {
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
   const [searchValue, setSearchValue] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState<string>('all');
   const [selectedCity, setSelectedCity] = useState<string>('all');
@@ -193,7 +186,9 @@ const ProfessionalNetwork = () => {
 
   const renderHeader = useMemo(
     () => (
-      <View style={styles.header}>
+      <View style={[
+        styles.header
+      ]}>
         <Text variant="lg-semibold" style={styles.headerTitle}>
           Shia Professionals Network
         </Text>
@@ -244,10 +239,11 @@ const ProfessionalNetwork = () => {
           <Text variant="md-medium" style={styles.filterLabel}>
             Location
           </Text>
-          <Dropdown
-            options={cityOptions}
+          <CityDropdown
             selectedValue={selectedCity}
             onSelect={handleCityChange}
+            includeAllOption={true}
+            valueFormat="lowercase"
             buttonStyle={styles.dropdownButton}
           />
         </View>
@@ -387,7 +383,7 @@ const ProfessionalNetwork = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={[styles.container,{paddingTop: insets.top}]}>
       {renderHeader}
       <FlatList
         data={filteredProfessionals}
@@ -426,7 +422,7 @@ const ProfessionalNetwork = () => {
           ) : null
         }
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

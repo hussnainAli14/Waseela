@@ -148,16 +148,52 @@ export const getProducts = async (
  * Get products by seller ID
  */
 export const getProductsBySeller = async (sellerId: string): Promise<Product[]> => {
-    const snapshot = await firebaseFirestore
-        .collection(COLLECTION)
-        .where('sellerId', '==', sellerId)
-        .orderBy('createdAt', 'desc')
-        .get();
-
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Product[];
+    try {
+        // Try with orderBy first
+        try {
+            const query = firebaseFirestore
+                .collection(COLLECTION)
+                .where('sellerId', '==', sellerId)
+                .orderBy('createdAt', 'desc');
+            
+            const snapshot = await query.get();
+            const products = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Product[];
+            
+            // Already sorted by Firestore, but ensure consistency
+            return products.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+        } catch (error: any) {
+            // If orderBy fails (index missing), fetch without orderBy and sort in memory
+            if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+                console.warn('⚠️ Firestore: Index missing for getProductsBySeller, fetching without orderBy');
+                const snapshot = await firebaseFirestore
+                    .collection(COLLECTION)
+                    .where('sellerId', '==', sellerId)
+                    .get();
+                
+                const products = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as Product[];
+                
+                return products.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateB - dateA;
+                });
+            }
+            throw error;
+        }
+    } catch (error: any) {
+        console.error('❌ Firestore: Error fetching products by seller:', error);
+        throw error;
+    }
 };
 
 /**

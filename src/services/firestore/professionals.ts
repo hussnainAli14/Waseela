@@ -84,6 +84,26 @@ export const getProfessionalByUserId = async (userId: string): Promise<Professio
     } as Professional;
 };
 
+/**
+ * Get all professional profiles for a user
+ */
+export const getProfessionalsByUserId = async (userId: string): Promise<Professional[]> => {
+    try {
+        const snapshot = await firebaseFirestore
+            .collection(COLLECTION)
+            .where('userId', '==', userId)
+            .get();
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        })) as Professional[];
+    } catch (error: any) {
+        console.error('❌ Firestore: Error fetching professionals by user ID:', error);
+        throw error;
+    }
+};
+
 export const getProfessionals = async (
     filters: { industry?: string; location?: string; verified?: boolean } = {},
     limit: number = 20,

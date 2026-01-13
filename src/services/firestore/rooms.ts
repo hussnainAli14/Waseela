@@ -226,16 +226,52 @@ export const getRooms = async (
 };
 
 export const getRoomsByPoster = async (posterId: string): Promise<Room[]> => {
-    const snapshot = await firebaseFirestore
-        .collection(COLLECTION)
-        .where('posterId', '==', posterId)
-        .orderBy('createdAt', 'desc')
-        .get();
-
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Room[];
+    try {
+        // Try with orderBy first
+        try {
+            const query = firebaseFirestore
+                .collection(COLLECTION)
+                .where('posterId', '==', posterId)
+                .orderBy('createdAt', 'desc');
+            
+            const snapshot = await query.get();
+            const rooms = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            })) as Room[];
+            
+            // Already sorted by Firestore, but ensure consistency
+            return rooms.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+        } catch (error: any) {
+            // If orderBy fails (index missing), fetch without orderBy and sort in memory
+            if (error.code === 'failed-precondition' || error.message?.includes('index')) {
+                console.warn('⚠️ Firestore: Index missing for getRoomsByPoster, fetching without orderBy');
+                const snapshot = await firebaseFirestore
+                    .collection(COLLECTION)
+                    .where('posterId', '==', posterId)
+                    .get();
+                
+                const rooms = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as Room[];
+                
+                return rooms.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return dateB - dateA;
+                });
+            }
+            throw error;
+        }
+    } catch (error: any) {
+        console.error('❌ Firestore: Error fetching rooms by poster:', error);
+        throw error;
+    }
 };
 
 export const updateRoom = async (
