@@ -12,37 +12,39 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProducts, resetProducts } from '@/store/slices/productsSlice';
 import type { Product } from '@/types/firestore';
 
-type CategoryItem = { key: string; label: string };
+// Categories managed from Redux
 
-const categoryItems: CategoryItem[] = [
-  { key: 'all', label: 'All' },
-  { key: 'furniture', label: 'Furniture' },
-  { key: 'electronics', label: 'Electronics' },
-  { key: 'clothing', label: 'Clothing' },
-  { key: 'books', label: 'Books' },
-];
 
 const BuySell = () => {
   const dispatch = useAppDispatch();
   const { products, isLoading } = useAppSelector(state => state.products);
+  const { marketplaceCategories } = useAppSelector(state => state.categories);
+
   const [searchValue, setSearchValue] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSold, setShowSold] = useState(false);
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
 
-  // Fetch products on mount
+  // Fetch products and categories on mount
   useEffect(() => {
-    dispatch(resetProducts());
-    dispatch(
-      fetchProducts({
-        filters: {
-          status: 'approved', // Only show approved products
-        },
-        limit: 50,
-      })
-    );
+    dispatch(fetchProducts({
+      filters: {
+        status: 'approved', // Only show approved products
+      },
+      limit: 50,
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Prepare categories for display (prepend 'All')
+  const displayCategories = useMemo(() => {
+    const allOption = { key: 'all', label: 'All' };
+    const dynamicCats = marketplaceCategories.map(cat => ({
+      key: cat.name,
+      label: cat.name,
+    }));
+    return [allOption, ...dynamicCats];
+  }, [marketplaceCategories]);
 
   // Convert Product to MarketItem format
   const convertProductToMarketItem = useCallback((product: Product): MarketItem => {
@@ -72,7 +74,7 @@ const BuySell = () => {
     };
   }, []);
 
-  const renderCategory = ({ item }: { item: CategoryItem }) => (
+  const renderCategory = ({ item }: { item: { key: string; label: string } }) => (
     <TouchableOpacity
       style={[
         styles.categoryChip,
@@ -132,8 +134,8 @@ const BuySell = () => {
       item.condition === 'Like New'
         ? styles.conditionLikeNew
         : item.condition === 'New'
-        ? styles.conditionNew
-        : styles.conditionGood;
+          ? styles.conditionNew
+          : styles.conditionGood;
 
     return (
       <Card
@@ -211,7 +213,7 @@ const BuySell = () => {
 
       <View style={styles.categoryBar}>
         <FlatList
-          data={categoryItems}
+          data={displayCategories}
           keyExtractor={item => item.key}
           renderItem={renderCategory}
           horizontal

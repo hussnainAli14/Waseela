@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, ScrollView, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Linking } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { toMilliseconds } from '@/utils/dateUtils';
 import { Text } from '@/components/atoms';
@@ -12,7 +12,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ListingItem, MarketItem, RoomItem } from '@/navigation/types';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { createAllTestData } from '@/utils/createTestData';
+import { createAllTestData, createTestCategories } from '@/utils/createTestData';
 import { fetchUserBusinesses } from '@/store/slices/businessesSlice';
 import { fetchUserServices } from '@/store/slices/servicesSlice';
 import { fetchUserProducts } from '@/store/slices/productsSlice';
@@ -950,41 +950,112 @@ const Profile = () => {
         </View>
 
         {/* DEV: Create Test Data Button */}
+        {__DEV__ && (
+          <View style={{ paddingHorizontal: 20, marginTop: 20, marginBottom: 16, gap: 10 }}>
+            {/* Seed Categories Button */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary[700],
+                padding: 16,
+                borderRadius: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: isCreatingTestData ? 0.6 : 1,
+              }}
+              onPress={async () => {
+                Alert.alert(
+                  '🌱 Seed Categories',
+                  'This will populate the database with default categories. Continue?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Seed',
+                      onPress: async () => {
+                        setIsCreatingTestData(true);
+                        try {
+                          await createTestCategories();
+                          Alert.alert('✅ Success!', 'Categories seeded successfully!');
+                        } catch (error: any) {
+                          Alert.alert('❌ Error', error.message || 'Failed to seed categories');
+                        } finally {
+                          setIsCreatingTestData(false);
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+              disabled={isCreatingTestData}
+              activeOpacity={0.7}>
+              {isCreatingTestData ? (
+                <ActivityIndicator size="small" color={colors.common.white} />
+              ) : (
+                <Ionicons name="pricetags" size={20} color={colors.common.white} />
+              )}
+              <Text
+                variant="md-semibold"
+                style={{ color: colors.common.white, marginLeft: 10 }}>
+                {isCreatingTestData ? 'Seeding...' : 'DEV: Seed Categories'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Create All Test Data Button */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.accent.purple,
+                padding: 16,
+                borderRadius: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: isCreatingTestData ? 0.6 : 1,
+              }}
+              onPress={handleCreateTestData}
+              disabled={isCreatingTestData}
+              activeOpacity={0.7}>
+              {isCreatingTestData ? (
+                <ActivityIndicator size="small" color={colors.common.white} />
+              ) : (
+                <Ionicons name="flask" size={20} color={colors.common.white} />
+              )}
+              <Text
+                variant="md-semibold"
+                style={{ color: colors.common.white, marginLeft: 10 }}>
+                DEV: Create Test Data
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )
+        }
         <View style={{ paddingHorizontal: 20, marginTop: 20, marginBottom: 16 }}>
           <TouchableOpacity
             style={{
-              backgroundColor: colors.accent.purple,
+              backgroundColor: colors.primary[50],
               padding: 16,
               borderRadius: 12,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: isCreatingTestData ? 0.6 : 1,
+              borderWidth: 1,
+              borderColor: colors.primary[100],
             }}
-            onPress={handleCreateTestData}
-            disabled={isCreatingTestData}
+            onPress={() => {
+              Linking.openURL('mailto:wasila.app313@gmail.com?subject=Issue Regarding Wasila App');
+            }}
             activeOpacity={0.7}>
-            {isCreatingTestData ? (
-              <>
-                <ActivityIndicator size="small" color={colors.common.white} />
-                <Text
-                  variant="md-semibold"
-                  style={{ color: colors.common.white, marginLeft: 10 }}>
-                  Creating...
-                </Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="flask" size={20} color={colors.common.white} />
-                <Text
-                  variant="md-semibold"
-                  style={{ color: colors.common.white, marginLeft: 10 }}>
-                  🧪 DEV: Create Test Data
-                </Text>
-              </>
-            )}
+            <Ionicons name="mail-open-outline" size={24} color={colors.primary[600]} />
+            <View style={{ marginLeft: 12 }}>
+              <Text variant="md-semibold" style={{ color: colors.primary[700] }}>
+                Need Help?
+              </Text>
+              <Text variant="sm-normal" style={{ color: colors.primary[600] }}>
+                Contact Wasila Support
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
+
 
         <View style={styles.logoutButtonWrapper}>
           <TouchableOpacity

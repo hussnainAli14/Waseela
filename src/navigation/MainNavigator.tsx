@@ -195,7 +195,12 @@ const renderServicesIcon = ({ color, size, focused }: { color: string; size: num
   />
 );
 
+import { useCategorySubscription } from '@/hooks';
+
 export const MainNavigator = () => {
+  // Subscribe to category updates globally while authenticated
+  useCategorySubscription();
+
   return (
     <Stack.Navigator
       screenOptions={{

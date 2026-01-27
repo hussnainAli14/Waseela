@@ -3,6 +3,42 @@ import type { Category } from '@/types/firestore';
 
 const COLLECTION = 'categories';
 
+// Real-time subscription
+export const subscribeToCategories = (
+    onUpdate: (categories: Category[]) => void,
+    onError?: (error: any) => void,
+    type?: 'business' | 'service' | 'marketplace'
+): (() => void) => {
+    let query = firebaseFirestore.collection(COLLECTION).where('active', '==', true);
+
+    if (type) {
+        query = query.where('type', '==', type);
+    }
+
+    const unsubscribe = query.orderBy('order', 'asc').onSnapshot(
+        snapshot => {
+            const categories = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    type: data.type,
+                    name: data.name,
+                    icon: data.icon,
+                    order: data.order,
+                    active: data.active,
+                };
+            }) as Category[];
+            onUpdate(categories);
+        },
+        error => {
+            console.error('Error listening to categories:', error);
+            if (onError) onError(error);
+        }
+    );
+
+    return unsubscribe;
+};
+
 export const getCategories = async (
     type?: 'business' | 'service' | 'marketplace'
 ): Promise<Category[]> => {
@@ -14,10 +50,17 @@ export const getCategories = async (
 
     const snapshot = await query.orderBy('order', 'asc').get();
 
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Category[];
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            type: data.type,
+            name: data.name,
+            icon: data.icon,
+            order: data.order,
+            active: data.active,
+        };
+    }) as Category[];
 };
 
 export const getCategory = async (categoryId: string): Promise<Category | null> => {

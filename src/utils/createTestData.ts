@@ -13,6 +13,57 @@ const getCurrentUserId = () => {
     return currentUser.uid;
 };
 
+export const createTestCategories = async () => {
+    console.log('Creating test categories...');
+    const categories = [
+        // Business Categories
+        { name: 'Food', type: 'business', icon: 'restaurant-outline', order: 1, active: true },
+        { name: 'Retail', type: 'business', icon: 'cart-outline', order: 2, active: true },
+        { name: 'Health', type: 'business', icon: 'medkit-outline', order: 3, active: true },
+        { name: 'Education', type: 'business', icon: 'school-outline', order: 4, active: true },
+        { name: 'Travel', type: 'business', icon: 'airplane-outline', order: 5, active: true },
+        { name: 'Textile', type: 'business', icon: 'shirt-outline', order: 6, active: true },
+        { name: 'Construction', type: 'business', icon: 'construct-outline', order: 7, active: true },
+        { name: 'Other', type: 'business', icon: 'grid-outline', order: 99, active: true },
+
+        // Service Categories
+        { name: 'Tutor', type: 'service', icon: 'book-outline', order: 1, active: true },
+        { name: 'Plumber', type: 'service', icon: 'water-outline', order: 2, active: true },
+        { name: 'Electrician', type: 'service', icon: 'flash-outline', order: 3, active: true },
+        { name: 'Cleaner', type: 'service', icon: 'sparkles-outline', order: 4, active: true },
+        { name: 'Graphic Designer', type: 'service', icon: 'color-palette-outline', order: 5, active: true },
+        { name: 'Developer', type: 'service', icon: 'code-slash-outline', order: 6, active: true },
+        { name: 'Mechanic', type: 'service', icon: 'car-outline', order: 7, active: true },
+        { name: 'Photographer', type: 'service', icon: 'camera-outline', order: 8, active: true },
+        { name: 'Other', type: 'service', icon: 'grid-outline', order: 99, active: true },
+
+        // Marketplace Categories
+        { name: 'Electronics', type: 'marketplace', icon: 'phone-portrait-outline', order: 1, active: true },
+        { name: 'Furniture', type: 'marketplace', icon: 'bed-outline', order: 2, active: true },
+        { name: 'Vehicles', type: 'marketplace', icon: 'car-sport-outline', order: 3, active: true },
+        { name: 'Clothing', type: 'marketplace', icon: 'shirt-outline', order: 4, active: true },
+        { name: 'Books', type: 'marketplace', icon: 'library-outline', order: 5, active: true },
+        { name: 'Sports', type: 'marketplace', icon: 'football-outline', order: 6, active: true },
+        { name: 'Other', type: 'marketplace', icon: 'grid-outline', order: 99, active: true },
+    ];
+
+    const batch = firebaseFirestore.batch();
+    const collectionRef = firebaseFirestore.collection('categories');
+
+    for (const cat of categories) {
+        const docRef = collectionRef.doc(); // Auto-ID
+        batch.set(docRef, {
+            ...cat,
+            id: docRef.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+    }
+
+    await batch.commit();
+    console.log('✓ All categories created!');
+};
+
 export const createTestBusinesses = async () => {
     const userId = getCurrentUserId();
 
@@ -557,4 +608,5 @@ export default {
     createTestMarketplaceItems,
     createTestRooms,
     createTestProfessionals,
+    createTestCategories,
 };

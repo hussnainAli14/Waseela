@@ -11,4 +11,6 @@ export {
 } from './useNavigation';
 
 export { useDebounce, useDebouncedCallback } from './useDebounce';
+export { useCategorySubscription } from './useCategorySubscription';
+
 

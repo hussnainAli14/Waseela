@@ -12,26 +12,8 @@ import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchBusinesses, resetBusinesses } from '@/store/slices/businessesSlice';
 
-type CategoryItem = { key: string; label: string; icon: string };
+// Categories managed from Redux
 
-const categoryItems: CategoryItem[] = [
-  { key: 'food', label: 'Food', icon: 'restaurant' },
-  { key: 'retail', label: 'Retail', icon: 'cart-outline' },
-  { key: 'legal', label: 'Legal', icon: 'scales-outline' },
-  { key: 'health', label: 'Healthcare', icon: 'medkit-outline' },
-  { key: 'education', label: 'Education', icon: 'school-outline' },
-  { key: 'services', label: 'Services', icon: 'construct-outline' },
-];
-
-// Map UI category keys to database category values
-const categoryMap: Record<string, string> = {
-  food: 'Food',
-  retail: 'Retail',
-  legal: 'Legal',
-  health: 'Healthcare', // Map 'health' key to 'Healthcare' in database
-  education: 'Education',
-  services: 'Services',
-};
 
 const Directory = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -42,6 +24,9 @@ const Directory = () => {
 
   // Get businesses from Redux
   const { businesses: allBusinesses, isLoading, hasMore } = useAppSelector(state => state.businesses);
+  const { businessCategories } = useAppSelector(state => state.categories);
+
+  // Categories are now fetched via global subscription in MainNavigator
 
   // Helper function to apply filters and fetch businesses
   const applyFiltersAndFetch = useCallback(
@@ -54,8 +39,8 @@ const Directory = () => {
       }
 
       if (category) {
-        // Use category map to get the correct database value
-        filterObj.category = categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+        // Use the exact category name as it comes from the database
+        filterObj.category = category;
       }
 
       // Add search term to filters if provided
@@ -117,7 +102,7 @@ const Directory = () => {
       const categoryMatch = business.category?.toLowerCase().includes(searchLower);
       const descriptionMatch = business.description?.toLowerCase().includes(searchLower);
       const cityMatch = business.city?.toLowerCase().includes(searchLower);
-      
+
       return nameMatch || categoryMatch || descriptionMatch || cityMatch;
     });
   }, [allBusinesses, searchValue]);
@@ -127,34 +112,34 @@ const Directory = () => {
     if (hasMore && !isLoading && allBusinesses.length > 0) {
       dispatch(fetchBusinesses({}));
     }
-  }, [dispatch, hasMore, isLoading, allBusinesses.length]);
+  }, [dispatch, hasMore, isLoading, allBusinesses.length]); // Use allBusinesses.length
 
-  const renderCategory = ({ item }: { item: CategoryItem }) => (
+  const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[
         styles.categoryCard,
-        item.key === selectedCategory && styles.categoryCardActive,
+        item.name === selectedCategory && styles.categoryCardActive,
       ]}
       activeOpacity={0.85}
-      onPress={() => handleCategoryChange(item.key)}>
+      onPress={() => handleCategoryChange(item.name)}>
       <View
         style={[
           styles.categoryIconWrapper,
-          item.key === selectedCategory && styles.categoryIconWrapperActive,
+          item.name === selectedCategory && styles.categoryIconWrapperActive,
         ]}>
         <Ionicons
           name={item.icon as string}
           size={22}
-          color={item.key === selectedCategory ? colors.secondary[500] : colors.text.secondary}
+          color={item.name === selectedCategory ? colors.secondary[500] : colors.text.secondary}
         />
       </View>
       <Text
         variant="md-medium"
         style={[
           styles.categoryLabel,
-          item.key === selectedCategory && styles.categoryLabelActive,
+          item.name === selectedCategory && styles.categoryLabelActive,
         ]}>
-        {item.label}
+        {item.name}
       </Text>
     </TouchableOpacity>
   );
@@ -218,8 +203,8 @@ const Directory = () => {
 
       <View style={styles.categoryBar}>
         <FlatList
-          data={categoryItems}
-          keyExtractor={item => item.key}
+          data={businessCategories}
+          keyExtractor={item => item.id}
           renderItem={renderCategory}
           horizontal
           showsHorizontalScrollIndicator={false}

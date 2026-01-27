@@ -12,16 +12,8 @@ import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchServices, resetServices } from '@/store/slices/servicesSlice';
 
-type ServiceTypeItem = { key: string; label: string; icon: string };
+// Categories managed from Redux
 
-const serviceTypeItems: ServiceTypeItem[] = [
-  { key: 'tutor', label: 'Tutor', icon: 'book-outline' },
-  { key: 'plumber', label: 'Plumber', icon: 'water-outline' },
-  { key: 'electrician', label: 'Electrician', icon: 'flash-outline' },
-  { key: 'designer', label: 'Designer', icon: 'color-palette-outline' },
-  { key: 'cleaner', label: 'Cleaner', icon: 'sparkles-outline' },
-  { key: 'driver', label: 'Driver', icon: 'car-outline' },
-];
 
 const Services = () => {
   const [searchValue, setSearchValue] = useState('');
@@ -32,6 +24,9 @@ const Services = () => {
 
   // Get services from Redux
   const { services: allServices, isLoading, hasMore } = useAppSelector(state => state.services);
+  const { serviceCategories } = useAppSelector(state => state.categories);
+
+  // Fetch categories managed by global subscription
 
   // Helper function to apply filters and fetch services
   const applyFiltersAndFetch = useCallback(
@@ -44,8 +39,8 @@ const Services = () => {
       }
 
       if (serviceType) {
-        // Capitalize service type to match database format
-        filterObj.serviceType = serviceType.charAt(0).toUpperCase() + serviceType.slice(1).toLowerCase();
+        // Use the exact category name as it comes from the database
+        filterObj.serviceType = serviceType;
       }
 
       // Add search term to filters if provided
@@ -107,7 +102,7 @@ const Services = () => {
       const serviceTypeMatch = service.serviceType?.toLowerCase().includes(searchLower);
       const descriptionMatch = service.description?.toLowerCase().includes(searchLower);
       const cityMatch = service.city?.toLowerCase().includes(searchLower);
-      
+
       return nameMatch || serviceTypeMatch || descriptionMatch || cityMatch;
     });
   }, [allServices, searchValue]);
@@ -119,32 +114,32 @@ const Services = () => {
     }
   }, [dispatch, hasMore, isLoading, allServices.length]);
 
-  const renderCategory = ({ item }: { item: ServiceTypeItem }) => (
+  const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[
         styles.categoryCard,
-        item.key === selectedServiceType && styles.categoryCardActive,
+        item.name === selectedServiceType && styles.categoryCardActive,
       ]}
       activeOpacity={0.85}
-      onPress={() => handleServiceTypeChange(item.key)}>
+      onPress={() => handleServiceTypeChange(item.name)}>
       <View
         style={[
           styles.categoryIconWrapper,
-          item.key === selectedServiceType && styles.categoryIconWrapperActive,
+          item.name === selectedServiceType && styles.categoryIconWrapperActive,
         ]}>
         <Ionicons
           name={item.icon as string}
           size={22}
-          color={item.key === selectedServiceType ? colors.common.white : colors.text.primary}
+          color={item.name === selectedServiceType ? colors.common.white : colors.text.primary}
         />
       </View>
       <Text
         variant="md-medium"
         style={[
           styles.categoryLabel,
-          item.key === selectedServiceType && styles.categoryCardActive,
+          item.name === selectedServiceType && styles.categoryCardActive,
         ]}>
-        {item.label}
+        {item.name}
       </Text>
     </TouchableOpacity>
   );
@@ -207,8 +202,8 @@ const Services = () => {
 
       <View style={styles.categoryBar}>
         <FlatList
-          data={serviceTypeItems}
-          keyExtractor={item => item.key}
+          data={serviceCategories}
+          keyExtractor={item => item.id}
           renderItem={renderCategory}
           horizontal
           showsHorizontalScrollIndicator={false}
