@@ -7,7 +7,7 @@ const COLLECTION = 'categories';
 export const subscribeToCategories = (
     onUpdate: (categories: Category[]) => void,
     onError?: (error: any) => void,
-    type?: 'business' | 'service' | 'marketplace'
+    type?: 'business' | 'service' | 'marketplace' | 'professional'
 ): (() => void) => {
     let query = firebaseFirestore.collection(COLLECTION).where('active', '==', true);
 
@@ -40,7 +40,7 @@ export const subscribeToCategories = (
 };
 
 export const getCategories = async (
-    type?: 'business' | 'service' | 'marketplace'
+    type?: 'business' | 'service' | 'marketplace' | 'professional'
 ): Promise<Category[]> => {
     let query = firebaseFirestore.collection(COLLECTION).where('active', '==', true);
 
@@ -77,7 +77,7 @@ export const getCategory = async (categoryId: string): Promise<Category | null> 
 };
 
 export const createCategory = async (
-    type: 'business' | 'service' | 'marketplace',
+    type: 'business' | 'service' | 'marketplace' | 'professional',
     name: string,
     icon: string,
     order: number

@@ -11,6 +11,7 @@ import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchServices, resetServices } from '@/store/slices/servicesSlice';
+import { getListingImage } from '@/utils/placeholders';
 
 // Categories managed from Redux
 
@@ -169,7 +170,7 @@ const Services = () => {
         rating: item.rating,
         reviews: item.reviewCount,
         verified: item.verified,
-        image: item.images[0] || 'https://via.placeholder.com/600',
+        image: getListingImage(item.images, 'service'),
       };
       navigation.navigate('Details', { listing: listingItem });
     },
@@ -179,9 +180,27 @@ const Services = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.fixedHeader}>
-        <Text variant="xl-bold" style={styles.headerTitle}>
-          Service Marketplace
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text variant="xl-bold" style={[styles.headerTitle, { marginBottom: 0 }]}>
+            Service Marketplace
+          </Text>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.primary[50],
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 20,
+            }}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('SubmitListing', { initialType: 'service' })}>
+            <Ionicons name="add" size={18} color={colors.primary[700]} />
+            <Text variant="sm-semibold" style={{ color: colors.primary[700], marginLeft: 4 }}>
+              Post Service
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.searchBlock}>
           <SearchBar
             placeholder="Search service providers..."
@@ -225,7 +244,7 @@ const Services = () => {
                 rating={item.rating}
                 reviews={item.reviewCount}
                 verified={item.verified}
-                imageUri={item.images[0] || 'https://via.placeholder.com/600'}
+                imageUri={getListingImage(item.images, 'service')}
                 onPress={() => handlePressListing(item)}
               />
             </View>

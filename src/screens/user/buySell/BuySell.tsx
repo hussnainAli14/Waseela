@@ -11,6 +11,7 @@ import { MainStackParamList, MarketItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProducts, resetProducts } from '@/store/slices/productsSlice';
 import type { Product } from '@/types/firestore';
+import { getListingImage } from '@/utils/placeholders';
 
 // Categories managed from Redux
 
@@ -64,7 +65,7 @@ const BuySell = () => {
       location: product.city,
       condition: conditionMap[product.condition] || product.condition,
       category: product.category,
-      image: product.images[0] || 'https://via.placeholder.com/600',
+      image: getListingImage(product.images, 'product'),
       description: product.description,
       safetyTips: [
         'Meet in a public place',

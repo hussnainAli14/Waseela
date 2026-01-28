@@ -6,6 +6,7 @@ interface CategoriesState {
     businessCategories: Category[];
     serviceCategories: Category[];
     marketplaceCategories: Category[];
+    professionalIndustries: Category[];
     isLoading: boolean;
     error: string | null;
     lastFetched: number | null;
@@ -15,6 +16,7 @@ const initialState: CategoriesState = {
     businessCategories: [],
     serviceCategories: [],
     marketplaceCategories: [],
+    professionalIndustries: [],
     isLoading: false,
     error: null,
     lastFetched: null,
@@ -24,12 +26,13 @@ export const fetchAllCategories = createAsyncThunk(
     'categories/fetchAll',
     async (_, { rejectWithValue }) => {
         try {
-            const [business, service, marketplace] = await Promise.all([
+            const [business, service, marketplace, professional] = await Promise.all([
                 getCategories('business'),
                 getCategories('service'),
                 getCategories('marketplace'),
+                getCategories('professional'),
             ]);
-            return { business, service, marketplace };
+            return { business, service, marketplace, professional };
         } catch (error: any) {
             return rejectWithValue(error.message || 'Failed to fetch categories');
         }
@@ -44,14 +47,16 @@ const categoriesSlice = createSlice({
             state.businessCategories = [];
             state.serviceCategories = [];
             state.marketplaceCategories = [];
+            state.professionalIndustries = [];
             state.error = null;
             state.lastFetched = null;
         },
-        setCategories: (state, action: PayloadAction<{ type: 'business' | 'service' | 'marketplace', categories: Category[] }>) => {
+        setCategories: (state, action: PayloadAction<{ type: 'business' | 'service' | 'marketplace' | 'professional', categories: Category[] }>) => {
             const { type, categories } = action.payload;
             if (type === 'business') state.businessCategories = categories;
             else if (type === 'service') state.serviceCategories = categories;
             else if (type === 'marketplace') state.marketplaceCategories = categories;
+            else if (type === 'professional') state.professionalIndustries = categories;
             state.lastFetched = Date.now();
             state.isLoading = false;
         },
@@ -74,6 +79,7 @@ const categoriesSlice = createSlice({
                 state.businessCategories = action.payload.business;
                 state.serviceCategories = action.payload.service;
                 state.marketplaceCategories = action.payload.marketplace;
+                state.professionalIndustries = action.payload.professional;
                 state.lastFetched = Date.now();
             })
             .addCase(fetchAllCategories.rejected, (state, action) => {

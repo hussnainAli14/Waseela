@@ -229,17 +229,17 @@ const PostRoom: React.FC = () => {
         formData.phone = phone.trim();
       }
 
-      // Use dummy images for now (as requested)
-      const dummyImages = [
-        'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80',
-      ];
+      // Extract image URIs from selected photos (if any)
+      const imageUris = photos
+        .map(photo => photo.uri)
+        .filter((uri): uri is string => uri !== undefined);
 
-      // Dispatch the create room action
+      // Dispatch the create room action with actual images (or empty array)
       const result = await dispatch(
         createRoom({
           data: formData,
           posterId: user.uid,
-          images: dummyImages,
+          images: imageUris, // Uses actual photos if selected, empty array if not
         })
       ).unwrap();
 
@@ -289,259 +289,259 @@ const PostRoom: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <TextField
-            label="Room Title"
-            placeholder="e.g., Cozy Single Room near UCL"
-            value={roomTitle}
-            onChangeText={setRoomTitle}
-          />
-          <Text variant="md-semibold" style={styles.label}>Room Type</Text>
-          <Dropdown
-            options={roomTypes}
-            selectedValue={roomType}
-            onSelect={setRoomType}
-            placeholder="Select..."
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownText}
-          />
-        </View>
-
-        <View style={[styles.card, { marginTop: 14 }]}>
-          <TextField
-            label="Monthly Rent (£)"
-            placeholder="e.g., 650"
-            keyboardType="decimal-pad"
-            value={rent}
-            onChangeText={setRent}
-          />
-          <View style={[styles.row, { marginTop: 8 }]}>
-            <View style={styles.halfInput}>
-              <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
-                City *
-              </Text>
-              <CityDropdown
-                selectedValue={city}
-                onSelect={setCity}
-                placeholder="Select city"
-                includeAllOption={false}
-                valueFormat="capitalized"
-              />
-            </View>
-            <View style={styles.halfInput}>
-              <TextField
-                label="Area"
-                placeholder="e.g., Camden"
-                value={area}
-                onChangeText={setArea}
-              />
-            </View>
-          </View>
-          <TextField
-            label="Near University (Optional)"
-            placeholder="e.g., UCL, Imperial College"
-            value={nearUni}
-            onChangeText={setNearUni}
-          />
-          <TextField
-            label="Postcode (Optional)"
-            placeholder="e.g., E1 4NS"
-            value={postcode}
-            onChangeText={setPostcode}
-          />
-          <Text variant="md-semibold" style={styles.label}>Available From</Text>
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={styles.datePickerButton}>
-            <Text
-              variant="md-normal"
-              style={[
-                styles.datePickerText,
-                !availableFrom && { color: colors.text.secondary },
-              ]}>
-              {availableFrom ? formatDate(availableFrom) : 'Select date'}
-            </Text>
-            <Ionicons name="calendar-outline" size={18} color={colors.text.secondary} />
-          </TouchableOpacity>
-          {showDatePicker && (
-            <>
-              {Platform.OS === 'ios' ? (
-                <Modal
-                  visible={showDatePicker}
-                  transparent
-                  animationType="slide"
-                  onRequestClose={() => setShowDatePicker(false)}>
-                  <View style={styles.datePickerModal}>
-                    <View style={styles.datePickerModalContent}>
-                      <View style={styles.datePickerHeader}>
-                        <TouchableOpacity
-                          onPress={() => setShowDatePicker(false)}
-                          style={styles.datePickerCancelButton}>
-                          <Text variant="md-medium" style={styles.datePickerCancelText}>
-                            Cancel
-                          </Text>
-                        </TouchableOpacity>
-                        <Text variant="md-semibold" style={styles.datePickerTitle}>
-                          Select Date
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => {
-                            setShowDatePicker(false);
-                          }}
-                          style={styles.datePickerDoneButton}>
-                          <Text variant="md-medium" style={styles.datePickerDoneText}>
-                            Done
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                      <DateTimePicker
-                        value={availableFrom || new Date()}
-                        mode="date"
-                        display="spinner"
-                        onChange={handleDateChange}
-                        minimumDate={new Date()}
-                      />
-                    </View>
-                  </View>
-                </Modal>
-              ) : (
-                <DateTimePicker
-                  value={availableFrom || new Date()}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                  minimumDate={new Date()}
-                />
-              )}
-            </>
-          )}
-          <TextField
-            label="Description"
-            placeholder="Describe the room, house environment, transport links, and any special features..."
-            multiline
-            numberOfLines={5}
-            value={description}
-            onChangeText={setDescription}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <Text variant="md-semibold" style={styles.label}>Amenities</Text>
-          <View style={styles.amenitiesWrap}>
-            {defaultAmenities.map(label => {
-              const active = amenities.includes(label);
-              return (
-                <TouchableOpacity
-                  key={label}
-                  style={[styles.amenityPill, active && styles.amenityPillActive]}
-                  activeOpacity={0.85}
-                  onPress={() => toggleAmenity(label)}>
-                  <Text variant="md-medium" style={styles.amenityText}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <View style={styles.addAmenityRow}>
-            <TextInput
-              style={styles.addAmenityInput}
-              placeholder="Add custom amenity"
-              placeholderTextColor={colors.text.secondary}
-              value={customAmenity}
-              onChangeText={setCustomAmenity}
-              onSubmitEditing={handleAddAmenity}
-              returnKeyType="done"
+          <View style={styles.card}>
+            <TextField
+              label="Room Title"
+              placeholder="e.g., Cozy Single Room near UCL"
+              value={roomTitle}
+              onChangeText={setRoomTitle}
             />
+            <Text variant="md-semibold" style={styles.label}>Room Type</Text>
+            <Dropdown
+              options={roomTypes}
+              selectedValue={roomType}
+              onSelect={setRoomType}
+              placeholder="Select..."
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownText}
+            />
+          </View>
+
+          <View style={[styles.card, { marginTop: 14 }]}>
+            <TextField
+              label="Monthly Rent (£)"
+              placeholder="e.g., 650"
+              keyboardType="decimal-pad"
+              value={rent}
+              onChangeText={setRent}
+            />
+            <View style={[styles.row, { marginTop: 8 }]}>
+              <View style={styles.halfInput}>
+                <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
+                  City *
+                </Text>
+                <CityDropdown
+                  selectedValue={city}
+                  onSelect={setCity}
+                  placeholder="Select city"
+                  includeAllOption={false}
+                  valueFormat="capitalized"
+                />
+              </View>
+              <View style={styles.halfInput}>
+                <TextField
+                  label="Area"
+                  placeholder="e.g., Camden"
+                  value={area}
+                  onChangeText={setArea}
+                />
+              </View>
+            </View>
+            <TextField
+              label="Near University (Optional)"
+              placeholder="e.g., UCL, Imperial College"
+              value={nearUni}
+              onChangeText={setNearUni}
+            />
+            <TextField
+              label="Postcode (Optional)"
+              placeholder="e.g., E1 4NS"
+              value={postcode}
+              onChangeText={setPostcode}
+            />
+            <Text variant="md-semibold" style={styles.label}>Available From</Text>
+            <TouchableOpacity
+              onPress={() => setShowDatePicker(true)}
+              style={styles.datePickerButton}>
+              <Text
+                variant="md-normal"
+                style={[
+                  styles.datePickerText,
+                  !availableFrom && { color: colors.text.secondary },
+                ]}>
+                {availableFrom ? formatDate(availableFrom) : 'Select date'}
+              </Text>
+              <Ionicons name="calendar-outline" size={18} color={colors.text.secondary} />
+            </TouchableOpacity>
+            {showDatePicker && (
+              <>
+                {Platform.OS === 'ios' ? (
+                  <Modal
+                    visible={showDatePicker}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowDatePicker(false)}>
+                    <View style={styles.datePickerModal}>
+                      <View style={styles.datePickerModalContent}>
+                        <View style={styles.datePickerHeader}>
+                          <TouchableOpacity
+                            onPress={() => setShowDatePicker(false)}
+                            style={styles.datePickerCancelButton}>
+                            <Text variant="md-medium" style={styles.datePickerCancelText}>
+                              Cancel
+                            </Text>
+                          </TouchableOpacity>
+                          <Text variant="md-semibold" style={styles.datePickerTitle}>
+                            Select Date
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setShowDatePicker(false);
+                            }}
+                            style={styles.datePickerDoneButton}>
+                            <Text variant="md-medium" style={styles.datePickerDoneText}>
+                              Done
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                        <DateTimePicker
+                          value={availableFrom || new Date()}
+                          mode="date"
+                          display="spinner"
+                          onChange={handleDateChange}
+                          minimumDate={new Date()}
+                        />
+                      </View>
+                    </View>
+                  </Modal>
+                ) : (
+                  <DateTimePicker
+                    value={availableFrom || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+              </>
+            )}
+            <TextField
+              label="Description"
+              placeholder="Describe the room, house environment, transport links, and any special features..."
+              multiline
+              numberOfLines={5}
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <Text variant="md-semibold" style={styles.label}>Amenities</Text>
+            <View style={styles.amenitiesWrap}>
+              {defaultAmenities.map(label => {
+                const active = amenities.includes(label);
+                return (
+                  <TouchableOpacity
+                    key={label}
+                    style={[styles.amenityPill, active && styles.amenityPillActive]}
+                    activeOpacity={0.85}
+                    onPress={() => toggleAmenity(label)}>
+                    <Text variant="md-medium" style={styles.amenityText}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={styles.addAmenityRow}>
+              <TextInput
+                style={styles.addAmenityInput}
+                placeholder="Add custom amenity"
+                placeholderTextColor={colors.text.secondary}
+                value={customAmenity}
+                onChangeText={setCustomAmenity}
+                onSubmitEditing={handleAddAmenity}
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleAddAmenity}
+                style={styles.addButton}>
+                <Text variant="md-medium" style={styles.addButtonText}>
+                  Add
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.checkboxRow}>
+              <Checkbox checked={billsIncluded} onPress={() => setBillsIncluded(!billsIncluded)} />
+              <Text variant="sm-normal" style={styles.checkboxLabel}>
+                Bills are included in the rent (electricity, water, gas, internet)
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.card, { marginTop: 14 }]}>
+            <TextField
+              label="Your Name"
+              placeholder="e.g., Fatima Khan"
+              value={yourName}
+              onChangeText={setYourName}
+            />
+            <TextField
+              label="Contact Number"
+              placeholder="+44 7XXX XXXXXX"
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
+            <TextField
+              label="Email Address (Optional)"
+              placeholder="contact@example.com"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              rightIcon={<Ionicons name="mail-outline" size={18} color={colors.text.secondary} />}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <Text variant="md-semibold" style={styles.label}>Upload Room Photos</Text>
             <TouchableOpacity
               activeOpacity={0.85}
-              onPress={handleAddAmenity}
-              style={styles.addButton}>
-              <Text variant="md-medium" style={styles.addButtonText}>
-                Add
+              style={styles.uploadCard}
+              onPress={handlePickPhotos}>
+              <Ionicons name="cloud-upload-outline" size={32} color={colors.text.secondary} />
+              <Text variant="md-medium" style={styles.uploadTitle}>
+                Tap to upload photos
+              </Text>
+              <Text variant="sm-normal" style={styles.uploadSubtitle}>
+                PNG, JPG up to 5MB each
               </Text>
             </TouchableOpacity>
-          </View>
-          <View style={styles.checkboxRow}>
-            <Checkbox checked={billsIncluded} onPress={() => setBillsIncluded(!billsIncluded)} />
-            <Text variant="sm-normal" style={styles.checkboxLabel}>
-              Bills are included in the rent (electricity, water, gas, internet)
-            </Text>
-          </View>
-        </View>
-
-        <View style={[styles.card, { marginTop: 14 }]}>
-          <TextField
-            label="Your Name"
-            placeholder="e.g., Fatima Khan"
-            value={yourName}
-            onChangeText={setYourName}
-          />
-          <TextField
-            label="Contact Number"
-            placeholder="+44 7XXX XXXXXX"
-            keyboardType="phone-pad"
-            value={phone}
-            onChangeText={setPhone}
-          />
-          <TextField
-            label="Email Address (Optional)"
-            placeholder="contact@example.com"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-            rightIcon={<Ionicons name="mail-outline" size={18} color={colors.text.secondary} />}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <Text variant="md-semibold" style={styles.label}>Upload Room Photos</Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.uploadCard}
-            onPress={handlePickPhotos}>
-            <Ionicons name="cloud-upload-outline" size={32} color={colors.text.secondary} />
-            <Text variant="md-medium" style={styles.uploadTitle}>
-              Tap to upload photos
-            </Text>
-            <Text variant="sm-normal" style={styles.uploadSubtitle}>
-              PNG, JPG up to 5MB each
-            </Text>
-          </TouchableOpacity>
-          {photos.length > 0 && (
-            <View style={styles.photoPreviewRow}>
-              {photos.map((asset, index) => (
-                <Image
-                  key={asset.uri ?? asset.fileName ?? index.toString()}
-                  source={{ uri: asset.uri }}
-                  resizeMode="cover"
-                  style={styles.photoThumb}
-                />
-              ))}
+            {photos.length > 0 && (
+              <View style={styles.photoPreviewRow}>
+                {photos.map((asset, index) => (
+                  <Image
+                    key={asset.uri ?? asset.fileName ?? index.toString()}
+                    source={{ uri: asset.uri }}
+                    resizeMode="cover"
+                    style={styles.photoThumb}
+                  />
+                ))}
+              </View>
+            )}
+            <View style={styles.checkboxRow}>
+              <Checkbox checked={confirm} onPress={() => setConfirm(!confirm)} />
+              <Text variant="sm-normal" style={styles.checkboxLabel}>
+                I confirm that all information is accurate and I am authorized to advertise this room.
+              </Text>
             </View>
-          )}
-          <View style={styles.checkboxRow}>
-            <Checkbox checked={confirm} onPress={() => setConfirm(!confirm)} />
-            <Text variant="sm-normal" style={styles.checkboxLabel}>
-              I confirm that all information is accurate and I am authorized to advertise this room.
+            <Button
+              title={isLoading ? 'Posting...' : 'Post Room Listing'}
+              fullWidth
+              onPress={handleSubmit}
+              disabled={isLoading}
+              containerStyle={styles.postButton}
+            />
+            {isLoading && (
+              <View style={{ alignItems: 'center', marginTop: 10 }}>
+                <ActivityIndicator size="small" color={colors.primary[500]} />
+              </View>
+            )}
+            <Text variant="sm-normal" style={styles.infoText}>
+              Your listing will be visible to students looking for accommodation
             </Text>
           </View>
-          <Button
-            title={isLoading ? 'Posting...' : 'Post Room Listing'}
-            fullWidth
-            onPress={handleSubmit}
-            disabled={isLoading}
-            containerStyle={styles.postButton}
-          />
-          {isLoading && (
-            <View style={{ alignItems: 'center', marginTop: 10 }}>
-              <ActivityIndicator size="small" color={colors.primary[500]} />
-            </View>
-          )}
-          <Text variant="sm-normal" style={styles.infoText}>
-            Your listing will be visible to students looking for accommodation
-          </Text>
-        </View>
         </ScrollView>
       </View>
     </SafeAreaView>

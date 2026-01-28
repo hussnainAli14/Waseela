@@ -166,6 +166,10 @@ const businessesSlice = createSlice({
         setSelectedBusiness: (state, action: PayloadAction<Business | null>) => {
             state.selectedBusiness = action.payload;
         },
+        setBusinesses: (state, action: PayloadAction<Business[]>) => {
+            state.businesses = action.payload;
+            state.hasMore = action.payload.length > 0;
+        },
     },
     extraReducers: builder => {
         // Fetch businesses
@@ -297,7 +301,7 @@ const businessesSlice = createSlice({
     },
 });
 
-export const { setFilters, clearFilters, clearError, resetBusinesses, setSelectedBusiness } =
+export const { setFilters, clearFilters, clearError, resetBusinesses, setSelectedBusiness, setBusinesses } =
     businessesSlice.actions;
 
 export default businessesSlice.reducer;

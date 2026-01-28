@@ -11,6 +11,7 @@ import { MainStackParamList, ProfessionalProfileItem } from '@/navigation/types'
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchUserProfessionals } from '@/store/slices/professionalsSlice';
 import type { ProfessionalProfile as FirestoreProfessional } from '@/types/firestore';
+import { getListingImage } from '@/utils/placeholders';
 
 // Helper function to convert Firestore Professional to ProfessionalProfileItem
 const convertToProfileItem = (pro: FirestoreProfessional): ProfessionalProfileItem => {
@@ -27,7 +28,7 @@ const convertToProfileItem = (pro: FirestoreProfessional): ProfessionalProfileIt
     city: pro.location,
     yearsExperience,
     tags: pro.skills || [],
-    avatar: pro.profilePhoto || 'https://via.placeholder.com/300',
+    avatar: getListingImage(pro.profilePhoto ? [pro.profilePhoto] : undefined, 'professional'),
     about: pro.bio,
     expertise: pro.skills,
     helpTitle: undefined,

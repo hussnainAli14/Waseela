@@ -12,6 +12,7 @@ import { MainStackParamList } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchRooms, resetRooms } from '@/store/slices/roomsSlice';
 import type { Room } from '@/types/firestore';
+import { getListingImage } from '@/utils/placeholders';
 
 type RoomType = 'all' | 'single' | 'double' | 'studio' | 'shared';
 
@@ -38,15 +39,17 @@ const convertRoomToRoomItem = (room: Room): RoomItem => {
     type: room.type,
     price: room.price,
     priceLabel: room.priceLabel,
-    image: room.images[0] || 'https://via.placeholder.com/600',
+    image: getListingImage(room.images, 'room'),
     billsIncluded: room.billsIncluded,
     locationLine1: room.locationLine1,
     locationLine2: room.locationLine2 || '',
     description: room.description,
     amenities: room.amenities,
-    availableFrom: typeof room.availableFrom === 'string' 
-      ? new Date(room.availableFrom).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-      : room.availableFrom?.toDate?.().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) || '',
+    availableFrom: typeof room.availableFrom === 'object' && room.availableFrom && 'toDate' in room.availableFrom
+      ? (room.availableFrom as any).toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+      : typeof room.availableFrom === 'string'
+        ? new Date(room.availableFrom).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '',
   };
 };
 
@@ -180,7 +183,7 @@ const RoomFinder = () => {
         const nameMatch = room.title?.toLowerCase().includes(searchLower);
         const locationMatch = room.locationLine1?.toLowerCase().includes(searchLower);
         const descriptionMatch = room.description?.toLowerCase().includes(searchLower);
-        
+
         return nameMatch || locationMatch || descriptionMatch;
       });
     }
@@ -221,10 +224,10 @@ const RoomFinder = () => {
                   {item.type === 'single'
                     ? 'Single'
                     : item.type === 'double'
-                    ? 'Double'
-                    : item.type === 'studio'
-                    ? 'Studio'
-                    : 'Shared'}
+                      ? 'Double'
+                      : item.type === 'studio'
+                        ? 'Studio'
+                        : 'Shared'}
                 </Text>
               </View>
               {item.billsIncluded && (

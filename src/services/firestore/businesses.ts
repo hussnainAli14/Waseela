@@ -8,6 +8,30 @@ const COLLECTION = 'businesses';
 import { uploadListingImages } from '@/services/storage/imageUpload';
 
 /**
+ * Helper function to serialize Firestore document data
+ * Converts Timestamp objects to milliseconds for Redux serialization
+ */
+const serializeBusinessData = (docId: string, data: any): Business => {
+    // Helper to convert any timestamp field
+    const serializeTimestamp = (timestamp: any): number | undefined => {
+        if (!timestamp) return undefined;
+        if (timestamp?.toMillis) return timestamp.toMillis();
+        if (typeof timestamp === 'number') return timestamp;
+        if (typeof timestamp === 'string') return toMilliseconds(timestamp);
+        return undefined;
+    };
+
+    return {
+        id: docId,
+        ...data,
+        createdAt: serializeTimestamp(data?.createdAt) ?? Date.now(),
+        updatedAt: serializeTimestamp(data?.updatedAt) ?? Date.now(),
+        approvedAt: serializeTimestamp(data?.approvedAt),
+        rejectedAt: serializeTimestamp(data?.rejectedAt),
+    } as Business;
+};
+
+/**
  * Create a new business listing
  * Optimizes image upload by running in parallel and ensures listing ID is available for storage path
  */
@@ -64,10 +88,7 @@ export const getBusiness = async (businessId: string): Promise<Business | null> 
         return null;
     }
 
-    return {
-        id: doc.id,
-        ...doc.data(),
-    } as Business;
+    return serializeBusinessData(doc.id, doc.data());
 };
 
 /**
@@ -145,10 +166,7 @@ export const getBusinesses = async (
             console.log('💡 Tip: Check if category/city values match exactly (case-sensitive)');
         }
 
-        let businesses: Business[] = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as Business[];
+        let businesses: Business[] = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 
         // If we couldn't use orderBy due to filters requiring index, sort in memory
         if (hasFiltersRequiringIndex) {
@@ -245,10 +263,7 @@ export const searchBusinesses = async (
         .limit(limit)
         .get();
 
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Business[];
+    return snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 };
 
 /**
@@ -263,10 +278,7 @@ export const getFeaturedBusinesses = async (limit: number = 10): Promise<Busines
         .limit(limit)
         .get();
 
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Business[];
+    return snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 };
 
 /**
@@ -282,10 +294,7 @@ export const getBusinessesByOwner = async (ownerId: string): Promise<Business[]>
                 .orderBy('createdAt', 'desc');
 
             const snapshot = await query.get();
-            const businesses = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Business[];
+            const businesses = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 
             // Already sorted by Firestore, but ensure consistency
             return businesses.sort((a, b) => {
@@ -302,10 +311,7 @@ export const getBusinessesByOwner = async (ownerId: string): Promise<Business[]>
                     .where('ownerId', '==', ownerId)
                     .get();
 
-                const businesses = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                })) as Business[];
+                const businesses = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 
                 return businesses.sort((a, b) => {
                     const dateA = toMilliseconds(a.createdAt);
@@ -396,10 +402,7 @@ export const subscribeToBusinesses = (
     query = query.orderBy('createdAt', 'desc').limit(20);
 
     const unsubscribe = query.onSnapshot(snapshot => {
-        const businesses: Business[] = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as Business[];
+        const businesses: Business[] = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 
         callback(businesses);
     });
@@ -423,11 +426,7 @@ export const getRelatedBusinesses = async (
             .limit(limit + 2)
             .get();
 
-        const businesses = snapshot.docs
-            .map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Business[];
+        const businesses = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
 
         return businesses
             .filter(b => b.id !== currentId)

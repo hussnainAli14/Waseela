@@ -16,6 +16,7 @@ import { styles } from './styles';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '@/navigation/types';
+import { RouteProp, useRoute } from '@react-navigation/native';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DocumentPicker = require('@react-native-documents/picker');
 import type { DocumentPickerResponse } from '@react-native-documents/picker';
@@ -27,50 +28,23 @@ import type { BusinessFormData, ServiceFormData } from '@/types/firestore';
 
 type ListingType = 'business' | 'service';
 
-const listingCategories = [
-  { label: 'Food', value: 'food' },
-  { label: 'Retail', value: 'retail' },
-  { label: 'Legal', value: 'legal' },
-  { label: 'Healthcare', value: 'healthcare' },
-  { label: 'Beauty', value: 'beauty' },
-  { label: 'Education', value: 'education' },
-  { label: 'Trades', value: 'trades' },
-  { label: 'Other', value: 'other' },
-];
+// Categories will be fetched from Redux
 
-// Map UI category keys to database category values
-const categoryMap: Record<string, string> = {
-  food: 'Food',
-  retail: 'Retail',
-  legal: 'Legal',
-  healthcare: 'Healthcare',
-  beauty: 'Beauty',
-  education: 'Education',
-  trades: 'Trades',
-  other: 'Other',
-};
-
-const serviceCategories = [
-  { label: 'Tutor', value: 'tutor' },
-  { label: 'Plumber', value: 'plumber' },
-  { label: 'Electrician', value: 'electrician' },
-  { label: 'Designer', value: 'designer' },
-  { label: 'Caterer', value: 'caterer' },
-  { label: 'Driver', value: 'driver' },
-  { label: 'Tailor', value: 'tailor' },
-  { label: 'Freelancer', value: 'freelancer' },
-];
+type SubmitListingRoute = RouteProp<MainStackParamList, 'SubmitListing'>;
 
 type Navigation = NativeStackNavigationProp<MainStackParamList, 'SubmitListing'>;
 
 const SubmitListing: React.FC = () => {
   const navigation = useNavigation<Navigation>();
+  const route = useRoute<SubmitListingRoute>();
+  const initialType = route.params?.initialType || 'business';
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { isLoading: isBusinessLoading } = useAppSelector(state => state.businesses);
   const { isLoading: isServiceLoading } = useAppSelector(state => state.services);
+  const { businessCategories, serviceCategories } = useAppSelector(state => state.categories);
 
-  const [listingType, setListingType] = useState<ListingType>('business');
+  const [listingType, setListingType] = useState<ListingType>(initialType);
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
   const [category, setCategory] = useState('');
@@ -173,14 +147,13 @@ const SubmitListing: React.FC = () => {
     }
 
     try {
-      // Use dummy images for now (as requested for rooms)
-      const dummyImages = [
-        'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=600&q=80',
-      ];
+      // Extract logo URI if selected, otherwise use empty array
+      const logoUri = logo?.uri ? [logo.uri] : [];
 
       if (listingType === 'business') {
         // Map category to database format
-        const categoryValue = categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+        // Use the category name directly as it comes from the dynamic list
+        const categoryValue = category;
 
         // Prepare business form data
         const formData: BusinessFormData = {
@@ -211,12 +184,12 @@ const SubmitListing: React.FC = () => {
           formData.openingHours = openingHours.trim();
         }
 
-        // Dispatch the create business action
+        // Dispatch the create business action with actual logo (or empty array)
         const result = await dispatch(
           createBusiness({
             data: formData,
             userId: user.uid,
-            images: dummyImages,
+            images: logoUri, // Uses actual logo if selected, empty array if not
           })
         ).unwrap();
 
@@ -255,8 +228,8 @@ const SubmitListing: React.FC = () => {
           );
         }
       } else {
-        // Capitalize service type to match database format
-        const serviceTypeValue = category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+        // Use service type directly
+        const serviceTypeValue = category;
 
         // Prepare service form data
         const formData: ServiceFormData = {
@@ -275,12 +248,12 @@ const SubmitListing: React.FC = () => {
           formData.phone = phone.trim();
         }
 
-        // Dispatch the create service action
+        // Dispatch the create service action with actual logo (or empty array)
         const result = await dispatch(
           createService({
             data: formData,
             userId: user.uid,
-            images: dummyImages,
+            images: logoUri, // Uses actual logo if selected, empty array if not
           })
         ).unwrap();
 
@@ -439,7 +412,11 @@ const SubmitListing: React.FC = () => {
             {listingType === 'business' ? 'Category' : 'Service Type'}
           </Text>
           <Dropdown
-            options={listingType === 'business' ? listingCategories : serviceCategories}
+            options={
+              listingType === 'business'
+                ? businessCategories.map(c => ({ label: c.name, value: c.name }))
+                : serviceCategories.map(c => ({ label: c.name, value: c.name }))
+            }
             selectedValue={category}
             onSelect={setCategory}
             placeholder="Select..."

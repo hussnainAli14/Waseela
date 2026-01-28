@@ -15,6 +15,19 @@ const getCurrentUserId = () => {
 
 export const createTestCategories = async () => {
     console.log('Creating test categories...');
+
+    // First, delete all existing categories
+    console.log('Deleting existing categories...');
+    const existingRef = firebaseFirestore.collection('categories');
+    const snapshot = await existingRef.get();
+
+    const deleteBatch = firebaseFirestore.batch();
+    snapshot.docs.forEach(doc => {
+        deleteBatch.delete(doc.ref);
+    });
+    await deleteBatch.commit();
+    console.log('✓ Existing categories deleted');
+
     const categories = [
         // Business Categories
         { name: 'Food', type: 'business', icon: 'restaurant-outline', order: 1, active: true },
@@ -45,6 +58,16 @@ export const createTestCategories = async () => {
         { name: 'Books', type: 'marketplace', icon: 'library-outline', order: 5, active: true },
         { name: 'Sports', type: 'marketplace', icon: 'football-outline', order: 6, active: true },
         { name: 'Other', type: 'marketplace', icon: 'grid-outline', order: 99, active: true },
+
+        // Professional Industries
+        { name: 'Technology', type: 'professional', icon: 'laptop-outline', order: 1, active: true },
+        { name: 'Healthcare', type: 'professional', icon: 'medkit-outline', order: 2, active: true },
+        { name: 'Finance', type: 'professional', icon: 'cash-outline', order: 3, active: true },
+        { name: 'Education', type: 'professional', icon: 'school-outline', order: 4, active: true },
+        { name: 'Engineering', type: 'professional', icon: 'construct-outline', order: 5, active: true },
+        { name: 'Legal', type: 'professional', icon: 'briefcase-outline', order: 6, active: true },
+        { name: 'Creative', type: 'professional', icon: 'color-palette-outline', order: 7, active: true },
+        { name: 'Other', type: 'professional', icon: 'grid-outline', order: 99, active: true },
     ];
 
     const batch = firebaseFirestore.batch();

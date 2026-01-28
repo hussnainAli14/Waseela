@@ -12,14 +12,9 @@ import { MainStackParamList, ProfessionalProfileItem } from '@/navigation/types'
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProfessionals, resetProfessionals } from '@/store/slices/professionalsSlice';
 import type { ProfessionalProfile as FirestoreProfessional } from '@/types/firestore';
+import { getListingImage } from '@/utils/placeholders';
 
-const industryOptions: IndustryOption[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Technology', value: 'technology' },
-  { label: 'Healthcare', value: 'healthcare' },
-  { label: 'Finance', value: 'finance' },
-  { label: 'Education', value: 'education' },
-];
+// Industries will be fetched from Redux
 
 // Helper function to convert Firestore Professional to local Professional type
 const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional => {
@@ -37,7 +32,7 @@ const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional 
     city: pro.location,
     yearsExperience,
     tags: pro.skills || [],
-    avatar: pro.profilePhoto || 'https://via.placeholder.com/300',
+    avatar: getListingImage(pro.profilePhoto ? [pro.profilePhoto] : undefined, 'professional'),
     offeringMentorship: false, // This field doesn't exist in Firestore Professional, default to false
     about: pro.bio,
     expertise: pro.skills,
@@ -56,8 +51,9 @@ const ProfessionalNetwork = () => {
   const [selectedCity, setSelectedCity] = useState<string>('all');
   const [onlyMentors, setOnlyMentors] = useState(false);
 
-  // Get professionals from Redux
+  // Get professionals and categories from Redux
   const { professionals: allProfessionals, isLoading } = useAppSelector(state => state.professionals);
+  const { professionalIndustries } = useAppSelector(state => state.categories);
   const [refreshing, setRefreshing] = useState(false);
 
   // Helper function to apply filters and fetch professionals
@@ -229,7 +225,10 @@ const ProfessionalNetwork = () => {
             Industry
           </Text>
           <Dropdown
-            options={industryOptions}
+            options={[
+              { label: 'All', value: 'all' },
+              ...professionalIndustries.map(cat => ({ label: cat.name, value: cat.name }))
+            ]}
             selectedValue={selectedIndustry}
             onSelect={handleIndustryChange}
             buttonStyle={styles.dropdownButton}

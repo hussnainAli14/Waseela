@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { SavedListing } from '@/types/firestore';
 import * as savedListingsService from '@/services/firestore/savedListings';
 
@@ -78,6 +78,14 @@ const savedListingsSlice = createSlice({
             state.items = [];
             state.savedItemIds = [];
         },
+        setSavedListings: (state, action: PayloadAction<SavedListing[]>) => {
+            console.log('📡 setSavedListings: Updating from subscription:', {
+                count: action.payload.length,
+                itemIds: action.payload.map((item: any) => item.itemId),
+            });
+            state.items = action.payload;
+            state.savedItemIds = action.payload.map((item: any) => item.itemId);
+        },
     },
     extraReducers: builder => {
         builder
@@ -131,17 +139,25 @@ const savedListingsSlice = createSlice({
 
         builder
             .addCase(checkIfSaved.fulfilled, (state, action) => {
+                console.log('🔍 checkIfSaved.fulfilled:', {
+                    itemId: action.payload.itemId,
+                    isSaved: action.payload.isSaved,
+                    currentSavedIds: state.savedItemIds,
+                });
                 if (action.payload.isSaved) {
                     if (!state.savedItemIds.includes(action.payload.itemId)) {
+                        console.log('➕ Adding item to savedItemIds:', action.payload.itemId);
                         state.savedItemIds.push(action.payload.itemId);
                     }
                 } else {
+                    console.log('➖ Removing item from savedItemIds:', action.payload.itemId);
                     state.savedItemIds = state.savedItemIds.filter(id => id !== action.payload.itemId);
                 }
+                console.log('✅ Updated savedItemIds:', state.savedItemIds);
             });
     },
 });
 
-export const { clearError, resetSavedListings } = savedListingsSlice.actions;
+export const { clearError, resetSavedListings, setSavedListings } = savedListingsSlice.actions;
 
 export default savedListingsSlice.reducer;

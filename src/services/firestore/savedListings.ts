@@ -91,3 +91,32 @@ export const getSavedCount = async (userId: string): Promise<number> => {
 
     return snapshot.size;
 };
+
+/**
+ * Subscribe to real-time updates for saved listings
+ */
+export const subscribeToSavedListings = (
+    userId: string,
+    callback: (savedListings: SavedListing[]) => void,
+    onError?: (error: any) => void
+): (() => void) => {
+    const unsubscribe = firebaseFirestore
+        .collection('savedListings')
+        .doc(userId)
+        .collection('items')
+        .orderBy('savedAt', 'desc')
+        .onSnapshot(
+            (snapshot) => {
+                const savedListings: SavedListing[] = snapshot.docs.map(doc => ({
+                    ...doc.data(),
+                })) as SavedListing[];
+                callback(savedListings);
+            },
+            (error) => {
+                console.error('Error in saved listings subscription:', error);
+                if (onError) onError(error);
+            }
+        );
+
+    return unsubscribe;
+};

@@ -15,16 +15,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProduct } from '@/store/slices/productsSlice';
 import type { ProductFormData } from '@/types/firestore';
 
-const categoryOptions = [
-  { label: 'Electronics', value: 'electronics' },
-  { label: 'Clothing', value: 'clothing' },
-  { label: 'Home & Garden', value: 'home-garden' },
-  { label: 'Books', value: 'books' },
-  { label: 'Sports & Outdoors', value: 'sports' },
-  { label: 'Health & Beauty', value: 'health-beauty' },
-  { label: 'Toys', value: 'toys' },
-  { label: 'Other', value: 'other' },
-];
+// Categories will be fetched from Redux
 
 const conditionOptions = [
   { label: 'New', value: 'new' },
@@ -38,6 +29,7 @@ const SellItem: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { isLoading } = useAppSelector(state => state.products);
+  const { marketplaceCategories } = useAppSelector(state => state.categories);
 
   const [photos, setPhotos] = useState<Asset[]>([]);
   const [category, setCategory] = useState('');
@@ -135,17 +127,17 @@ const SellItem: React.FC = () => {
         city: city.trim(),
       };
 
-      // Use dummy images for now (as requested)
-      const dummyImages = [
-        'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=600&q=80',
-      ];
+      // Extract image URIs from selected photos (if any)
+      const imageUris = photos
+        .map(photo => photo.uri)
+        .filter((uri): uri is string => uri !== undefined);
 
-      // Dispatch the create product action
+      // Dispatch the create product action with actual images (or empty array)
       const result = await dispatch(
         createProduct({
           data: formData,
           sellerId: user.uid,
-          images: dummyImages,
+          images: imageUris, // Uses actual photos if selected, empty array if not
         })
       ).unwrap();
 
@@ -186,144 +178,144 @@ const SellItem: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <Text variant="md-semibold" style={styles.sectionLabel}>
-            Photos
-          </Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.uploadCard}
-            onPress={handlePickPhotos}>
-            <Ionicons name="camera-outline" size={32} color={colors.text.secondary} />
-            <Text variant="md-medium" style={styles.uploadTitle}>
-              Add photos of your item
+          <View style={styles.card}>
+            <Text variant="md-semibold" style={styles.sectionLabel}>
+              Photos
             </Text>
-            <Text variant="sm-normal" style={styles.uploadSubtitle}>
-              Up to 5 photos
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.uploadCard}
+              onPress={handlePickPhotos}>
+              <Ionicons name="camera-outline" size={32} color={colors.text.secondary} />
+              <Text variant="md-medium" style={styles.uploadTitle}>
+                Add photos of your item
+              </Text>
+              <Text variant="sm-normal" style={styles.uploadSubtitle}>
+                Up to 5 photos
+              </Text>
+            </TouchableOpacity>
+
+            {photos.length > 0 && (
+              <View style={styles.photoPreviewRow}>
+                {photos.map((asset, index) => (
+                  <Image
+                    key={asset.uri ?? asset.fileName ?? index.toString()}
+                    source={{ uri: asset.uri }}
+                    resizeMode="cover"
+                    style={styles.photoThumb}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.card}>
+            <TextField
+              label="Title"
+              placeholder="e.g., iPhone 13 Pro - 256GB"
+              value={title}
+              onChangeText={setTitle}
+              containerStyle={{ marginBottom: 12 }}
+            />
+
+            <Text variant="md-semibold" style={styles.dropdownLabel}>
+              Category
             </Text>
-          </TouchableOpacity>
-
-          {photos.length > 0 && (
-            <View style={styles.photoPreviewRow}>
-              {photos.map((asset, index) => (
-                <Image
-                  key={asset.uri ?? asset.fileName ?? index.toString()}
-                  source={{ uri: asset.uri }}
-                  resizeMode="cover"
-                  style={styles.photoThumb}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <TextField
-            label="Title"
-            placeholder="e.g., iPhone 13 Pro - 256GB"
-            value={title}
-            onChangeText={setTitle}
-            containerStyle={{ marginBottom: 12 }}
-          />
-
-          <Text variant="md-semibold" style={styles.dropdownLabel}>
-            Category
-          </Text>
-          <Dropdown
-            options={categoryOptions}
-            selectedValue={category}
-            onSelect={setCategory}
-            placeholder="Select category..."
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownText}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <TextField
-            label="Price (£)"
-            placeholder="0.00"
-            keyboardType="decimal-pad"
-            value={price}
-            onChangeText={setPrice}
-            // containerStyle={{ marginBottom: 12 }}
-          />
-
-          <Text variant="md-semibold" style={styles.dropdownLabel}>
-            Condition
-          </Text>
-          <Dropdown
-            options={conditionOptions}
-            selectedValue={condition}
-            onSelect={setCondition}
-            placeholder="Select condition..."
-            buttonStyle={styles.dropdownButton}
-            buttonTextStyle={styles.dropdownText}
-          />
-        </View>
-
-        <View style={styles.card}>
-          <TextField
-            label="Location"
-            placeholder="e.g., East London, Zone 2"
-            value={location}
-            onChangeText={setLocation}
-            containerStyle={{ marginBottom: 12 }}
-          />
-          <View style={{ marginBottom: 12 }}>
-            <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
-              City *
-            </Text>
-            <CityDropdown
-              selectedValue={city}
-              onSelect={setCity}
-              placeholder="Select city"
-              includeAllOption={false}
-              valueFormat="capitalized"
+            <Dropdown
+              options={marketplaceCategories.map(c => ({ label: c.name, value: c.name }))}
+              selectedValue={category}
+              onSelect={setCategory}
+              placeholder="Select category..."
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownText}
             />
           </View>
-          <TextField
-            label="Description"
-            placeholder="Describe your item, its condition, and any other relevant details..."
-            multiline
-            numberOfLines={5}
-            value={description}
-            onChangeText={setDescription}
-            inputContainerStyle={styles.descriptionInputContainer}
-            inputStyle={styles.descriptionInput}
-          />
-        </View>
 
-        <View style={[styles.card, styles.guidelinesCard]}>
-          <Text variant="md-semibold" style={styles.guidelinesTitle}>
-            Posting Guidelines
-          </Text>
-          <Text variant="sm-normal" style={styles.guidelineItem}>
-            • Be honest about the item's condition
-          </Text>
-          <Text variant="sm-normal" style={styles.guidelineItem}>
-            • Set a fair price
-          </Text>
-          <Text variant="sm-normal" style={styles.guidelineItem}>
-            • Respond promptly to messages
-          </Text>
-          <Text variant="sm-normal" style={[styles.guidelineItem, { marginBottom: 0 }]}>
-            • No prohibited or illegal items
-          </Text>
-        </View>
+          <View style={styles.card}>
+            <TextField
+              label="Price (£)"
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              value={price}
+              onChangeText={setPrice}
+            // containerStyle={{ marginBottom: 12 }}
+            />
 
-        <Button
-          title={isLoading ? 'Posting...' : 'Post Item'}
-          fullWidth
-          onPress={handleSubmit}
-          disabled={isLoading}
-          containerStyle={[styles.buttonSpacing, styles.postButton]}
-        />
-        {isLoading && (
-          <View style={{ alignItems: 'center', marginTop: 10 }}>
-            <ActivityIndicator size="small" color={colors.primary[500]} />
+            <Text variant="md-semibold" style={styles.dropdownLabel}>
+              Condition
+            </Text>
+            <Dropdown
+              options={conditionOptions}
+              selectedValue={condition}
+              onSelect={setCondition}
+              placeholder="Select condition..."
+              buttonStyle={styles.dropdownButton}
+              buttonTextStyle={styles.dropdownText}
+            />
           </View>
-        )}
+
+          <View style={styles.card}>
+            <TextField
+              label="Location"
+              placeholder="e.g., East London, Zone 2"
+              value={location}
+              onChangeText={setLocation}
+              containerStyle={{ marginBottom: 12 }}
+            />
+            <View style={{ marginBottom: 12 }}>
+              <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
+                City *
+              </Text>
+              <CityDropdown
+                selectedValue={city}
+                onSelect={setCity}
+                placeholder="Select city"
+                includeAllOption={false}
+                valueFormat="capitalized"
+              />
+            </View>
+            <TextField
+              label="Description"
+              placeholder="Describe your item, its condition, and any other relevant details..."
+              multiline
+              numberOfLines={5}
+              value={description}
+              onChangeText={setDescription}
+              inputContainerStyle={styles.descriptionInputContainer}
+              inputStyle={styles.descriptionInput}
+            />
+          </View>
+
+          <View style={[styles.card, styles.guidelinesCard]}>
+            <Text variant="md-semibold" style={styles.guidelinesTitle}>
+              Posting Guidelines
+            </Text>
+            <Text variant="sm-normal" style={styles.guidelineItem}>
+              • Be honest about the item's condition
+            </Text>
+            <Text variant="sm-normal" style={styles.guidelineItem}>
+              • Set a fair price
+            </Text>
+            <Text variant="sm-normal" style={styles.guidelineItem}>
+              • Respond promptly to messages
+            </Text>
+            <Text variant="sm-normal" style={[styles.guidelineItem, { marginBottom: 0 }]}>
+              • No prohibited or illegal items
+            </Text>
+          </View>
+
+          <Button
+            title={isLoading ? 'Posting...' : 'Post Item'}
+            fullWidth
+            onPress={handleSubmit}
+            disabled={isLoading}
+            containerStyle={[styles.buttonSpacing, styles.postButton]}
+          />
+          {isLoading && (
+            <View style={{ alignItems: 'center', marginTop: 10 }}>
+              <ActivityIndicator size="small" color={colors.primary[500]} />
+            </View>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>

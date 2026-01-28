@@ -25,7 +25,9 @@ export type MainStackParamList = {
   ProfessionalNetwork: undefined;
   Profile: undefined;
   EditProfile: undefined;
-  SubmitListing: undefined;
+  SubmitListing: {
+    initialType?: 'business' | 'service';
+  };
   SellItem: undefined;
   PostRoom: undefined;
   JoinProfessionalNetwork: undefined;

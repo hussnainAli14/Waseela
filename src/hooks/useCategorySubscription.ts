@@ -31,11 +31,18 @@ export const useCategorySubscription = () => {
             'marketplace'
         );
 
+        const unsubscribeProfessional = subscribeToCategories(
+            (categories) => dispatch(setCategories({ type: 'professional', categories })),
+            (error) => dispatch(setCategoriesError(error.message)),
+            'professional'
+        );
+
         // Cleanup subscriptions on unmount
         return () => {
             unsubscribeBusiness();
             unsubscribeService();
             unsubscribeMarketplace();
+            unsubscribeProfessional();
         };
     }, [dispatch]);
 };

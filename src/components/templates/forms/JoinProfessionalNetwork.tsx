@@ -148,8 +148,8 @@ const JoinProfessionalNetwork: React.FC = () => {
 
     try {
       // Format experience as "X years" if provided
-      const experienceFormatted = experience.trim() 
-        ? `${experience.trim()} years` 
+      const experienceFormatted = experience.trim()
+        ? `${experience.trim()} years`
         : undefined;
 
       // Prepare form data - only include fields with values (no undefined)
@@ -188,16 +188,16 @@ const JoinProfessionalNetwork: React.FC = () => {
         formData.linkedIn = linkedinTrimmed;
       }
 
-      // Use dummy image URL for now (as requested)
-      const dummyProfilePhoto = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80';
+      // Extract profile photo URI if selected, otherwise use empty string
+      const profilePhotoUri = photo?.uri || '';
 
-      // Dispatch the create professional action
+      // Dispatch the create professional action with actual photo (or empty string)
       // user.uid is guaranteed to exist due to validation check above
       const result = await dispatch(
         createProfessional({
           data: formData,
           userId: user!.uid,
-          profilePhoto: dummyProfilePhoto,
+          profilePhoto: profilePhotoUri, // Uses actual photo if selected, empty string if not
         })
       ).unwrap();
 

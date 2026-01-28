@@ -23,6 +23,8 @@ import type { Product, Room } from '@/types/firestore';
 import { getSavedItems } from '@/services/firestore/savedListings';
 import { fetchSavedListings } from '@/store/slices/savedListingsSlice';
 import { fetchFullSavedListings, formatSavedDate, type FullSavedListing } from '@/utils/savedListingsHelper';
+import { getListingImage, ListingType } from '@/utils/placeholders';
+import { useSavedListingsSubscription } from '@/hooks/useSavedListingsSubscription';
 
 type ListingStatus = 'approved' | 'pending';
 
@@ -65,6 +67,9 @@ const Profile = () => {
     isUserProfessionalsLoading,
   } = useAppSelector(state => state.professionals);
   const { items: savedListingsFromRedux } = useAppSelector(state => state.savedListings);
+
+  // Subscribe to real-time saved listings updates
+  useSavedListingsSubscription(user?.uid);
 
   // Debug: Log Redux state
   useEffect(() => {
@@ -201,7 +206,7 @@ const Profile = () => {
       title: business.name,
       category: business.category,
       status: business.status === 'approved' ? 'approved' : 'pending',
-      image: business.images[0] || business.logoUrl || 'https://via.placeholder.com/150',
+      image: getListingImage(business.images, 'business'),
       type: 'business' as const,
     }));
 
@@ -210,7 +215,7 @@ const Profile = () => {
       title: service.name,
       category: service.serviceType || 'Service',
       status: service.status === 'approved' ? 'approved' : 'pending',
-      image: service.images[0] || service.profilePhoto || 'https://via.placeholder.com/150',
+      image: getListingImage(service.images, 'service'),
       type: 'service' as const,
     }));
 
@@ -236,7 +241,7 @@ const Profile = () => {
       location: product.city,
       condition: conditionMap[product.condition] || product.condition,
       category: product.category,
-      image: product.images[0] || 'https://via.placeholder.com/600',
+      image: getListingImage(product.images, 'product'),
       description: product.description,
       safetyTips: [
         'Meet in a public place',
@@ -264,7 +269,7 @@ const Profile = () => {
         type: room.type,
         price: room.price,
         priceLabel: room.priceLabel || `£${room.price}/month`,
-        image: room.images[0] || 'https://via.placeholder.com/600',
+        image: getListingImage(room.images, 'room'),
         billsIncluded: room.billsIncluded || false,
         locationLine1: room.locationLine1,
         locationLine2: room.locationLine2 || '',
@@ -336,7 +341,7 @@ const Profile = () => {
         rating: originalBusiness.rating || 0,
         reviews: originalBusiness.reviewCount || 0,
         verified: originalBusiness.verified || false,
-        image: originalBusiness.images[0] || originalBusiness.logoUrl || 'https://via.placeholder.com/600',
+        image: getListingImage(originalBusiness.images, 'business'),
         ownerId: originalBusiness.ownerId,
       };
     } else if (originalService) {
@@ -348,7 +353,7 @@ const Profile = () => {
         rating: originalService.rating || 0,
         reviews: originalService.reviewCount || 0,
         verified: originalService.verified || false,
-        image: originalService.images[0] || originalService.profilePhoto || 'https://via.placeholder.com/600',
+        image: getListingImage(originalService.images, 'service'),
         ownerId: originalService.providerId,
       };
     }
@@ -362,7 +367,7 @@ const Profile = () => {
       rating: 0,
       reviews: 0,
       verified: false,
-      image: item.image || 'https://via.placeholder.com/600',
+      image: getListingImage(item.image ? [item.image] : undefined, 'business'),
     };
   }, [userBusinesses, userServices]);
 
@@ -567,7 +572,7 @@ const Profile = () => {
         city: professional.location,
         yearsExperience,
         tags: professional.skills || [],
-        avatar: professional.profilePhoto || 'https://via.placeholder.com/300',
+        avatar: getListingImage(professional.profilePhoto ? [professional.profilePhoto] : undefined, 'professional'),
         about: professional.bio,
         expertise: professional.skills,
         helpTitle: undefined,

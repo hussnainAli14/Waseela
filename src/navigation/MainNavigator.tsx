@@ -80,6 +80,7 @@ const DirectoryStackNavigator = () => (
   <DirectoryStack.Navigator screenOptions={{ headerShown: false }}>
     <DirectoryStack.Screen name="Directory" component={Directory} />
     <DirectoryStack.Screen name="Details" component={Details} />
+    <DirectoryStack.Screen name="SubmitListing" component={SubmitListing} />
   </DirectoryStack.Navigator>
 );
 
@@ -97,13 +98,13 @@ const ServicesStackNavigator = () => (
       component={SellItem}
       options={{ headerShown: true, title: 'Sell an Item' }}
     />
-    <ServicesStack.Screen name="RoomFinder" component={RoomFinder} />
     <ServicesStack.Screen
       name="PostRoom"
       component={PostRoom}
       options={{ headerShown: true, title: 'Post a Room' }}
     />
     <ServicesStack.Screen name="Details" component={Details} />
+    <ServicesStack.Screen name="SubmitListing" component={SubmitListing} />
   </ServicesStack.Navigator>
 );
 
@@ -196,10 +197,17 @@ const renderServicesIcon = ({ color, size, focused }: { color: string; size: num
 );
 
 import { useCategorySubscription } from '@/hooks';
+import { useSavedListingsSubscription } from '@/hooks/useSavedListingsSubscription';
+import { useAppSelector } from '@/store/hooks';
 
 export const MainNavigator = () => {
+  const { user } = useAppSelector(state => state.auth);
+
   // Subscribe to category updates globally while authenticated
   useCategorySubscription();
+
+  // Subscribe to saved listings updates globally while authenticated
+  useSavedListingsSubscription(user?.uid);
 
   return (
     <Stack.Navigator

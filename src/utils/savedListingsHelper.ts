@@ -3,6 +3,7 @@ import { getBusiness } from '@/services/firestore/businesses';
 import { getService } from '@/services/firestore/services';
 import { getProduct } from '@/services/firestore/products';
 import { getRoom } from '@/services/firestore/rooms';
+import { getListingImage } from '@/utils/placeholders';
 
 export interface FullSavedListing {
     id: string;
@@ -40,7 +41,7 @@ export const fetchFullSavedListings = async (
                         id: listingData.id,
                         name: listingData.name,
                         category: listingData.category,
-                        image: listingData.images?.[0] || listingData.logoUrl || 'https://via.placeholder.com/300',
+                        image: getListingImage(listingData.images, 'business'),
                         location: listingData.city,
                         city: listingData.city,
                         savedType: 'business' as const,
@@ -57,7 +58,7 @@ export const fetchFullSavedListings = async (
                         id: listingData.id,
                         name: listingData.name,
                         category: listingData.serviceType,
-                        image: listingData.images?.[0] || 'https://via.placeholder.com/300',
+                        image: getListingImage(listingData.images, 'service'),
                         location: listingData.city,
                         city: listingData.city,
                         savedType: 'service' as const,
@@ -74,7 +75,7 @@ export const fetchFullSavedListings = async (
                         id: listingData.id,
                         title: listingData.title,
                         category: listingData.category,
-                        image: listingData.images?.[0] || 'https://via.placeholder.com/300',
+                        image: getListingImage(listingData.images, 'product'),
                         location: listingData.city,
                         city: listingData.city,
                         savedType: 'marketplace' as const,
@@ -89,7 +90,7 @@ export const fetchFullSavedListings = async (
                         id: listingData.id,
                         title: listingData.title,
                         category: listingData.type,
-                        image: listingData.images?.[0] || 'https://via.placeholder.com/300',
+                        image: getListingImage(listingData.images, 'room'),
                         location: listingData.city,
                         city: listingData.city,
                         savedType: 'room' as const,

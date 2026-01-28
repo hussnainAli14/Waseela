@@ -195,7 +195,7 @@ export interface SavedListing {
 // Category type
 export interface Category {
     id: string;
-    type: 'business' | 'service' | 'marketplace';
+    type: 'business' | 'service' | 'marketplace' | 'professional';
     name: string;
     icon: string;
     order: number;

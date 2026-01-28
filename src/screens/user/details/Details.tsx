@@ -75,6 +75,7 @@ import { fetchReviews, fetchUserReview, submitReview, updateReview, deleteReview
 import { submitReport as submitReportAction } from '@/store/slices/reportsSlice';
 import type { ReviewFormData } from '@/services/firestore/reviews';
 import type { ReportFormData, ReportType, TargetType } from '@/services/firestore/reports';
+import { getListingImage } from '@/utils/placeholders';
 
 type ListingType = 'business' | 'service' | 'marketplace' | 'room' | 'product';
 type DetailsNavigationProp = NativeStackNavigationProp<MainStackParamList, 'Details'>;
@@ -104,16 +105,18 @@ const Details = () => {
   useEffect(() => {
     if (listing?.id) {
       const saved = savedItemIds.includes(listing.id);
+      console.log('🔖 Details: Checking if saved:', {
+        listingId: listing.id,
+        savedItemIds,
+        saved,
+        currentIsSaved: isSaved,
+      });
       setIsSaved(saved);
     }
   }, [listing?.id, savedItemIds]);
 
-  // Fetch saved listings on mount if not already loaded
-  useEffect(() => {
-    if (user?.uid && savedItemIds.length === 0) {
-      dispatch(checkIfSaved({ userId: user.uid, itemId: listing?.id || '' }));
-    }
-  }, [user?.uid, listing?.id]);
+  // NOTE: Removed checkIfSaved call - subscription keeps savedItemIds up-to-date
+  // The subscription in MainNavigator handles real-time updates
 
   // Fetch reviews and user's review
   useEffect(() => {
@@ -338,7 +341,7 @@ const Details = () => {
       rating: item.rating || 0,
       reviews: item.reviews || item.reviewCount || 0,
       verified: item.verified,
-      image: item.images?.[0] || 'https://via.placeholder.com/300',
+      image: getListingImage(item.images, 'business'), // Defaulting to business for related items
       description: item.description,
       phone: item.phone,
       email: item.email,
@@ -439,7 +442,7 @@ const Details = () => {
           </Text>
           <Text variant="md-normal" style={styles.subtleText}>
             {listing.description ??
-              'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Authentic Middle Eastern flavors and warm hospitality.'}
+              'No description available.'}
           </Text>
         </View>
 
@@ -589,7 +592,7 @@ const Details = () => {
                   rating={item.rating || 0}
                   reviews={item.reviewCount || item.reviews || 0}
                   verified={item.verified}
-                  imageUri={item.images?.[0] || 'https://via.placeholder.com/300'}
+                  imageUri={getListingImage(item.images, 'business')}
                 />
               </TouchableOpacity>
             ))}

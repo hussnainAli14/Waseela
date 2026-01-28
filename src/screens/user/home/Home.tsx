@@ -12,6 +12,7 @@ import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchFeaturedBusinesses } from '@/store/slices/businessesSlice';
 import { fetchFeaturedServices } from '@/store/slices/servicesSlice';
+import { getListingImage } from '@/utils/placeholders';
 
 const exploreItems = [
   {
@@ -71,7 +72,7 @@ const Home = () => {
         rating: business.rating,
         reviews: business.reviewCount,
         verified: business.verified,
-        image: business.images[0] || 'https://via.placeholder.com/600',
+        image: getListingImage(business.images, 'business'),
       })),
       ...featuredServices.map(service => ({
         id: service.id,
@@ -81,7 +82,7 @@ const Home = () => {
         rating: service.rating,
         reviews: service.reviewCount,
         verified: service.verified,
-        image: service.images[0] || 'https://via.placeholder.com/600',
+        image: getListingImage(service.images, 'service'),
       })),
     ];
     return combined.slice(0, 10); // Limit to 10 total

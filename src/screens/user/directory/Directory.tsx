@@ -11,6 +11,8 @@ import { NavigationProp } from '@react-navigation/native';
 import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchBusinesses, resetBusinesses } from '@/store/slices/businessesSlice';
+import { getListingImage } from '@/utils/placeholders';
+import { useBusinessSubscription } from '@/hooks/useBusinessSubscription';
 
 // Categories managed from Redux
 
@@ -28,10 +30,28 @@ const Directory = () => {
 
   // Categories are now fetched via global subscription in MainNavigator
 
+  // Build filters object for subscription
+  const subscriptionFilters = useMemo(() => {
+    const filterObj: any = { status: 'approved' }; // Only show approved businesses
+
+    if (selectedCity && selectedCity !== 'all') {
+      filterObj.city = selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1).toLowerCase();
+    }
+
+    if (selectedCategory) {
+      filterObj.category = selectedCategory;
+    }
+
+    return filterObj;
+  }, [selectedCity, selectedCategory]);
+
+  // Subscribe to real-time updates
+  useBusinessSubscription(subscriptionFilters);
+
   // Helper function to apply filters and fetch businesses
   const applyFiltersAndFetch = useCallback(
     (city: string | undefined, category: string, searchTerm?: string) => {
-      const filterObj: any = {};
+      const filterObj: any = { status: 'approved' }; // Only show approved businesses
 
       if (city && city !== 'all') {
         // Capitalize city name to match database format
@@ -49,18 +69,18 @@ const Directory = () => {
       }
 
       console.log('🔍 Directory: Applying filters:', { city, category, searchTerm, filterObj });
-      dispatch(resetBusinesses());
-      dispatch(fetchBusinesses({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
+      // Note: With real-time subscription, we might not need to fetch manually
+      // But keeping it for search functionality which isn't real-time
+      if (searchTerm && searchTerm.trim()) {
+        dispatch(resetBusinesses());
+        dispatch(fetchBusinesses({ filters: filterObj, limit: 50 }));
+      }
     },
     [dispatch],
   );
 
-  // Fetch all businesses on initial mount
-  useEffect(() => {
-    console.log('🔍 Directory: Initial fetch - loading all businesses');
-    dispatch(resetBusinesses());
-    dispatch(fetchBusinesses({ filters: {}, limit: 20 }));
-  }, [dispatch]);
+  // No need for initial fetch anymore - subscription handles it
+  // useEffect removed
 
   // Handle search input change (debouncing is handled by SearchBar component)
   const handleSearchChange = useCallback(
@@ -170,7 +190,7 @@ const Directory = () => {
         rating: item.rating,
         reviews: item.reviewCount,
         verified: item.verified,
-        image: item.images[0] || 'https://via.placeholder.com/600',
+        image: getListingImage(item.images, 'business'),
       };
       navigation.navigate('Details', { listing: listingItem });
     },
@@ -180,9 +200,27 @@ const Directory = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.fixedHeader}>
-        <Text variant="xl-bold" style={styles.headerTitle}>
-          Business Directory
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <Text variant="xl-bold" style={[styles.headerTitle, { marginBottom: 0 }]}>
+            Business Directory
+          </Text>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.secondary[50],
+              paddingVertical: 6,
+              paddingHorizontal: 12,
+              borderRadius: 20,
+            }}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('SubmitListing', { initialType: 'business' })}>
+            <Ionicons name="add" size={18} color={colors.secondary[700]} />
+            <Text variant="sm-semibold" style={{ color: colors.secondary[700], marginLeft: 4 }}>
+              Add Listing
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.searchBlock}>
           <SearchBar
             placeholder="Search businesses..."
@@ -226,7 +264,7 @@ const Directory = () => {
                 rating={item.rating}
                 reviews={item.reviewCount}
                 verified={item.verified}
-                imageUri={item.images[0] || 'https://via.placeholder.com/600'}
+                imageUri={getListingImage(item.images, 'business')}
                 onPress={() => handlePressListing(item)}
               />
             </View>
