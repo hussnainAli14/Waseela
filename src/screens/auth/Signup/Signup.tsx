@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
@@ -21,7 +22,9 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
     email: '',
     password: '',
     confirmPassword: '',
+    dob: '',
   });
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<SignupFormData>>({});
@@ -73,6 +76,18 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
       newErrors.fullName = 'Full name must be at least 2 characters';
     }
 
+    if (!formData.dob) {
+      newErrors.dob = 'Date of birth is required';
+    } else {
+      const birthDate = new Date(formData.dob);
+      const ageDifMs = Date.now() - birthDate.getTime();
+      const ageDate = new Date(ageDifMs);
+      const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+      if (age < 16) {
+        newErrors.dob = 'You must be at least 16 years old';
+      }
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -111,6 +126,7 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
         email: formData.email.trim(),
         password: formData.password,
         displayName: formData.fullName.trim(),
+        dob: formData.dob,
       }));
     }
   };
@@ -124,6 +140,13 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
       }
       return updated;
     });
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      handleInputChange('dob', selectedDate.toISOString());
+    }
   };
 
   return (
@@ -189,6 +212,32 @@ const Signup: React.FC<SignupScreenProps> = ({ navigation }) => {
               <Ionicons name="person-outline" size={20} style={styles.icon} />
             }
           />
+
+          <View style={{ marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+              <View pointerEvents="none">
+                <TextField
+                  label="Date of Birth (DD/MM/YYYY)"
+                  placeholder="Select your date of birth"
+                  value={formData.dob ? new Date(formData.dob).toLocaleDateString('en-GB') : ''}
+                  editable={false}
+                  error={errors.dob}
+                  leftIcon={
+                    <Ionicons name="calendar-outline" size={20} style={styles.icon} />
+                  }
+                />
+              </View>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={formData.dob ? new Date(formData.dob) : new Date()}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                maximumDate={new Date()}
+              />
+            )}
+          </View>
 
           <TextField
             label="Email"

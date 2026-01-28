@@ -8,6 +8,8 @@ export interface User {
     displayName?: string;
     photoURL?: string;
     createdAt?: string;
+    dob?: string;
+    role?: string;
 }
 
 interface AuthState {
@@ -27,7 +29,7 @@ const initialState: AuthState = {
 // Async thunks for Firebase operations
 export const signUp = createAsyncThunk(
     'auth/signUp',
-    async ({ email, password, displayName }: { email: string; password: string; displayName?: string }, { rejectWithValue }) => {
+    async ({ email, password, displayName, dob }: { email: string; password: string; displayName?: string; dob?: string }, { rejectWithValue }) => {
         try {
             const userCredential = await firebaseAuth.createUserWithEmailAndPassword(email, password);
             const { uid, email: userEmail } = userCredential.user;
@@ -43,6 +45,7 @@ export const signUp = createAsyncThunk(
                 email: userEmail!,
                 displayName: displayName || '',
                 createdAt: new Date().toISOString(),
+                dob: dob || '',
             };
 
             await firebaseFirestore.collection('users').doc(uid).set(userData);

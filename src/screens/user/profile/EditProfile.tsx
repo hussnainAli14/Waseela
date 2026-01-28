@@ -11,9 +11,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { firebaseFirestore, firebaseAuth } from '@/config/firebase';
 import { launchImageLibrary, type Asset, type ImageLibraryOptions } from 'react-native-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { uploadProfilePhoto } from '@/services/storage/imageUpload';
 import { useSignOut } from '@/hooks/useSignOut';
 import { loadUser } from '@/store/slices/authSlice';
+import auth from '@react-native-firebase/auth';
 
 type EditProfileScreenNavigation = NativeStackNavigationProp<any>;
 
@@ -38,6 +40,11 @@ const pricingStyleOptions = [
   { label: 'Quote / Estimate', value: 'Quote / Estimate' },
   { label: 'Hourly Rate', value: 'Hourly Rate' },
   { label: 'Fixed Price', value: 'Fixed Price' },
+];
+
+const roleOptions = [
+  { label: 'User', value: 'user' },
+  { label: 'Service Provider', value: 'service_provider' },
 ];
 
 interface ExpandableSectionProps {
@@ -96,17 +103,26 @@ const EditProfile = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { handleSignOut } = useSignOut();
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<Asset | null>(null);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phoneNumber: '',
     city: '',
+    dob: '',
+    role: 'user',
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    current: '',
+    new: '',
+    confirm: '',
   });
 
   const [privacySettings, setPrivacySettings] = useState({
@@ -150,6 +166,8 @@ const EditProfile = () => {
             email: userData.email || user?.email || '',
             phoneNumber: userData.phone || '',
             city: userData.location || '',
+            dob: userData.dob || '',
+            role: userData.role || 'user',
           });
 
           setProfilePhotoUrl(userData.photoURL || user?.photoURL || null);
@@ -248,6 +266,24 @@ const EditProfile = () => {
       Alert.alert('Validation Error', 'Please select your city.');
       return false;
     }
+    if (showPasswordForm) {
+      if (!passwordForm.current) {
+        Alert.alert('Validation Error', 'Please enter your current password.');
+        return false;
+      }
+      if (!passwordForm.new) {
+        Alert.alert('Validation Error', 'Please enter a new password.');
+        return false;
+      }
+      if (passwordForm.new.length < 6) {
+        Alert.alert('Validation Error', 'New password must be at least 6 characters.');
+        return false;
+      }
+      if (passwordForm.new !== passwordForm.confirm) {
+        Alert.alert('Validation Error', 'New passwords do not match.');
+        return false;
+      }
+    }
     return true;
   };
 
@@ -263,9 +299,29 @@ const EditProfile = () => {
 
     setIsLoading(true);
     try {
+      // 1. Password Update (if applicable)
+      if (showPasswordForm) {
+        const currentUser = firebaseAuth.currentUser;
+        if (currentUser && currentUser.email) {
+          try {
+            // Re-authenticate
+            const credential = auth.EmailAuthProvider.credential(currentUser.email, passwordForm.current);
+            await currentUser.reauthenticateWithCredential(credential);
+
+            // Update Password
+            await currentUser.updatePassword(passwordForm.new);
+          } catch (error: any) {
+            console.error("Password update error", error);
+            Alert.alert('Password Error', error.message || 'Failed to update password. Check current password.');
+            setIsLoading(false);
+            return; // Stop saving if password update fails
+          }
+        }
+      }
+
       let photoUrl = profilePhotoUrl;
 
-      // Upload new profile photo if selected
+      // 2. Upload new profile photo if selected
       if (profilePhoto?.uri) {
         try {
           photoUrl = await uploadProfilePhoto(profilePhoto.uri, user.uid);
@@ -276,7 +332,7 @@ const EditProfile = () => {
         }
       }
 
-      // Update Firebase Auth displayName if changed
+      // 3. Update Firebase Auth displayName if changed
       const currentUser = firebaseAuth.currentUser;
       if (currentUser && currentUser.displayName !== formData.fullName) {
         try {
@@ -286,17 +342,23 @@ const EditProfile = () => {
         }
       }
 
-      // Update Firestore user document
+      // 4. Update Firestore user document
       const updateData: any = {
         displayName: formData.fullName,
         email: formData.email,
         phone: formData.phoneNumber || null,
         location: formData.city,
+        dob: formData.dob,
+        role: formData.role, // Save Role
         updatedAt: new Date().toISOString(),
         privacySettings,
         notificationSettings,
-        serviceProviderData,
       };
+
+      // Only save service provider data if role is service_provider
+      if (formData.role === 'service_provider') {
+        updateData.serviceProviderData = serviceProviderData;
+      }
 
       if (photoUrl) {
         updateData.photoURL = photoUrl;
@@ -304,7 +366,7 @@ const EditProfile = () => {
 
       await firebaseFirestore.collection('users').doc(user.uid).update(updateData);
 
-      // Also refresh auth user in Redux so Profile header shows latest name/photo
+      // Also refresh auth user in Redux
       if (firebaseAuth.currentUser) {
         try {
           await dispatch(loadUser(firebaseAuth.currentUser)).unwrap();
@@ -325,6 +387,61 @@ const EditProfile = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This will permanently delete all your listings, reviews, and data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              if (!user?.uid) return;
+
+              const batch = firebaseFirestore.batch();
+
+              // 1. Review items to delete (best effort)
+              // Note: Client side batch has limits (500 ops).
+              const listingsSnapshot = await firebaseFirestore.collection('marketplace').where('userId', '==', user.uid).limit(50).get();
+              listingsSnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+              });
+
+              const reviewsSnapshot = await firebaseFirestore.collection('reviews').where('reviewerId', '==', user.uid).limit(50).get();
+              reviewsSnapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+              });
+
+              await batch.commit();
+
+              // 2. Delete User Document
+              await firebaseFirestore.collection('users').doc(user.uid).delete();
+
+              // 3. Delete Auth User
+              await firebaseAuth.currentUser?.delete();
+
+              // 4. Sign Out
+              handleSignOut();
+
+            } catch (error: any) {
+              console.error('Error deleting account:', error);
+              if (error.code === 'auth/requires-recent-login') {
+                Alert.alert('Security', 'Please sign out and sign in again to delete your account.');
+              } else {
+                Alert.alert('Error', 'Failed to delete account. ' + error.message);
+              }
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        },
+      ]
+    );
   };
 
   const handleLogout = () => {
@@ -428,6 +545,36 @@ const EditProfile = () => {
             }
             containerStyle={styles.inputField}
           />
+
+          <View style={{ marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={0.8}>
+              <View pointerEvents="none">
+                <TextField
+                  label="Date of Birth (DD/MM/YYYY)"
+                  placeholder="Select your date of birth"
+                  value={formData.dob ? new Date(formData.dob).toLocaleDateString('en-GB') : ''}
+                  editable={false}
+                  leftIcon={
+                    <Ionicons name="calendar-outline" size={20} color={colors.text.secondary} />
+                  }
+                />
+              </View>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={formData.dob ? new Date(formData.dob) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(event: any, selectedDate?: Date) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    handleInputChange('dob', selectedDate.toISOString());
+                  }
+                }}
+                maximumDate={new Date()}
+              />
+            )}
+          </View>
           <View style={styles.emailVerificationNote}>
             <Ionicons name="information-circle-outline" size={14} color={colors.accent.blue} />
             <Text variant="xs-normal" style={styles.emailVerificationText}>
@@ -525,11 +672,14 @@ const EditProfile = () => {
           iconColor={colors.accent.purple}
           iconBackgroundColor={colors.accent.purple + '20'}
           defaultExpanded={true}>
-          <TouchableOpacity style={styles.roleButton} activeOpacity={0.9}>
-            <Text variant="md-semibold" style={styles.roleButtonText}>
-              Service Provider
-            </Text>
-          </TouchableOpacity>
+          <Dropdown
+            options={roleOptions}
+            selectedValue={formData.role}
+            onSelect={value => handleInputChange('role', value)}
+            placeholder="Select Role"
+            buttonStyle={styles.dropdownField}
+            buttonTextStyle={styles.dropdownValue}
+          />
           <View style={styles.infoNote}>
             <Ionicons name="shield-checkmark-outline" size={14} color={colors.accent.blue} />
             <Text variant="xs-normal" style={styles.infoNoteText}>
@@ -538,115 +688,116 @@ const EditProfile = () => {
           </View>
         </ExpandableSection>
 
-        <ExpandableSection
-          title="Service Provider Details"
-          subtitle="Your service information"
-          iconName="briefcase-outline"
-          iconColor={colors.accent.orange}
-          iconBackgroundColor={colors.accent.orange + '20'}
-          defaultExpanded={true}>
-          <View style={styles.warningBox}>
-            <Ionicons name="warning-outline" size={18} color={colors.status.warning} />
-            <Text variant="sm-normal" style={styles.warningText}>
-              Edits to services require admin approval before going live.
-            </Text>
-          </View>
-
-          <TextField
-            label="Service Title *"
-            value={serviceProviderData.serviceTitle}
-            onChangeText={value => handleServiceProviderChange('serviceTitle', value)}
-            containerStyle={styles.inputField}
-          />
-
-          <View style={styles.dropdownContainer}>
-            <Text variant="sm-medium" style={styles.dropdownLabel}>
-              Service Category *
-            </Text>
-            <Dropdown
-              options={serviceCategoryOptions}
-              selectedValue={serviceProviderData.serviceCategory}
-              onSelect={value => handleServiceProviderChange('serviceCategory', value)}
-              placeholder="Select service category"
-              buttonStyle={styles.dropdownField}
-              buttonTextStyle={styles.dropdownValue}
-            />
-          </View>
-
-          <TextField
-            label="Service Description *"
-            value={serviceProviderData.serviceDescription}
-            onChangeText={value => handleServiceProviderChange('serviceDescription', value)}
-            multiline
-            numberOfLines={4}
-            containerStyle={styles.inputField}
-          />
-
-          <TextField
-            label="Availability"
-            value={serviceProviderData.availability}
-            onChangeText={value => handleServiceProviderChange('availability', value)}
-            leftIcon={<Ionicons name="time-outline" size={20} color={colors.text.secondary} />}
-            containerStyle={styles.inputField}
-          />
-
-          <View style={styles.toggleItem}>
-            <View style={styles.toggleContent}>
-              <Text variant="md-medium" style={styles.toggleLabel}>
-                Emergency / Same-day Service
-              </Text>
-              <Text variant="xs-normal" style={styles.toggleDescription}>
-                Offer urgent same-day services
+        {formData.role === 'service_provider' && (
+          <ExpandableSection
+            title="Service Provider Details"
+            subtitle="Your service information"
+            iconName="briefcase-outline"
+            iconColor={colors.accent.orange}
+            iconBackgroundColor={colors.accent.orange + '20'}
+            defaultExpanded={true}>
+            <View style={styles.warningBox}>
+              <Ionicons name="warning-outline" size={18} color={colors.status.warning} />
+              <Text variant="sm-normal" style={styles.warningText}>
+                Edits to services require admin approval before going live.
               </Text>
             </View>
-            <Switch
-              value={serviceProviderData.emergencyService}
-              onValueChange={value =>
-                setServiceProviderData(prev => ({ ...prev, emergencyService: value }))
-              }
-              trackColor={{ false: colors.border.light, true: colors.secondary[500] }}
-              thumbColor={colors.common.white}
+
+            <TextField
+              label="Service Title *"
+              value={serviceProviderData.serviceTitle}
+              onChangeText={value => handleServiceProviderChange('serviceTitle', value)}
+              containerStyle={styles.inputField}
             />
-          </View>
 
-          <View style={styles.dropdownContainer}>
-            <Text variant="sm-medium" style={styles.dropdownLabel}>
-              Pricing Style
-            </Text>
-            <Dropdown
-              options={pricingStyleOptions}
-              selectedValue={serviceProviderData.pricingStyle}
-              onSelect={value => handleServiceProviderChange('pricingStyle', value)}
-              placeholder="Select pricing style"
-              buttonStyle={styles.dropdownField}
-              buttonTextStyle={styles.dropdownValue}
-            />
-          </View>
-
-          <TextField
-            label="Qualifications / Licences (Optional)"
-            value={serviceProviderData.qualifications}
-            onChangeText={value => handleServiceProviderChange('qualifications', value)}
-            multiline
-            numberOfLines={3}
-            containerStyle={styles.inputField}
-          />
-
-          <View style={styles.servicePhotosSection}>
-            <Text variant="sm-medium" style={styles.servicePhotosLabel}>
-              Service Photos / Logo
-            </Text>
-            <TouchableOpacity style={styles.uploadButton} activeOpacity={0.9}>
-              <Ionicons name="cloud-upload-outline" size={20} color={colors.text.primary} />
-              <Text variant="md-medium" style={styles.uploadButtonText}>
-                Upload Photos
+            <View style={styles.dropdownContainer}>
+              <Text variant="sm-medium" style={styles.dropdownLabel}>
+                Service Category *
               </Text>
-            </TouchableOpacity>
-            <Text variant="xs-normal" style={styles.uploadHint}>
-              Add photos of your work or business logo
-            </Text>
-          </View>
-        </ExpandableSection>
+              <Dropdown
+                options={serviceCategoryOptions}
+                selectedValue={serviceProviderData.serviceCategory}
+                onSelect={value => handleServiceProviderChange('serviceCategory', value)}
+                placeholder="Select service category"
+                buttonStyle={styles.dropdownField}
+                buttonTextStyle={styles.dropdownValue}
+              />
+            </View>
+
+            <TextField
+              label="Service Description *"
+              value={serviceProviderData.serviceDescription}
+              onChangeText={value => handleServiceProviderChange('serviceDescription', value)}
+              multiline
+              numberOfLines={4}
+              containerStyle={styles.inputField}
+            />
+
+            <TextField
+              label="Availability"
+              value={serviceProviderData.availability}
+              onChangeText={value => handleServiceProviderChange('availability', value)}
+              leftIcon={<Ionicons name="time-outline" size={20} color={colors.text.secondary} />}
+              containerStyle={styles.inputField}
+            />
+
+            <View style={styles.toggleItem}>
+              <View style={styles.toggleContent}>
+                <Text variant="md-medium" style={styles.toggleLabel}>
+                  Emergency / Same-day Service
+                </Text>
+                <Text variant="xs-normal" style={styles.toggleDescription}>
+                  Offer urgent same-day services
+                </Text>
+              </View>
+              <Switch
+                value={serviceProviderData.emergencyService}
+                onValueChange={value =>
+                  setServiceProviderData(prev => ({ ...prev, emergencyService: value }))
+                }
+                trackColor={{ false: colors.border.light, true: colors.secondary[500] }}
+                thumbColor={colors.common.white}
+              />
+            </View>
+
+            <View style={styles.dropdownContainer}>
+              <Text variant="sm-medium" style={styles.dropdownLabel}>
+                Pricing Style
+              </Text>
+              <Dropdown
+                options={pricingStyleOptions}
+                selectedValue={serviceProviderData.pricingStyle}
+                onSelect={value => handleServiceProviderChange('pricingStyle', value)}
+                placeholder="Select pricing style"
+                buttonStyle={styles.dropdownField}
+                buttonTextStyle={styles.dropdownValue}
+              />
+            </View>
+
+            <TextField
+              label="Qualifications / Licences (Optional)"
+              value={serviceProviderData.qualifications}
+              onChangeText={value => handleServiceProviderChange('qualifications', value)}
+              multiline
+              numberOfLines={3}
+              containerStyle={styles.inputField}
+            />
+
+            <View style={styles.servicePhotosSection}>
+              <Text variant="sm-medium" style={styles.servicePhotosLabel}>
+                Service Photos / Logo
+              </Text>
+              <TouchableOpacity style={styles.uploadButton} activeOpacity={0.9}>
+                <Ionicons name="cloud-upload-outline" size={20} color={colors.text.primary} />
+                <Text variant="md-medium" style={styles.uploadButtonText}>
+                  Upload Photos
+                </Text>
+              </TouchableOpacity>
+              <Text variant="xs-normal" style={styles.uploadHint}>
+                Add photos of your work or business logo
+              </Text>
+            </View>
+          </ExpandableSection>)}
 
         <ExpandableSection
           title="Notifications & Preferences"
@@ -714,19 +865,43 @@ const EditProfile = () => {
           iconColor={colors.status.error}
           iconBackgroundColor={colors.status.errorLight}
           defaultExpanded={true}>
-          <TouchableOpacity style={styles.actionItem} activeOpacity={0.9}>
+          <TouchableOpacity
+            style={styles.actionItem}
+            activeOpacity={0.9}
+            onPress={() => setShowPasswordForm(!showPasswordForm)}
+          >
             <Ionicons name="lock-closed-outline" size={20} color={colors.text.primary} />
             <Text variant="md-medium" style={styles.actionItemText}>
               Change Password
             </Text>
+            <Ionicons name={showPasswordForm ? "chevron-up" : "chevron-down"} size={20} color={colors.text.secondary} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionItem} activeOpacity={0.9} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={20} color={colors.text.primary} />
-            <Text variant="md-medium" style={styles.actionItemText}>
-              Log Out
-            </Text>
-          </TouchableOpacity>
+          {showPasswordForm && (
+            <View style={{ marginTop: 16 }}>
+              <TextField
+                label="Current Password"
+                value={passwordForm.current}
+                onChangeText={v => setPasswordForm(prev => ({ ...prev, current: v }))}
+                secureTextEntry
+                containerStyle={styles.inputField}
+              />
+              <TextField
+                label="New Password"
+                value={passwordForm.new}
+                onChangeText={v => setPasswordForm(prev => ({ ...prev, new: v }))}
+                secureTextEntry
+                containerStyle={styles.inputField}
+              />
+              <TextField
+                label="Confirm New Password"
+                value={passwordForm.confirm}
+                onChangeText={v => setPasswordForm(prev => ({ ...prev, confirm: v }))}
+                secureTextEntry
+                containerStyle={styles.inputField}
+              />
+            </View>
+          )}
         </ExpandableSection>
 
         <View style={styles.sectionCard}>
@@ -750,7 +925,7 @@ const EditProfile = () => {
             <Text variant="sm-normal" style={styles.dangerText}>
               Once you delete your account, there is no going back. Please be certain.
             </Text>
-            <TouchableOpacity style={styles.deleteButton} activeOpacity={0.9}>
+            <TouchableOpacity style={styles.deleteButton} activeOpacity={0.9} onPress={handleDeleteAccount}>
               <Ionicons name="warning-outline" size={18} color={colors.status.error} />
               <Text variant="md-semibold" style={styles.deleteButtonText}>
                 Delete Account
