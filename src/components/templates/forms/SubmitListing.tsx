@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -293,10 +294,24 @@ const SubmitListing: React.FC = () => {
         }
       }
     } catch (error: any) {
-      console.error('Error creating listing:', error);
+      console.error('❌ Listing submission error:', {
+        error: error.message,
+        stack: error.stack,
+        listingType,
+        formData: {
+          name,
+          category,
+          city,
+          description: description.substring(0, 50) + '...',
+          contactPerson,
+          whatsapp,
+          email,
+          hasLogo: !!logo,
+        },
+      });
       Alert.alert(
-        'Error',
-        error.message || 'Failed to submit listing. Please try again.',
+        'Submission Failed',
+        `Failed to submit ${listingType}: ${error.message || 'Unknown error'}. Please check all fields and try again.`,
       );
     }
   };
@@ -607,29 +622,46 @@ const SubmitListing: React.FC = () => {
           <Text variant="md-semibold" style={styles.label}>
             Upload Logo/Photo
           </Text>
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={styles.uploadCard}
-            onPress={pickLogo}>
-            <Ionicons
-              name="cloud-upload-outline"
-              size={28}
-              color={colors.text.secondary}
-            />
-            <Text variant="md-medium" style={styles.uploadTitle}>
-              Tap to upload or select
-            </Text>
-            <Text variant="sm-normal" style={styles.uploadSubtitle}>
-              PNG, JPG up to 5MB
-            </Text>
-          </TouchableOpacity>
-          {logo?.fileName && (
-            <View style={styles.fileRow}>
-              <Ionicons name="image-outline" size={18} color={colors.text.secondary} />
-              <Text variant="sm-medium" style={styles.fileName}>
-                {logo.fileName}
-              </Text>
+          {logo?.uri ? (
+            <View style={styles.imagePreviewContainer}>
+              <Image
+                source={{ uri: logo.uri }}
+                style={styles.imagePreview}
+                resizeMode="cover"
+              />
+              <TouchableOpacity
+                style={styles.removeImageButton}
+                onPress={() => setLogo(null)}
+                activeOpacity={0.8}>
+                <Ionicons name="close-circle" size={28} color={colors.status.error} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.changeImageButton}
+                onPress={pickLogo}
+                activeOpacity={0.85}>
+                <Ionicons name="camera-outline" size={18} color={colors.primary[600]} />
+                <Text variant="sm-medium" style={styles.changeImageText}>
+                  Change Image
+                </Text>
+              </TouchableOpacity>
             </View>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.uploadCard}
+              onPress={pickLogo}>
+              <Ionicons
+                name="cloud-upload-outline"
+                size={28}
+                color={colors.text.secondary}
+              />
+              <Text variant="md-medium" style={styles.uploadTitle}>
+                Tap to upload or select
+              </Text>
+              <Text variant="sm-normal" style={styles.uploadSubtitle}>
+                PNG, JPG up to 5MB
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
 

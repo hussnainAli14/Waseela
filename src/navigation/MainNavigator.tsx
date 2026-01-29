@@ -45,10 +45,16 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="Details" component={Details} />
     <HomeStack.Screen name="ProfessionalNetwork" component={ProfessionalNetwork} />
     <HomeStack.Screen name="BuySell" component={BuySell} />
+    <HomeStack.Screen name="RoomFinder" component={RoomFinder} />
     <HomeStack.Screen
       name="SellItem"
       component={SellItem}
       options={{ headerShown: true, title: 'Sell an Item' }}
+    />
+    <HomeStack.Screen
+      name="PostRoom"
+      component={PostRoom}
+      options={{ headerShown: true, title: 'Post a Room' }}
     />
     <HomeStack.Screen name="SubmitListing" component={SubmitListing} />
     <HomeStack.Screen

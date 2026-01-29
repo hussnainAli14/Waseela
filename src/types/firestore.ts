@@ -1,7 +1,7 @@
 import { Timestamp } from '@react-native-firebase/firestore';
 
 // Base types
-export type ListingStatus = 'pending' | 'approved' | 'rejected';
+export type ListingStatus = 'pending' | 'approved' | 'active' | 'rejected';
 export type ItemStatus = 'active' | 'sold' | 'removed';
 export type RoomStatus = 'available' | 'rented' | 'removed';
 export type RoomType = 'single' | 'double' | 'studio' | 'shared';
@@ -51,6 +51,8 @@ export interface Business {
     status: ListingStatus;
     createdAt: Timestamp | string | number;
     updatedAt: Timestamp | string | number;
+    approvedAt?: Timestamp | string | number;
+    rejectedAt?: Timestamp | string | number;
 }
 
 // Service type
@@ -75,6 +77,8 @@ export interface Service {
     status: ListingStatus;
     createdAt: Timestamp | string | number;
     updatedAt: Timestamp | string | number;
+    approvedAt?: Timestamp | string | number;
+    rejectedAt?: Timestamp | string | number;
 }
 
 // Marketplace item type
@@ -98,6 +102,8 @@ export interface MarketplaceItem {
     views: number;
     createdAt: Timestamp | string | number;
     updatedAt: Timestamp | string | number;
+    approvedAt?: Timestamp | string | number;
+    rejectedAt?: Timestamp | string | number;
 }
 
 // Product type
@@ -117,6 +123,8 @@ export interface Product {
     views: number;
     createdAt: Timestamp | string | number;
     updatedAt: Timestamp | string | number;
+    approvedAt?: Timestamp | string | number;
+    rejectedAt?: Timestamp | string | number;
 }
 
 // Room type
@@ -143,6 +151,8 @@ export interface Room {
     views: number;
     createdAt: Timestamp | string | number;
     updatedAt: Timestamp | string | number;
+    approvedAt?: Timestamp | string | number;
+    rejectedAt?: Timestamp | string | number;
 }
 
 // Professional type
@@ -168,6 +178,8 @@ export interface ProfessionalProfile {
     status: ListingStatus;
     createdAt: Timestamp | string | number;
     updatedAt: Timestamp | string | number;
+    approvedAt?: Timestamp | string | number;
+    rejectedAt?: Timestamp | string | number;
 }
 
 // Review type

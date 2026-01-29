@@ -6,6 +6,29 @@ import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 const COLLECTION = 'products';
 
 /**
+ * Convert Firestore timestamp objects to ISO strings for Redux serialization
+ */
+const serializeProduct = (data: any): Product => {
+    const product = { ...data };
+
+    // Convert Firestore timestamps to ISO strings/numbers
+    if (product.createdAt) {
+        product.createdAt = toMilliseconds(product.createdAt);
+    }
+    if (product.updatedAt) {
+        product.updatedAt = toMilliseconds(product.updatedAt);
+    }
+    if (product.approvedAt) {
+        product.approvedAt = toMilliseconds(product.approvedAt);
+    }
+    if (product.rejectedAt) {
+        product.rejectedAt = toMilliseconds(product.rejectedAt);
+    }
+
+    return product as Product;
+};
+
+/**
  * Create a new product listing
  */
 import { uploadListingImages } from '@/services/storage/imageUpload';
@@ -73,10 +96,10 @@ export const getProduct = async (productId: string): Promise<Product | null> => 
         return null;
     }
 
-    return {
+    return serializeProduct({
         id: doc.id,
         ...doc.data(),
-    } as Product;
+    });
 };
 
 /**
@@ -148,10 +171,12 @@ export const getProducts = async (
         const snapshot = await query.get();
         console.log('✅ Firestore: Query returned', snapshot.docs.length, 'products');
 
-        let products: Product[] = snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => ({
-            id: doc.id,
-            ...doc.data(),
-        })) as Product[];
+        let products: Product[] = snapshot.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+            serializeProduct({
+                id: doc.id,
+                ...doc.data(),
+            })
+        );
 
         // If we couldn't use orderBy due to filters requiring index, sort in memory
         if (hasFiltersRequiringIndex) {
@@ -187,10 +212,12 @@ export const getProductsBySeller = async (sellerId: string): Promise<Product[]> 
                 .orderBy('createdAt', 'desc');
 
             const snapshot = await query.get();
-            const products = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Product[];
+            const products = snapshot.docs.map(doc =>
+                serializeProduct({
+                    id: doc.id,
+                    ...doc.data(),
+                })
+            );
 
             // Already sorted by Firestore, but ensure consistency
             return products.sort((a, b) => {
@@ -207,10 +234,12 @@ export const getProductsBySeller = async (sellerId: string): Promise<Product[]> 
                     .where('sellerId', '==', sellerId)
                     .get();
 
-                const products = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                })) as Product[];
+                const products = snapshot.docs.map(doc =>
+                    serializeProduct({
+                        id: doc.id,
+                        ...doc.data(),
+                    })
+                );
 
                 return products.sort((a, b) => {
                     const dateA = toMilliseconds(a.createdAt);

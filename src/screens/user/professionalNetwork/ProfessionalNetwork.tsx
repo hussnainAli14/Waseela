@@ -310,12 +310,18 @@ const ProfessionalNetwork = () => {
           }>
           <View style={styles.cardHeader}>
             <View style={styles.avatarWrapper}>
-              <Image
-                source={{ uri: item.avatar }}
-                resizeMode="cover"
-                containerStyle={styles.avatar}
-                borderRadius={999}
-              />
+              {item.avatar ? (
+                <Image
+                  source={{ uri: item.avatar }}
+                  resizeMode="cover"
+                  containerStyle={styles.avatar}
+                  borderRadius={999}
+                />
+              ) : (
+                <View style={[styles.avatar, { backgroundColor: colors.background.dark, justifyContent: 'center', alignItems: 'center' }]}>
+                  <Ionicons name="person-outline" size={32} color={colors.text.secondary} />
+                </View>
+              )}
             </View>
             <View style={styles.cardHeaderText}>
               <Text variant="md-semibold" style={styles.nameText}>

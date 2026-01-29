@@ -423,29 +423,42 @@ const JoinProfessionalNetwork: React.FC = () => {
             <Text variant="md-semibold" style={[styles.label, { marginTop: 6 }]}>
               Professional Photo
             </Text>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.uploadCard}
-              onPress={handlePickPhoto}>
-              <Ionicons name="cloud-upload-outline" size={32} color={colors.text.secondary} />
-              <Text variant="md-medium" style={styles.uploadTitle}>
-                Upload a professional headshot
-              </Text>
-              <Text variant="sm-normal" style={styles.uploadSubtitle}>
-                PNG, JPG up to 5MB
-              </Text>
-            </TouchableOpacity>
-            {photo?.fileName && (
-              <View style={{ marginTop: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {photo?.uri ? (
+              <View style={styles.imagePreviewContainer}>
                 <Image
                   source={{ uri: photo.uri }}
-                  style={{ width: 48, height: 48, borderRadius: 12 }}
+                  style={styles.imagePreview}
                   resizeMode="cover"
                 />
-                <Text variant="sm-medium" style={{ color: colors.text.primary }}>
-                  {photo.fileName}
-                </Text>
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setPhoto(null)}
+                  activeOpacity={0.8}>
+                  <Ionicons name="close-circle" size={28} color={colors.status.error} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.changeImageButton}
+                  onPress={handlePickPhoto}
+                  activeOpacity={0.85}>
+                  <Ionicons name="camera-outline" size={18} color={colors.primary[600]} />
+                  <Text variant="sm-medium" style={styles.changeImageText}>
+                    Change Photo
+                  </Text>
+                </TouchableOpacity>
               </View>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.uploadCard}
+                onPress={handlePickPhoto}>
+                <Ionicons name="cloud-upload-outline" size={32} color={colors.text.secondary} />
+                <Text variant="md-medium" style={styles.uploadTitle}>
+                  Upload a professional headshot
+                </Text>
+                <Text variant="sm-normal" style={styles.uploadSubtitle}>
+                  PNG, JPG up to 5MB
+                </Text>
+              </TouchableOpacity>
             )}
             <View style={[styles.checkboxRow, { marginTop: 12 }]}>
               <Checkbox checked={confirm} onPress={() => setConfirm(!confirm)} />

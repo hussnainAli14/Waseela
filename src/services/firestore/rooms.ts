@@ -6,6 +6,33 @@ import { toMilliseconds } from '@/utils/dateUtils';
 
 const COLLECTION = 'rooms';
 
+/**
+ * Convert Firestore timestamp objects to numbers (milliseconds) for Redux serialization
+ */
+const serializeRoom = (data: any): Room => {
+    const room = { ...data };
+
+    // Convert Firestore timestamps to numbers
+    if (room.createdAt) {
+        room.createdAt = toMilliseconds(room.createdAt);
+    }
+    if (room.updatedAt) {
+        room.updatedAt = toMilliseconds(room.updatedAt);
+    }
+    if (room.availableFrom) {
+        room.availableFrom = toMilliseconds(room.availableFrom);
+    }
+    // Rooms might not have approvedAt/rejectedAt systematically but safe to check
+    if (room.approvedAt) {
+        room.approvedAt = toMilliseconds(room.approvedAt);
+    }
+    if (room.rejectedAt) {
+        room.rejectedAt = toMilliseconds(room.rejectedAt);
+    }
+
+    return room as Room;
+};
+
 import { uploadListingImages } from '@/services/storage/imageUpload';
 
 export const createRoom = async (
@@ -71,10 +98,10 @@ export const getRoom = async (roomId: string): Promise<Room | null> => {
         return null;
     }
 
-    return {
+    return serializeRoom({
         id: doc.id,
         ...doc.data(),
-    } as Room;
+    });
 };
 
 export const getRooms = async (
@@ -150,10 +177,10 @@ export const getRooms = async (
             console.log('💡 Tip: Check if type/city values match exactly (case-sensitive)');
         }
 
-        let rooms: Room[] = snapshot.docs.map(doc => ({
+        let rooms: Room[] = snapshot.docs.map(doc => serializeRoom({
             id: doc.id,
             ...doc.data(),
-        })) as Room[];
+        }));
 
         // Apply maxPrice filter client-side (if provided)
         if (filters.maxPrice) {
@@ -200,10 +227,10 @@ export const getRooms = async (
                 // Get more results to account for sorting in memory, then limit
                 const fallbackSnapshot = await fallbackQuery.limit(limit * 2).get();
 
-                let fallbackRooms: Room[] = fallbackSnapshot.docs.map(doc => ({
+                let fallbackRooms: Room[] = fallbackSnapshot.docs.map(doc => serializeRoom({
                     id: doc.id,
                     ...doc.data(),
-                })) as Room[];
+                }));
 
                 // Apply maxPrice filter
                 if (filters.maxPrice) {
@@ -251,10 +278,10 @@ export const getRoomsByPoster = async (posterId: string): Promise<Room[]> => {
                 .orderBy('createdAt', 'desc');
 
             const snapshot = await query.get();
-            const rooms = snapshot.docs.map(doc => ({
+            const rooms = snapshot.docs.map(doc => serializeRoom({
                 id: doc.id,
                 ...doc.data(),
-            })) as Room[];
+            }));
 
             // Already sorted by Firestore, but ensure consistency
             return rooms.sort((a, b) => {
@@ -271,10 +298,10 @@ export const getRoomsByPoster = async (posterId: string): Promise<Room[]> => {
                     .where('posterId', '==', posterId)
                     .get();
 
-                const rooms = snapshot.docs.map(doc => ({
+                const rooms = snapshot.docs.map(doc => serializeRoom({
                     id: doc.id,
                     ...doc.data(),
-                })) as Room[];
+                }));
 
                 return rooms.sort((a, b) => {
                     const dateA = toMilliseconds(a.createdAt);
@@ -348,10 +375,10 @@ export const searchRooms = async (
         .limit(limit)
         .get();
 
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map(doc => serializeRoom({
         id: doc.id,
         ...doc.data(),
-    })) as Room[];
+    }));
 };
 
 /**
@@ -371,10 +398,10 @@ export const getRelatedRooms = async (
             .get();
 
         const rooms = snapshot.docs
-            .map(doc => ({
+            .map(doc => serializeRoom({
                 id: doc.id,
                 ...doc.data(),
-            })) as Room[];
+            }));
 
         return rooms
             .filter(r => r.id !== currentId)

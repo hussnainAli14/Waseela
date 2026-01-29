@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
@@ -24,18 +24,32 @@ const BuySell = () => {
   const [searchValue, setSearchValue] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showSold, setShowSold] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<NavigationProp<MainStackParamList>>();
 
   // Fetch products and categories on mount
   useEffect(() => {
     dispatch(fetchProducts({
       filters: {
-        status: 'approved', // Only show approved products
+        status: 'active', // Match admin panel's approved status
       },
       limit: 50,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    dispatch(resetProducts());
+    await dispatch(fetchProducts({
+      filters: {
+        status: 'active', // Match admin panel's approved status
+      },
+      limit: 50,
+    }));
+    setRefreshing(false);
+  }, [dispatch]);
 
   // Prepare categories for display (prepend 'All')
   const displayCategories = useMemo(() => {
@@ -97,7 +111,7 @@ const BuySell = () => {
   // Filter products based on category and search
   const filteredItems = useMemo(() => {
     let filtered = products
-      .filter((product: Product) => product.status === 'approved') // Only show approved products
+      .filter((product: Product) => product.status === 'active') // Only show active (approved) products
       .map(convertProductToMarketItem);
 
     // Filter by category
@@ -269,6 +283,13 @@ const BuySell = () => {
             ItemSeparatorComponent={renderSeparator}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={[colors.primary[500]]}
+              />
+            }
           />
         )}
       </View>

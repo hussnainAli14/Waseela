@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text } from '@/components/atoms';
 import { SearchBar, ListingCard, CityDropdown } from '@/components/molecules';
@@ -29,10 +29,14 @@ const Services = () => {
 
   // Fetch categories managed by global subscription
 
+  const [refreshing, setRefreshing] = useState(false);
+
   // Helper function to apply filters and fetch services
   const applyFiltersAndFetch = useCallback(
-    (city: string | undefined, serviceType: string, searchTerm?: string) => {
-      const filterObj: any = {};
+    async (city: string | undefined, serviceType: string, searchTerm?: string) => {
+      const filterObj: any = {
+        status: 'approved', // Only show approved services
+      };
 
       if (city && city !== 'all') {
         // Capitalize city name to match database format
@@ -51,7 +55,7 @@ const Services = () => {
 
       console.log('🔍 Services: Applying filters:', { city, serviceType, searchTerm, filterObj });
       dispatch(resetServices());
-      dispatch(fetchServices({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
+      await dispatch(fetchServices({ filters: filterObj, limit: 50 })); // Fetch more for client-side search
     },
     [dispatch],
   );
@@ -60,8 +64,16 @@ const Services = () => {
   useEffect(() => {
     console.log('🔍 Services: Initial fetch - loading all services');
     dispatch(resetServices());
-    dispatch(fetchServices({ filters: {}, limit: 20 }));
+    dispatch(fetchServices({ filters: { status: 'approved' }, limit: 20 }));
   }, [dispatch]);
+
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Reset filters to current selection but force re-fetch
+    await applyFiltersAndFetch(selectedCity, selectedServiceType, searchValue);
+    setRefreshing(false);
+  }, [selectedCity, selectedServiceType, searchValue, applyFiltersAndFetch]);
 
   // Handle search input change (debouncing is handled by SearchBar component)
   const handleSearchChange = useCallback(
@@ -250,6 +262,13 @@ const Services = () => {
             </View>
           )}
           ItemSeparatorComponent={renderSeparator}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary[500]]}
+            />
+          }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"

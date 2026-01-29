@@ -6,6 +6,29 @@ import { toMilliseconds } from '@/utils/dateUtils';
 const COLLECTION = 'services';
 
 /**
+ * Convert Firestore timestamp objects to numbers (milliseconds) for Redux serialization
+ */
+const serializeService = (data: any): Service => {
+    const service = { ...data };
+
+    // Convert Firestore timestamps to numbers
+    if (service.createdAt) {
+        service.createdAt = toMilliseconds(service.createdAt);
+    }
+    if (service.updatedAt) {
+        service.updatedAt = toMilliseconds(service.updatedAt);
+    }
+    if (service.approvedAt) {
+        service.approvedAt = toMilliseconds(service.approvedAt);
+    }
+    if (service.rejectedAt) {
+        service.rejectedAt = toMilliseconds(service.rejectedAt);
+    }
+
+    return service as Service;
+};
+
+/**
  * Create a new service listing
  */
 import { uploadListingImages } from '@/services/storage/imageUpload';
@@ -36,6 +59,7 @@ export const createService = async (
         }
 
         // 3. Build service data object
+        // 3. Build service data object
         const serviceData: Service = {
             id: serviceId,
             name: data.name,
@@ -45,8 +69,6 @@ export const createService = async (
             areasCovered: data.areasCovered || [],
             whatsapp: data.whatsapp,
             email: data.email,
-            phone: data.phone,
-            experience: data.experience,
             tags: data.tags || [],
             providerId,
             images: imageUrls,
@@ -57,6 +79,10 @@ export const createService = async (
             createdAt: toMilliseconds(new Date().toISOString()),
             updatedAt: toMilliseconds(new Date().toISOString()),
         } as Service;
+
+        // Add optional fields only if defined
+        if (data.phone) serviceData.phone = data.phone;
+        if (data.experience) serviceData.experience = data.experience;
 
         await docRef.set(serviceData);
         return serviceId;
@@ -76,10 +102,10 @@ export const getService = async (serviceId: string): Promise<Service | null> => 
         return null;
     }
 
-    return {
+    return serializeService({
         id: doc.id,
         ...doc.data(),
-    } as Service;
+    });
 };
 
 /**
@@ -157,10 +183,10 @@ export const getServices = async (
             console.log('💡 Tip: Check if serviceType/city values match exactly (case-sensitive)');
         }
 
-        let services: Service[] = snapshot.docs.map(doc => ({
+        let services: Service[] = snapshot.docs.map(doc => serializeService({
             id: doc.id,
             ...doc.data(),
-        })) as Service[];
+        }));
 
         // If we couldn't use orderBy due to filters requiring index, sort in memory
         if (hasFiltersRequiringIndex) {
@@ -204,10 +230,10 @@ export const getServices = async (
                 // Get more results to account for sorting in memory, then limit
                 const fallbackSnapshot = await fallbackQuery.limit(limit * 2).get();
 
-                let fallbackServices: Service[] = fallbackSnapshot.docs.map(doc => ({
+                let fallbackServices: Service[] = fallbackSnapshot.docs.map(doc => serializeService({
                     id: doc.id,
                     ...doc.data(),
-                })) as Service[];
+                }));
 
                 // Sort by createdAt in memory
                 fallbackServices = fallbackServices.sort((a, b) => {
@@ -255,10 +281,10 @@ export const searchServices = async (
         .limit(limit)
         .get();
 
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map(doc => serializeService({
         id: doc.id,
         ...doc.data(),
-    })) as Service[];
+    }));
 };
 
 /**
@@ -273,10 +299,10 @@ export const getFeaturedServices = async (limit: number = 10): Promise<Service[]
         .limit(limit)
         .get();
 
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map(doc => serializeService({
         id: doc.id,
         ...doc.data(),
-    })) as Service[];
+    }));
 };
 
 /**
@@ -292,10 +318,10 @@ export const getServicesByProvider = async (providerId: string): Promise<Service
                 .orderBy('createdAt', 'desc');
 
             const snapshot = await query.get();
-            const services = snapshot.docs.map(doc => ({
+            const services = snapshot.docs.map(doc => serializeService({
                 id: doc.id,
                 ...doc.data(),
-            })) as Service[];
+            }));
 
             // Already sorted by Firestore, but ensure consistency
             return services.sort((a, b) => {
@@ -312,10 +338,10 @@ export const getServicesByProvider = async (providerId: string): Promise<Service
                     .where('providerId', '==', providerId)
                     .get();
 
-                const services = snapshot.docs.map(doc => ({
+                const services = snapshot.docs.map(doc => serializeService({
                     id: doc.id,
                     ...doc.data(),
-                })) as Service[];
+                }));
 
                 return services.sort((a, b) => {
                     const dateA = toMilliseconds(a.createdAt);
@@ -406,10 +432,10 @@ export const subscribeToServices = (
     query = query.orderBy('createdAt', 'desc').limit(20);
 
     const unsubscribe = query.onSnapshot(snapshot => {
-        const services: Service[] = snapshot.docs.map(doc => ({
+        const services: Service[] = snapshot.docs.map(doc => serializeService({
             id: doc.id,
             ...doc.data(),
-        })) as Service[];
+        }));
 
         callback(services);
     });
@@ -434,10 +460,10 @@ export const getRelatedServices = async (
             .get();
 
         const services = snapshot.docs
-            .map(doc => ({
+            .map(doc => serializeService({
                 id: doc.id,
                 ...doc.data(),
-            })) as Service[];
+            }));
 
         return services
             .filter(s => s.id !== currentId)
