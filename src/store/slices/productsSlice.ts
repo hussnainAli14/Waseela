@@ -71,11 +71,11 @@ export const fetchProductById = createAsyncThunk(
 export const createProduct = createAsyncThunk(
     'products/createProduct',
     async (
-        { data, sellerId, images }: { data: ProductFormData; sellerId: string; images: string[] },
+        { data, sellerId, seller, images }: { data: ProductFormData; sellerId: string; seller: { name: string; photo?: string }; images: string[] },
         { rejectWithValue }
     ) => {
         try {
-            const productId = await productsService.createProduct(data, sellerId, images);
+            const productId = await productsService.createProduct(data, sellerId, seller, images);
             return productId;
         } catch (error: any) {
             return rejectWithValue(error.message);

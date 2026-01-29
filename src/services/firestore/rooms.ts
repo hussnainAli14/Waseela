@@ -38,6 +38,7 @@ import { uploadListingImages } from '@/services/storage/imageUpload';
 export const createRoom = async (
     data: RoomFormData,
     posterId: string,
+    poster: { name: string; photo?: string },
     imageUris: string[] = []
 ): Promise<string> => {
     try {
@@ -70,8 +71,10 @@ export const createRoom = async (
             amenities: data.amenities,
             whatsapp: data.whatsapp,
             posterId,
+            posterName: poster.name,
+            posterPhoto: poster.photo,
             images: imageUrls,
-            status: 'available' as RoomStatus,
+            status: 'pending' as RoomStatus,
             views: 0,
             createdAt: toMilliseconds(new Date().toISOString()),
             updatedAt: toMilliseconds(new Date().toISOString()),

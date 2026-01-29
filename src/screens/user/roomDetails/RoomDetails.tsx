@@ -4,6 +4,7 @@ import { View, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Text, Image } from '@/components/atoms';
+import { formatDate } from '@/utils/dateUtils';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { MainStackParamList, RoomItem } from '@/navigation/types';
@@ -75,7 +76,7 @@ const RoomDetails = () => {
 
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: room.image }}
+            source={typeof room.image === 'string' ? { uri: room.image } : room.image}
             resizeMode="cover"
             containerStyle={styles.heroImage}
             borderRadius={0}
@@ -185,15 +186,23 @@ const RoomDetails = () => {
             Posted by
           </Text>
           <View style={styles.postedByRow}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={24} color={colors.accent.orange} />
-            </View>
+            {room.posterPhoto ? (
+              <Image
+                source={{ uri: room.posterPhoto }}
+                containerStyle={styles.avatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={24} color={colors.accent.orange} />
+              </View>
+            )}
             <View style={styles.postedByInfo}>
               <Text variant="md-semibold" style={styles.landlordName}>
-                {room.landlordName ?? 'Fatima K.'}
+                {room.posterName || 'Waseela User'}
               </Text>
               <Text variant="sm-normal" style={styles.postedDate}>
-                Posted {room.postedAt ?? '2 days ago'}
+                Posted {formatDate(room.createdAt, 'relative')}
               </Text>
             </View>
           </View>

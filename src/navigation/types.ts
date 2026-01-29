@@ -62,7 +62,7 @@ export type ListingItem = {
   rating: number;
   reviews: number;
   verified?: boolean;
-  image: string;
+  image: any;
   description?: string;
   address?: string;
   timings?: string;
@@ -82,7 +82,7 @@ export type MarketItem = {
   location: string;
   condition: string;
   category: string;
-  image: string;
+  image: any;
   postedAt?: string;
   sellerName?: string;
   description?: string;
@@ -96,13 +96,16 @@ export type RoomItem = {
   type: 'single' | 'double' | 'studio' | 'shared';
   price: number;
   priceLabel: string;
-  image: string;
+  image: any;
   billsIncluded: boolean;
   locationLine1: string;
   locationLine2: string;
   description?: string;
   amenities?: string[];
   availableFrom?: string;
+  posterName?: string;
+  posterPhoto?: string;
+  createdAt?: number;
   landlordName?: string;
   postedAt?: string;
 };

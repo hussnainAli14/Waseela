@@ -12,6 +12,7 @@ import { MainStackParamList } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchRooms, resetRooms } from '@/store/slices/roomsSlice';
 import type { Room } from '@/types/firestore';
+import { toMilliseconds } from '@/utils/dateUtils';
 import { getListingImage } from '@/utils/placeholders';
 
 type RoomType = 'all' | 'single' | 'double' | 'studio' | 'shared';
@@ -45,11 +46,10 @@ const convertRoomToRoomItem = (room: Room): RoomItem => {
     locationLine2: room.locationLine2 || '',
     description: room.description,
     amenities: room.amenities,
-    availableFrom: typeof room.availableFrom === 'object' && room.availableFrom && 'toDate' in room.availableFrom
-      ? (room.availableFrom as any).toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-      : typeof room.availableFrom === 'string'
-        ? new Date(room.availableFrom).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-        : '',
+    availableFrom: new Date(toMilliseconds(room.availableFrom)).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+    posterName: room.posterName || 'Waseela User',
+    posterPhoto: room.posterPhoto,
+    createdAt: typeof room.createdAt === 'number' ? room.createdAt : toMilliseconds(room.createdAt),
   };
 };
 
@@ -209,7 +209,7 @@ const RoomFinder = () => {
         onPress={() => handleRoomPress(item)}>
         <View style={styles.roomCardContent}>
           <Image
-            source={{ uri: item.image }}
+            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
             resizeMode="cover"
             containerStyle={styles.roomImage}
             borderRadius={18}

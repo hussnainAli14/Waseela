@@ -52,7 +52,7 @@ const CommunityGuidelines: React.FC<CommunityGuidelinesScreenProps> = ({
         showsVerticalScrollIndicator={false}>
         <View style={styles.logoContainer}>
           <Image
-            source={images.mainLogo}
+            source={images.placeholderImage}
             width={80}
             height={80}
             resizeMode="contain"

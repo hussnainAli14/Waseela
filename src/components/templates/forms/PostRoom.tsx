@@ -239,6 +239,10 @@ const PostRoom: React.FC = () => {
         createRoom({
           data: formData,
           posterId: user.uid,
+          poster: {
+            name: yourName.trim() || user.displayName || 'Waseela User',
+            photo: user.photoURL,
+          },
           images: imageUris, // Uses actual photos if selected, empty array if not
         })
       ).unwrap();

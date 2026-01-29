@@ -137,6 +137,10 @@ const SellItem: React.FC = () => {
         createProduct({
           data: formData,
           sellerId: user.uid,
+          seller: {
+            name: user.displayName || 'Waseela User',
+            photo: user.photoURL || undefined,
+          },
           images: imageUris, // Uses actual photos if selected, empty array if not
         })
       ).unwrap();

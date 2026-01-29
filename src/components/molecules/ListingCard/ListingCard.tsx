@@ -29,7 +29,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
       onPress={onPress}>
       <View style={styles.headerRow}>
         <Image
-          source={{ uri: imageUri }}
+          source={typeof imageUri === 'string' ? { uri: imageUri } : imageUri}
           containerStyle={styles.thumbnail}
           borderRadius={12}
         />
@@ -77,11 +77,11 @@ const ListingCard: React.FC<ListingCardProps> = ({
           style={styles.ctaButton}
           activeOpacity={0.85}
           onPress={onPressCta}>
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={18}
-              color={colors.common.white}
-            />
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={18}
+            color={colors.common.white}
+          />
           <Text variant="lg-semibold" style={styles.ctaText}>
             {ctaLabel}
           </Text>

@@ -22,7 +22,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerContent: {
-    flexDirection:'column',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -74,8 +74,8 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   exploreIconWrapper: {
-    width: 54,
-    height: 54,
+    width: 44,
+    height: 44,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -95,8 +95,8 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
   networkIconWrapper: {
-    width: 64,
-    height: 64,
+    width: 54,
+    height: 54,
   },
   featuredSection: {
     paddingHorizontal: 20,

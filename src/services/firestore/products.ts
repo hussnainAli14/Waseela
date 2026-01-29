@@ -40,6 +40,7 @@ import { uploadListingImages } from '@/services/storage/imageUpload';
 export const createProduct = async (
     data: ProductFormData,
     sellerId: string,
+    seller: { name: string; photo?: string },
     imageUris: string[] = []
 ): Promise<string> => {
     try {
@@ -69,6 +70,8 @@ export const createProduct = async (
             location: data.location,
             city: data.city,
             sellerId,
+            sellerName: seller.name,
+            sellerPhoto: seller.photo,
             images: imageUrls,
             verified: false,
             status: 'pending' as ListingStatus,

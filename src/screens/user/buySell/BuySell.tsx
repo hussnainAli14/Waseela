@@ -12,6 +12,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProducts, resetProducts } from '@/store/slices/productsSlice';
 import type { Product } from '@/types/firestore';
 import { getListingImage } from '@/utils/placeholders';
+import { formatDate } from '@/utils/dateUtils';
 
 // Categories managed from Redux
 
@@ -29,14 +30,14 @@ const BuySell = () => {
 
   // Fetch products and categories on mount
   useEffect(() => {
+    dispatch(resetProducts());
     dispatch(fetchProducts({
       filters: {
-        status: 'active', // Match admin panel's approved status
+        status: showSold ? 'sold' : 'active',
       },
       limit: 50,
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dispatch, showSold]);
 
   // Handle pull-to-refresh
   const handleRefresh = useCallback(async () => {
@@ -80,6 +81,8 @@ const BuySell = () => {
       condition: conditionMap[product.condition] || product.condition,
       category: product.category,
       image: getListingImage(product.images, 'product'),
+      sellerName: product.sellerName || 'Waseela User',
+      postedAt: formatDate(product.createdAt, 'relative'),
       description: product.description,
       safetyTips: [
         'Meet in a public place',
@@ -111,7 +114,6 @@ const BuySell = () => {
   // Filter products based on category and search
   const filteredItems = useMemo(() => {
     let filtered = products
-      .filter((product: Product) => product.status === 'active') // Only show active (approved) products
       .map(convertProductToMarketItem);
 
     // Filter by category
@@ -160,7 +162,7 @@ const BuySell = () => {
         onPress={() => handlePressItem(item)}>
         <View style={styles.itemImageWrapper}>
           <Image
-            source={{ uri: item.image }}
+            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
             resizeMode="cover"
             containerStyle={styles.itemImage}
             borderRadius={18}

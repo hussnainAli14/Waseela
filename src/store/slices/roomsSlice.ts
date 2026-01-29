@@ -73,11 +73,11 @@ export const fetchRoomById = createAsyncThunk(
 export const createRoom = createAsyncThunk(
     'rooms/createRoom',
     async (
-        { data, posterId, images }: { data: RoomFormData; posterId: string; images: string[] },
+        { data, posterId, poster, images }: { data: RoomFormData; posterId: string; poster: { name: string; photo?: string }; images: string[] },
         { rejectWithValue }
     ) => {
         try {
-            const roomId = await roomsService.createRoom(data, posterId, images);
+            const roomId = await roomsService.createRoom(data, posterId, poster, images);
             return roomId;
         } catch (error: any) {
             return rejectWithValue(error.message);

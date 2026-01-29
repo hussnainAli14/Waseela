@@ -35,7 +35,7 @@ export const toMilliseconds = (date: string | number | Timestamp | Date | undefi
  * @returns Formatted date string
  */
 export const formatDate = (
-    date: string | Timestamp | undefined | null,
+    date: string | number | Timestamp | undefined | null,
     format: 'relative' | 'short' | 'long' = 'relative'
 ): string => {
     const ms = toMilliseconds(date);

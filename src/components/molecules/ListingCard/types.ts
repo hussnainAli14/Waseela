@@ -7,7 +7,7 @@ export interface ListingCardProps {
   rating: number | string;
   reviews: number | string;
   verified?: boolean;
-  imageUri: string;
+  imageUri: any;
   variant?: ListingCardVariant;
   ctaLabel?: string;
   onPress?: () => void;

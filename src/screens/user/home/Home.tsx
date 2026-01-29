@@ -152,7 +152,7 @@ const Home = () => {
                     styles.exploreIconWrapper,
                     { backgroundColor: item.background },
                   ]}>
-                  <Ionicons name={item.icon} size={26} color={colors.common.white} />
+                  <Ionicons name={item.icon} size={20} color={colors.common.white} />
                 </View>
                 <Text variant="md-semibold" style={styles.exploreLabel}>
                   {item.title}
@@ -176,7 +176,7 @@ const Home = () => {
                 ]}>
                 <Ionicons
                   name="people-outline"
-                  size={30}
+                  size={24}
                   color={colors.common.white}
                 />
               </View>

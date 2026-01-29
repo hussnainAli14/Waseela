@@ -395,7 +395,7 @@ const Details = () => {
 
         <View style={styles.hero}>
           <Image
-            source={{ uri: listing.image }}
+            source={typeof listing.image === 'string' ? { uri: listing.image } : listing.image}
             resizeMode="cover"
             containerStyle={styles.heroImage}
           />

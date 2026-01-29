@@ -3,7 +3,7 @@ import { Timestamp } from '@react-native-firebase/firestore';
 // Base types
 export type ListingStatus = 'pending' | 'approved' | 'active' | 'rejected';
 export type ItemStatus = 'active' | 'sold' | 'removed';
-export type RoomStatus = 'available' | 'rented' | 'removed';
+
 export type RoomType = 'single' | 'double' | 'studio' | 'shared';
 export type ItemCondition = 'new' | 'like-new' | 'good' | 'fair' | 'needs-repair';
 export type ContactMethod = 'whatsapp' | 'email' | 'phone';
@@ -110,6 +110,8 @@ export interface MarketplaceItem {
 export interface Product {
     id: string;
     sellerId: string;
+    sellerName?: string;
+    sellerPhoto?: string;
     title: string;
     description: string;
     category: string;
@@ -127,10 +129,15 @@ export interface Product {
     rejectedAt?: Timestamp | string | number;
 }
 
+// Room Status
+export type RoomStatus = 'pending' | 'available' | 'rented' | 'removed' | 'rejected';
+
 // Room type
 export interface Room {
     id: string;
     posterId: string;
+    posterName?: string;
+    posterPhoto?: string;
     title: string;
     description: string;
     type: RoomType;
