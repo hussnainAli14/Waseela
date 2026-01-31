@@ -19,6 +19,10 @@ const convertToProfileItem = (pro: FirestoreProfessional): ProfessionalProfileIt
     ? parseInt(pro.experience.match(/\d+/)?.[0] || '0', 10)
     : 0;
 
+  // Ensure profilePhoto is a string (Firestore can sometimes return numbers)
+  const profilePhotoUrl =
+    pro.profilePhoto && typeof pro.profilePhoto === 'string' ? pro.profilePhoto : undefined;
+
   return {
     id: pro.id,
     name: pro.fullName,
@@ -28,7 +32,7 @@ const convertToProfileItem = (pro: FirestoreProfessional): ProfessionalProfileIt
     city: pro.location,
     yearsExperience,
     tags: pro.skills || [],
-    avatar: getListingImage(pro.profilePhoto ? [pro.profilePhoto] : undefined, 'professional'),
+    avatar: getListingImage(profilePhotoUrl ? [profilePhotoUrl] : undefined, 'professional'),
     about: pro.bio,
     expertise: pro.skills,
     helpTitle: undefined,
@@ -70,7 +74,7 @@ const UserProfessionalProfiles = () => {
           <View style={styles.cardHeader}>
             <View style={styles.avatarWrapper}>
               <Image
-                source={{ uri: profileData.avatar }}
+                source={typeof profileData.avatar === 'string' ? { uri: profileData.avatar } : profileData.avatar}
                 resizeMode="cover"
                 containerStyle={styles.avatar}
                 borderRadius={999}

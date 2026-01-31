@@ -52,7 +52,7 @@ const ProfessionalProfile = () => {
         <View style={styles.hero}>
           <View style={styles.avatarWrapper}>
             <Image
-              source={{ uri: professional.avatar }}
+              source={typeof professional.avatar === 'string' ? { uri: professional.avatar } : professional.avatar}
               resizeMode="cover"
               containerStyle={styles.avatar}
               borderRadius={999}

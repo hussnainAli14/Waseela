@@ -248,6 +248,15 @@ const SubmitListing: React.FC = () => {
         if (phone.trim()) {
           formData.phone = phone.trim();
         }
+        if (website.trim()) {
+          formData.website = website.trim();
+        }
+        if (instagram.trim()) {
+          formData.instagram = instagram.trim();
+        }
+        if (openingHours.trim()) {
+          formData.openingHours = openingHours.trim();
+        }
 
         // Dispatch the create service action with actual logo (or empty array)
         const result = await dispatch(
@@ -506,16 +515,22 @@ const SubmitListing: React.FC = () => {
             label="Website (Optional)"
             placeholder="https://www.example.com"
             keyboardType="url"
+            value={website}
+            onChangeText={setWebsite}
             containerStyle={styles.inputSpacing}
           />
           <TextField
             label="Instagram (Optional)"
             placeholder="@username"
+            value={instagram}
+            onChangeText={setInstagram}
             containerStyle={styles.inputSpacing}
           />
           <TextField
-            label="Opening Hours"
+            label="Opening Hours (Optional)"
             placeholder="e.g., Mon-Fri: 9am - 5pm, Sat: 10am - 6pm"
+            value={openingHours}
+            onChangeText={setOpeningHours}
             containerStyle={styles.inputSpacing}
           />
         </View>

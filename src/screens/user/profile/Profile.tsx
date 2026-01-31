@@ -343,6 +343,17 @@ const Profile = () => {
         verified: originalBusiness.verified || false,
         image: getListingImage(originalBusiness.images, 'business'),
         ownerId: originalBusiness.ownerId,
+        listingType: 'business' as const,
+        description: originalBusiness.description,
+        phone: originalBusiness.phone,
+        email: originalBusiness.email,
+        tagline: originalBusiness.tagline,
+        contactPerson: originalBusiness.contactPerson,
+        whatsapp: originalBusiness.whatsapp,
+        website: originalBusiness.website,
+        instagram: originalBusiness.instagram,
+        openingHours: originalBusiness.openingHours,
+        tags: originalBusiness.tags,
       };
     } else if (originalService) {
       return {
@@ -355,6 +366,16 @@ const Profile = () => {
         verified: originalService.verified || false,
         image: getListingImage(originalService.images, 'service'),
         ownerId: originalService.providerId,
+        listingType: 'service' as const,
+        description: originalService.description,
+        phone: originalService.phone,
+        email: originalService.email,
+        whatsapp: originalService.whatsapp,
+        website: originalService.website,
+        instagram: originalService.instagram,
+        openingHours: originalService.openingHours,
+        areasCovered: originalService.areasCovered,
+        tags: originalService.tags,
       };
     }
 
@@ -377,12 +398,13 @@ const Profile = () => {
   }, [navigation, buildListingItem]);
 
   const renderListingItem = ({ item }: { item: Listing }) => {
+    const imageSource = typeof item.image === 'string'
+      ? { uri: item.image }
+      : (item.image ?? { uri: 'https://via.placeholder.com/150' });
     return (
       <View style={styles.listingCard}>
         <Image
-          source={{
-            uri: item.image || 'https://via.placeholder.com/150'
-          }}
+          source={imageSource}
           resizeMode="cover"
           style={styles.listingImagePlaceholder}
         />
@@ -451,6 +473,9 @@ const Profile = () => {
       navigation.navigate('Details', { listing: listingForDetails });
     };
 
+    const imageSource = typeof item.image === 'string'
+      ? { uri: item.image }
+      : (item.image ?? { uri: 'https://via.placeholder.com/150' });
     return (
       <TouchableOpacity
         style={styles.listingCard}
@@ -458,7 +483,7 @@ const Profile = () => {
         activeOpacity={0.9}
       >
         <Image
-          source={{ uri: item.image || 'https://via.placeholder.com/150' }}
+          source={imageSource}
           resizeMode="cover"
           style={styles.listingImagePlaceholder}
         />
@@ -496,7 +521,7 @@ const Profile = () => {
       activeOpacity={0.9}
       onPress={() => navigation.navigate('MarketItemDetails', { item })}>
       <Image
-        source={{ uri: item.image }}
+        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
         resizeMode="cover"
         style={styles.listingImagePlaceholder}
       />
@@ -530,7 +555,7 @@ const Profile = () => {
       activeOpacity={0.9}
       onPress={() => navigation.navigate('RoomDetails', { room: item })}>
       <Image
-        source={{ uri: item.image }}
+        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
         resizeMode="cover"
         style={styles.listingImagePlaceholder}
       />

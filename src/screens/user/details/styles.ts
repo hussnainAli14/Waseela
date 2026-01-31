@@ -71,6 +71,15 @@ export const styles = StyleSheet.create({
   subtleText: {
     color: colors.text.secondary,
   },
+  tagChip: {
+    backgroundColor: colors.background.neutral,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  tagChipText: {
+    color: colors.text.primary,
+  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',

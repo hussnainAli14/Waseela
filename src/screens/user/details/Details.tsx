@@ -85,6 +85,7 @@ const Details = () => {
   const navigation = useNavigation<DetailsNavigationProp>();
   const { params } = useRoute<DetailsRoute>();
   const listing = params?.listing;
+  console.log('🔖 Details: Listing:', listing);
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { savedItemIds } = useAppSelector(state => state.savedListings);
@@ -224,20 +225,24 @@ const Details = () => {
   };
 
   const handleWhatsApp = () => {
-    const phone = listing.phone || '0000000000';
-    const url = `https://wa.me/${phone}`;
+    const num = listing.whatsapp || listing.phone || '';
+    const digits = (num || '').replace(/\D/g, '');
+    if (!digits) return;
+    const url = `https://wa.me/${digits}`;
     Linking.openURL(url).catch(() => { });
   };
 
   const handleEmail = () => {
-    const email = listing.email || 'info@example.com';
+    const email = (listing.email || '').trim();
+    if (!email) return;
     const url = `mailto:${email}`;
     Linking.openURL(url).catch(() => { });
   };
 
   const handleCall = () => {
-    const phone = listing.phone || '0000000000';
-    const url = `tel:${phone}`;
+    const phone = listing.phone || listing.whatsapp || '';
+    if (!phone) return;
+    const url = `tel:${phone.replace(/\s/g, '')}`;
     Linking.openURL(url).catch(() => { });
   };
 
@@ -330,26 +335,33 @@ const Details = () => {
   };
 
   const navigateToRelated = (item: any) => {
-    // Navigate to same details screen with new item
-    // We need to map the item to ListingItem structure
-
+    // Map related item to ListingItem with all form fields for Details
+    const isService = !!item.serviceType || (item.category && String(item.category).toLowerCase().includes('service'));
     const mappedItem: any = {
       id: item.id,
-      name: item.name || item.title, // Handle different field names
+      name: item.name || item.title,
       category: item.category || item.type || item.serviceType,
       location: item.location || item.city,
       rating: item.rating || 0,
       reviews: item.reviews || item.reviewCount || 0,
       verified: item.verified,
-      image: getListingImage(item.images, 'business'), // Defaulting to business for related items
+      image: getListingImage(item.images, isService ? 'service' : 'business'),
       description: item.description,
       phone: item.phone,
       email: item.email,
       ownerId: item.ownerId || item.sellerId || item.providerId,
-      // Add other specific fields if needed
       price: item.price,
       priceLabel: item.priceLabel,
       condition: item.condition,
+      listingType: isService ? ('service' as const) : ('business' as const),
+      tagline: item.tagline,
+      contactPerson: item.contactPerson,
+      whatsapp: item.whatsapp,
+      website: item.website,
+      instagram: item.instagram,
+      openingHours: item.openingHours,
+      tags: item.tags,
+      areasCovered: item.areasCovered,
     };
 
     navigation.push('Details', { listing: mappedItem });
@@ -446,40 +458,142 @@ const Details = () => {
           </Text>
         </View>
 
-        {/* Only show contact section if user is NOT the owner */}
-        {!isOwner && (
+        {/* Optional details – only show when user has entered them */}
+        {listing.tagline && listing.tagline.trim() && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Tagline
+            </Text>
+            <Text variant="md-normal" style={styles.subtleText}>
+              {listing.tagline}
+            </Text>
+          </View>
+        )}
+
+        {listing.contactPerson && listing.contactPerson.trim() && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Contact Person
+            </Text>
+            <Text variant="md-normal" style={styles.subtleText}>
+              {listing.contactPerson}
+            </Text>
+          </View>
+        )}
+
+        {listing.openingHours && listing.openingHours.trim() && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Opening Hours
+            </Text>
+            <Text variant="md-normal" style={styles.subtleText}>
+              {listing.openingHours}
+            </Text>
+          </View>
+        )}
+
+        {listing.website && listing.website.trim() && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Website
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                const url = listing.website!.trim().startsWith('http') ? listing.website!.trim() : `https://${listing.website!.trim()}`;
+                Linking.openURL(url).catch(() => {});
+              }}>
+              <Text variant="md-normal" style={[styles.subtleText, { color: colors.primary[600], textDecorationLine: 'underline' }]}>
+                {listing.website.trim()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {listing.instagram && listing.instagram.trim() && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Instagram
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                const handle = listing.instagram!.trim().replace(/^@/, '');
+                Linking.openURL(`https://instagram.com/${handle}`).catch(() => {});
+              }}>
+              <Text variant="md-normal" style={[styles.subtleText, { color: colors.primary[600], textDecorationLine: 'underline' }]}>
+                {listing.instagram.trim()}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {listing.tags && listing.tags.length > 0 && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Tags
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {listing.tags.map(tag => (
+                <View key={tag} style={styles.tagChip}>
+                  <Text variant="sm-medium" style={styles.tagChipText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {listing.areasCovered && listing.areasCovered.length > 0 && (
+          <View style={styles.section}>
+            <Text variant="lg-bold" style={styles.sectionTitle}>
+              Areas Covered
+            </Text>
+            <Text variant="md-normal" style={styles.subtleText}>
+              {listing.areasCovered.join(', ')}
+            </Text>
+          </View>
+        )}
+
+        {/* Contact – only show buttons when the corresponding field exists */}
+        {(listing.whatsapp || listing.phone || listing.email) && (
           <View style={styles.section}>
             <Text variant="lg-bold" style={styles.sectionTitle}>
               Contact
             </Text>
             <View style={styles.contactCard}>
-              <TouchableOpacity
-                style={[styles.contactItem, styles.contactPrimary]}
-                activeOpacity={0.85}
-                onPress={handleWhatsApp}>
-                <Ionicons name="logo-whatsapp" size={18} color={colors.common.white} />
-                <Text variant="md-semibold" style={styles.contactTextPrimary}>
-                  WhatsApp
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.contactItem}
-                activeOpacity={0.85}
-                onPress={handleEmail}>
-                <Ionicons name="mail-outline" size={18} color={colors.text.secondary} />
-                <Text variant="md-medium" style={styles.contactText}>
-                  Email
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.contactItem}
-                activeOpacity={0.85}
-                onPress={handleCall}>
-                <Ionicons name="call-outline" size={18} color={colors.text.secondary} />
-                <Text variant="md-medium" style={styles.contactText}>
-                  Call
-                </Text>
-              </TouchableOpacity>
+              {(listing.whatsapp || listing.phone) && (
+                <TouchableOpacity
+                  style={[styles.contactItem, styles.contactPrimary]}
+                  activeOpacity={0.85}
+                  onPress={handleWhatsApp}>
+                  <Ionicons name="logo-whatsapp" size={18} color={colors.common.white} />
+                  <Text variant="md-semibold" style={styles.contactTextPrimary}>
+                    WhatsApp
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {listing.email && listing.email.trim() && (
+                <TouchableOpacity
+                  style={styles.contactItem}
+                  activeOpacity={0.85}
+                  onPress={handleEmail}>
+                  <Ionicons name="mail-outline" size={18} color={colors.text.secondary} />
+                  <Text variant="md-medium" style={styles.contactText}>
+                    Email
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {(listing.phone || listing.whatsapp) && (
+                <TouchableOpacity
+                  style={styles.contactItem}
+                  activeOpacity={0.85}
+                  onPress={handleCall}>
+                  <Ionicons name="call-outline" size={18} color={colors.text.secondary} />
+                  <Text variant="md-medium" style={styles.contactText}>
+                    Call
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}

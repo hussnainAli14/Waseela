@@ -181,7 +181,7 @@ const Directory = () => {
 
   const handlePressListing = useCallback(
     (item: typeof businesses[0]) => {
-      // Convert business to ListingItem format
+      // Convert business to ListingItem format with all form fields for Details
       const listingItem: ListingItem = {
         id: item.id,
         name: item.name,
@@ -191,6 +191,18 @@ const Directory = () => {
         reviews: item.reviewCount,
         verified: item.verified,
         image: getListingImage(item.images, 'business'),
+        description: item.description,
+        phone: item.phone,
+        email: item.email,
+        ownerId: item.ownerId,
+        listingType: 'business',
+        tagline: item.tagline,
+        contactPerson: item.contactPerson,
+        whatsapp: item.whatsapp,
+        website: item.website,
+        instagram: item.instagram,
+        openingHours: item.openingHours,
+        tags: item.tags,
       };
       navigation.navigate('Details', { listing: listingItem });
     },

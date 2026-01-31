@@ -82,6 +82,9 @@ export const createService = async (
 
         // Add optional fields only if defined
         if (data.phone) serviceData.phone = data.phone;
+        if (data.website) serviceData.website = data.website;
+        if (data.instagram) serviceData.instagram = data.instagram;
+        if (data.openingHours) serviceData.openingHours = data.openingHours;
         if (data.experience) serviceData.experience = data.experience;
 
         await docRef.set(serviceData);

@@ -174,6 +174,7 @@ const Services = () => {
 
   const handlePressListing = useCallback(
     (item: typeof services[0]) => {
+      // Convert service to ListingItem format with all form fields for Details
       const listingItem: ListingItem = {
         id: item.id,
         name: item.name,
@@ -183,6 +184,17 @@ const Services = () => {
         reviews: item.reviewCount,
         verified: item.verified,
         image: getListingImage(item.images, 'service'),
+        description: item.description,
+        phone: item.phone,
+        email: item.email,
+        ownerId: item.providerId,
+        listingType: 'service',
+        whatsapp: item.whatsapp,
+        website: item.website,
+        instagram: item.instagram,
+        openingHours: item.openingHours,
+        areasCovered: item.areasCovered,
+        tags: item.tags,
       };
       navigation.navigate('Details', { listing: listingItem });
     },

@@ -133,11 +133,11 @@ const RoomDetails = () => {
             </View>
           )}
 
-          <View style={styles.proximityBadge}>
+        { room.locationLine2 && <View style={styles.proximityBadge}>
             <Text variant="sm-medium" style={styles.proximityBadgeText}>
               {room.locationLine2}
             </Text>
-          </View>
+          </View>}
         </View>
 
         <View style={styles.section}>

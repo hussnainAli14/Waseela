@@ -73,6 +73,17 @@ export type ListingItem = {
   price?: number;
   priceLabel?: string;
   condition?: string;
+  // Listing type for Details (business vs service)
+  listingType?: 'business' | 'service';
+  // Business & service form fields (optional – only show when present)
+  tagline?: string;
+  contactPerson?: string;
+  whatsapp?: string;
+  website?: string;
+  instagram?: string;
+  openingHours?: string;
+  tags?: string[];
+  areasCovered?: string[];
 };
 
 export type MarketItem = {

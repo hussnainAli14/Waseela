@@ -69,6 +69,9 @@ export interface Service {
     whatsapp: string;
     email: string;
     phone?: string;
+    website?: string;
+    instagram?: string;
+    openingHours?: string;
     experience?: string;
     tags: string[];
     rating: number;
@@ -248,6 +251,9 @@ export interface ServiceFormData {
     whatsapp: string;
     email: string;
     phone?: string;
+    website?: string;
+    instagram?: string;
+    openingHours?: string;
     experience?: string;
     tags: string[];
 }

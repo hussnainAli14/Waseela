@@ -23,6 +23,10 @@ const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional 
     ? parseInt(pro.experience.match(/\d+/)?.[0] || '0', 10)
     : 0;
 
+  // Ensure profilePhoto is a string (Firestore can sometimes return numbers)
+  const profilePhotoUrl =
+    pro.profilePhoto && typeof pro.profilePhoto === 'string' ? pro.profilePhoto : undefined;
+
   return {
     id: pro.id,
     name: pro.fullName,
@@ -32,7 +36,7 @@ const convertFirestoreProfessional = (pro: FirestoreProfessional): Professional 
     city: pro.location,
     yearsExperience,
     tags: pro.skills || [],
-    avatar: getListingImage(pro.profilePhoto ? [pro.profilePhoto] : undefined, 'professional'),
+    avatar: getListingImage(profilePhotoUrl ? [profilePhotoUrl] : undefined, 'professional'),
     offeringMentorship: false, // This field doesn't exist in Firestore Professional, default to false
     about: pro.bio,
     expertise: pro.skills,
@@ -312,7 +316,7 @@ const ProfessionalNetwork = () => {
             <View style={styles.avatarWrapper}>
               {item.avatar ? (
                 <Image
-                  source={{ uri: item.avatar }}
+                  source={typeof item.avatar === 'string' ? { uri: item.avatar } : item.avatar}
                   resizeMode="cover"
                   containerStyle={styles.avatar}
                   borderRadius={999}
