@@ -123,6 +123,9 @@ export interface Product {
     location: string;
     city: string;
     images: string[];
+    phone?: string;
+    whatsapp?: string;
+    email?: string;
     verified: boolean;
     status: ListingStatus;
     views: number;
@@ -280,6 +283,9 @@ export interface ProductFormData {
     price: number;
     location: string;
     city: string;
+    phone: string;
+    whatsapp: string;
+    email: string;
 }
 
 export interface RoomFormData {

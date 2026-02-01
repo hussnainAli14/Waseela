@@ -84,6 +84,9 @@ const BuySell = () => {
       sellerName: product.sellerName || 'Waseela User',
       postedAt: formatDate(product.createdAt, 'relative'),
       description: product.description,
+      phone: product.phone,
+      whatsapp: product.whatsapp,
+      email: product.email,
       safetyTips: [
         'Meet in a public place',
         'Check the item before paying',

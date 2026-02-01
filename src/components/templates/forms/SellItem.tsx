@@ -39,6 +39,9 @@ const SellItem: React.FC = () => {
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
   const [description, setDescription] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [email, setEmail] = useState('');
 
   const handlePickPhotos = async () => {
     const options: ImageLibraryOptions = {
@@ -90,6 +93,18 @@ const SellItem: React.FC = () => {
       Alert.alert('Validation Error', 'Please enter a description.');
       return false;
     }
+    if (!phone.trim()) {
+      Alert.alert('Validation Error', 'Please enter your phone number.');
+      return false;
+    }
+    if (!whatsapp.trim()) {
+      Alert.alert('Validation Error', 'Please enter your WhatsApp number.');
+      return false;
+    }
+    if (!email.trim()) {
+      Alert.alert('Validation Error', 'Please enter your email address.');
+      return false;
+    }
     if (!user?.uid) {
       Alert.alert('Authentication Error', 'You must be logged in to post an item.');
       return false;
@@ -125,6 +140,9 @@ const SellItem: React.FC = () => {
         price: priceNumber,
         location: location.trim(),
         city: city.trim(),
+        phone: phone.trim(),
+        whatsapp: whatsapp.trim(),
+        email: email.trim(),
       };
 
       // Extract image URIs from selected photos (if any)
@@ -162,6 +180,9 @@ const SellItem: React.FC = () => {
                 setLocation('');
                 setCity('');
                 setDescription('');
+                setPhone('');
+                setWhatsapp('');
+                setEmail('');
               },
             },
           ]
@@ -287,6 +308,39 @@ const SellItem: React.FC = () => {
               onChangeText={setDescription}
               inputContainerStyle={styles.descriptionInputContainer}
               inputStyle={styles.descriptionInput}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <Text variant="md-semibold" style={styles.sectionLabel}>
+              Contact details
+            </Text>
+            <Text variant="sm-normal" style={{ color: colors.text.secondary, marginBottom: 12 }}>
+              Buyers will use these to reach you. All fields are required.
+            </Text>
+            <TextField
+              label="Phone number"
+              placeholder="e.g., +44 7XXX XXXXXX"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              containerStyle={{ marginBottom: 12 }}
+            />
+            <TextField
+              label="WhatsApp number"
+              placeholder="e.g., +44 7XXX XXXXXX"
+              value={whatsapp}
+              onChangeText={setWhatsapp}
+              keyboardType="phone-pad"
+              containerStyle={{ marginBottom: 12 }}
+            />
+            <TextField
+              label="Email"
+              placeholder="e.g., your.email@example.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
           </View>
 

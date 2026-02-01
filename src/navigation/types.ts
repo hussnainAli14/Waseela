@@ -98,6 +98,9 @@ export type MarketItem = {
   sellerName?: string;
   description?: string;
   safetyTips?: string[];
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
 };
 
 export type RoomItem = {

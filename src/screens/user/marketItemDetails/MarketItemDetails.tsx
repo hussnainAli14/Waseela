@@ -7,6 +7,7 @@ import { Text, Image } from '@/components/atoms';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { MainStackParamList, MarketItem } from '@/navigation/types';
+import { getPlaceholderImage } from '@/utils/placeholders';
 
 type MarketDetailsRoute = RouteProp<MainStackParamList, 'MarketItemDetails'>;
 
@@ -19,15 +20,18 @@ const MarketItemDetails = () => {
   const goBack = () => navigation.goBack();
 
   const handleContactPress = async () => {
+    const whatsappNumber = item.whatsapp?.replace(/\D/g, '') || '';
+    if (!whatsappNumber) {
+      Alert.alert('No contact', 'This seller has not shared a WhatsApp number.');
+      return;
+    }
     const message = encodeURIComponent(
       `Hi, I'm interested in your listing "${item.title}" on Waseela.`,
     );
-
-    const whatsappUrl = `whatsapp://send?text=${message}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
 
     try {
       const canOpen = await Linking.canOpenURL(whatsappUrl);
-
       if (!canOpen) {
         Alert.alert(
           'WhatsApp not available',
@@ -68,7 +72,11 @@ const MarketItemDetails = () => {
         </View>
 
         <Image
-          source={{ uri: item.image }}
+          source={
+            typeof item.image === 'string'
+              ? { uri: item.image }
+              : (item.image ?? getPlaceholderImage('product'))
+          }
           resizeMode="cover"
           containerStyle={styles.heroImage}
           borderRadius={0}
@@ -148,17 +156,66 @@ const MarketItemDetails = () => {
         </View>
 
         <View style={styles.section}>
+          <Text variant="lg-bold" style={styles.sectionTitle}>
+            Contact details
+          </Text>
+          {(item.phone || item.whatsapp || item.email) ? (
+            <View style={styles.contactDetails}>
+              {item.phone ? (
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="call-outline"
+                    size={16}
+                    color={colors.text.secondary}
+                  />
+                  <Text variant="md-normal" style={styles.metaText}>
+                    {item.phone}
+                  </Text>
+                </View>
+              ) : null}
+              {item.whatsapp ? (
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="logo-whatsapp"
+                    size={16}
+                    color={colors.text.secondary}
+                  />
+                  <Text variant="md-normal" style={styles.metaText}>
+                    {item.whatsapp}
+                  </Text>
+                </View>
+              ) : null}
+              {item.email ? (
+                <View style={styles.metaRow}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={16}
+                    color={colors.text.secondary}
+                  />
+                  <Text variant="md-normal" style={styles.metaText}>
+                    {item.email}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : (
+            <Text variant="md-normal" style={styles.bodyText}>
+              No contact details shared.
+            </Text>
+          )}
+
           <TouchableOpacity
             style={styles.contactButton}
             activeOpacity={0.9}
-            onPress={handleContactPress}>
+            onPress={handleContactPress}
+            disabled={!item.whatsapp?.trim()}>
             <Ionicons
-              name="chatbubble-ellipses-outline"
+              name="logo-whatsapp"
               size={18}
               color={colors.common.white}
             />
             <Text variant="md-semibold" style={styles.contactButtonText}>
-              Contact Seller
+              Contact Seller on WhatsApp
             </Text>
           </TouchableOpacity>
         </View>

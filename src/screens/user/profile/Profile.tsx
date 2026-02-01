@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { View, ScrollView, TouchableOpacity, FlatList, Image, Alert, ActivityIndicator, Linking } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Linking } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { toMilliseconds } from '@/utils/dateUtils';
+import { toMilliseconds, formatDate } from '@/utils/dateUtils';
 import { Text } from '@/components/atoms';
 import { ExpandableDashboardSection } from '@/components/molecules';
 import { colors } from '@/theme';
@@ -20,10 +20,9 @@ import { fetchUserRooms } from '@/store/slices/roomsSlice';
 import { fetchUserProfessional, fetchUserProfessionals } from '@/store/slices/professionalsSlice';
 import { firebaseFirestore } from '@/config/firebase';
 import type { Product, Room } from '@/types/firestore';
-import { getSavedItems } from '@/services/firestore/savedListings';
 import { fetchSavedListings } from '@/store/slices/savedListingsSlice';
 import { fetchFullSavedListings, formatSavedDate, type FullSavedListing } from '@/utils/savedListingsHelper';
-import { getListingImage, ListingType } from '@/utils/placeholders';
+import { getListingImage } from '@/utils/placeholders';
 import { useSavedListingsSubscription } from '@/hooks/useSavedListingsSubscription';
 
 type ListingStatus = 'approved' | 'pending';
@@ -37,17 +36,7 @@ type Listing = {
   type: 'business' | 'service';
 };
 
-type SavedListing = {
-  id: string;
-  title: string;
-  category: string;
-  location: string;
-  image?: string;
-};
-
 type ProfileScreenNavigation = NativeStackNavigationProp<any>;
-
-const ListingSeparator = () => <View style={styles.listingSeparator} />;
 
 const Profile = () => {
   const navigation = useNavigation<ProfileScreenNavigation>();
@@ -66,7 +55,6 @@ const Profile = () => {
     isLoading: isProfessionalLoading,
     isUserProfessionalsLoading,
   } = useAppSelector(state => state.professionals);
-  const { items: savedListingsFromRedux } = useAppSelector(state => state.savedListings);
 
   // Subscribe to real-time saved listings updates
   useSavedListingsSubscription(user?.uid);
@@ -106,7 +94,6 @@ const Profile = () => {
 
   // Local state
   const [userProfile, setUserProfile] = useState<{ location?: string; phone?: string }>({});
-  const [savedListings, setSavedListings] = useState<SavedListing[]>([]);
   const [fullSavedListings, setFullSavedListings] = useState<FullSavedListing[]>([]);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isCreatingTestData, setIsCreatingTestData] = useState(false);
@@ -243,6 +230,11 @@ const Profile = () => {
       category: product.category,
       image: getListingImage(product.images, 'product'),
       description: product.description,
+      sellerName: product.sellerName,
+      postedAt: formatDate(product.createdAt, 'relative'),
+      phone: product.phone,
+      whatsapp: product.whatsapp,
+      email: product.email,
       safetyTips: [
         'Meet in a public place',
         'Check the item before paying',

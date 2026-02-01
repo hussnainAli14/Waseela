@@ -69,6 +69,10 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  contactDetails: {
+    gap: 8,
+    marginBottom: 16,
+  },
   metaText: {
     color: colors.text.secondary,
   },

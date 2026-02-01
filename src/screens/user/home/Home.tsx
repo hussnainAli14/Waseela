@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { View, FlatList } from 'react-native';
+import { View, FlatList, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, Header, SearchBar } from '@/components/molecules';
@@ -156,9 +156,9 @@ const Home = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.fixedHeader}>{renderFixedHeader}</View>
-      <View style={styles.scrollArea}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollArea}>
         {renderListHeader}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
