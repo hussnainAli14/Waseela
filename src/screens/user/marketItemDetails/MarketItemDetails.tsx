@@ -31,17 +31,12 @@ const MarketItemDetails = () => {
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
 
     try {
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      if (!canOpen) {
-        Alert.alert(
-          'WhatsApp not available',
-          'Please make sure WhatsApp is installed on your device.',
-        );
-        return;
-      }
       await Linking.openURL(whatsappUrl);
     } catch {
-      Alert.alert('Something went wrong', 'Unable to open WhatsApp right now.');
+      Alert.alert(
+        'Unable to open WhatsApp',
+        'Please make sure WhatsApp is installed on your device, or try again later.',
+      );
     }
   };
 

@@ -49,12 +49,12 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen
       name="SellItem"
       component={SellItem}
-      options={{ headerShown: true, title: 'Sell an Item' }}
+      // options={{ headerShown: true, title: 'Sell an Item' }}
     />
     <HomeStack.Screen
       name="PostRoom"
       component={PostRoom}
-      options={{ headerShown: true, title: 'Post a Room' }}
+      // options={{ headerShown: true, title: 'Post a Room' }}
     />
     <HomeStack.Screen name="SubmitListing" component={SubmitListing} />
     <HomeStack.Screen
@@ -102,12 +102,12 @@ const ServicesStackNavigator = () => (
     <ServicesStack.Screen
       name="SellItem"
       component={SellItem}
-      options={{ headerShown: true, title: 'Sell an Item' }}
+      // options={{ headerShown: true, title: 'Sell an Item' }}
     />
     <ServicesStack.Screen
       name="PostRoom"
       component={PostRoom}
-      options={{ headerShown: true, title: 'Post a Room' }}
+      // options={{ headerShown: true, title: 'Post a Room' }}
     />
     <ServicesStack.Screen name="Details" component={Details} />
     <ServicesStack.Screen name="SubmitListing" component={SubmitListing} />
@@ -131,7 +131,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen
       name="JoinProfessionalNetwork"
       component={JoinProfessionalNetwork}
-      options={{ headerShown: true, title: 'Join Professional Network' }}
+      // options={{ headerShown: true, title: 'Join Professional Network' }}
     />
     <ProfileStack.Screen
       name="ProfessionalNetwork"

@@ -14,6 +14,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProduct } from '@/store/slices/productsSlice';
 import type { ProductFormData } from '@/types/firestore';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 
 // Categories will be fetched from Redux
 
@@ -26,6 +27,7 @@ const conditionOptions = [
 ];
 
 const SellItem: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<any>>();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { isLoading } = useAppSelector(state => state.products);
@@ -203,6 +205,15 @@ const SellItem: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.goBack()}
+          style={styles.headerRow}>
+          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+          <Text variant="lg-semibold" style={styles.headerTitle}>
+            Sell an Item
+          </Text>
+        </TouchableOpacity>
           <View style={styles.card}>
             <Text variant="md-semibold" style={styles.sectionLabel}>
               Photos

@@ -25,6 +25,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createRoom } from '@/store/slices/roomsSlice';
 import type { RoomFormData } from '@/types/firestore';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 
 const roomTypes = [
   { label: 'Single Room', value: 'single' },
@@ -46,6 +47,7 @@ const defaultAmenities = [
 
 const PostRoom: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigation = useNavigation<NavigationProp<any>>();
   const { user } = useAppSelector(state => state.auth);
   const { isLoading } = useAppSelector(state => state.rooms);
 
@@ -293,6 +295,15 @@ const PostRoom: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
+          <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.goBack()}
+          style={styles.headerRow}>
+          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+          <Text variant="lg-semibold" style={styles.headerTitle}>
+            Post a Room
+          </Text>
+        </TouchableOpacity>
           <View style={styles.card}>
             <TextField
               label="Room Title"

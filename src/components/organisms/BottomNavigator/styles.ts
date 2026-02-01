@@ -10,10 +10,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     backgroundColor: colors.background.light,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
   },
   tabItem: {
     flex: 1,

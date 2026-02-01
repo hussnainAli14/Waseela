@@ -22,6 +22,7 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { createProfessional } from '@/store/slices/professionalsSlice';
 import type { ProfessionalFormData } from '@/types/firestore';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
 
 const industryOptions = [
   { label: 'Technology', value: 'technology' },
@@ -38,6 +39,7 @@ const industryOptions = [
 ];
 
 const JoinProfessionalNetwork: React.FC = () => {
+  const navigation = useNavigation<NavigationProp<any>>();
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { isLoading } = useAppSelector(state => state.professionals);
@@ -247,7 +249,17 @@ const JoinProfessionalNetwork: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
+             <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.goBack()}
+          style={styles.headerRow}>
+          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+          <Text variant="lg-semibold" style={styles.headerTitle}>
+            Join Professional Network
+          </Text>
+        </TouchableOpacity>
           <View style={styles.infoCard}>
+           
             <Text variant="md-semibold" style={styles.infoTitle}>
               About This Network
             </Text>
