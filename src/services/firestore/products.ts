@@ -83,6 +83,13 @@ export const createProduct = async (
             updatedAt: toMilliseconds(new Date().toISOString()),
         } as Product;
 
+        // Remove undefined fields to prevent Firestore errors
+        Object.keys(productData).forEach(key => {
+            if ((productData as any)[key] === undefined) {
+                delete (productData as any)[key];
+            }
+        });
+
         await docRef.set(productData);
         return productId;
     } catch (error) {

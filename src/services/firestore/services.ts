@@ -67,7 +67,6 @@ export const createService = async (
             description: data.description,
             city: data.city,
             areasCovered: data.areasCovered || [],
-            whatsapp: data.whatsapp,
             email: data.email,
             tags: data.tags || [],
             providerId,
@@ -81,6 +80,7 @@ export const createService = async (
         } as Service;
 
         // Add optional fields only if defined
+        if (data.whatsapp) serviceData.whatsapp = data.whatsapp;
         if (data.phone) serviceData.phone = data.phone;
         if (data.website) serviceData.website = data.website;
         if (data.instagram) serviceData.instagram = data.instagram;

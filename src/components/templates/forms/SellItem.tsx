@@ -44,6 +44,7 @@ const SellItem: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handlePickPhotos = async () => {
     const options: ImageLibraryOptions = {
@@ -62,10 +63,48 @@ const SellItem: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
     if (!title.trim()) {
-      Alert.alert('Validation Error', 'Please enter a title for your item.');
-      return false;
+      newErrors.title = 'Please enter a title for your item.';
     }
+    if (!category) {
+      // Dropdown
+    }
+    if (!condition) {
+      // Dropdown
+    }
+    if (!price.trim()) {
+      newErrors.price = 'Please enter the price.';
+    } else {
+      const priceNumber = parseFloat(price);
+      if (isNaN(priceNumber) || priceNumber <= 0) {
+        newErrors.price = 'Please enter a valid price.';
+      }
+    }
+    if (!location.trim()) {
+      newErrors.location = 'Please enter the location.';
+    }
+    if (!city) {
+      // Dropdown
+    }
+    if (!description.trim()) {
+      newErrors.description = 'Please enter a description.';
+    }
+    // Phone is now optional
+    // if (!phone.trim()) {
+    //   newErrors.phone = 'Please enter your phone number.';
+    // }
+    if (!whatsapp.trim()) {
+      newErrors.whatsapp = 'Please enter your WhatsApp number.';
+    }
+    if (!email.trim()) {
+      newErrors.email = 'Please enter your email address.';
+    }
+
+    setErrors(newErrors);
+
+    // Alert for non-TextField errors
     if (!category) {
       Alert.alert('Validation Error', 'Please select a category.');
       return false;
@@ -74,39 +113,14 @@ const SellItem: React.FC = () => {
       Alert.alert('Validation Error', 'Please select the condition.');
       return false;
     }
-    if (!price.trim()) {
-      Alert.alert('Validation Error', 'Please enter the price.');
-      return false;
-    }
-    const priceNumber = parseFloat(price);
-    if (isNaN(priceNumber) || priceNumber <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid price.');
-      return false;
-    }
-    if (!location.trim()) {
-      Alert.alert('Validation Error', 'Please enter the location.');
-      return false;
-    }
     if (!city) {
       Alert.alert('Validation Error', 'Please select a city.');
       return false;
     }
-    if (!description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description.');
+    if (Object.keys(newErrors).length > 0) {
       return false;
     }
-    if (!phone.trim()) {
-      Alert.alert('Validation Error', 'Please enter your phone number.');
-      return false;
-    }
-    if (!whatsapp.trim()) {
-      Alert.alert('Validation Error', 'Please enter your WhatsApp number.');
-      return false;
-    }
-    if (!email.trim()) {
-      Alert.alert('Validation Error', 'Please enter your email address.');
-      return false;
-    }
+
     if (!user?.uid) {
       Alert.alert('Authentication Error', 'You must be logged in to post an item.');
       return false;
@@ -142,7 +156,7 @@ const SellItem: React.FC = () => {
         price: priceNumber,
         location: location.trim(),
         city: city.trim(),
-        phone: phone.trim(),
+        phone: phone.trim() || undefined, // Send undefined if empty
         whatsapp: whatsapp.trim(),
         email: email.trim(),
       };
@@ -205,15 +219,15 @@ const SellItem: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-              <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
-          style={styles.headerRow}>
-          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
-          <Text variant="lg-semibold" style={styles.headerTitle}>
-            Sell an Item
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerRow}>
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+            <Text variant="lg-semibold" style={styles.headerTitle}>
+              Sell an Item
+            </Text>
+          </TouchableOpacity>
           <View style={styles.card}>
             <Text variant="md-semibold" style={styles.sectionLabel}>
               Photos
@@ -250,8 +264,12 @@ const SellItem: React.FC = () => {
               label="Title"
               placeholder="e.g., iPhone 13 Pro - 256GB"
               value={title}
-              onChangeText={setTitle}
+              onChangeText={(text) => {
+                setTitle(text);
+                if (errors.title) setErrors(prev => ({ ...prev, title: '' }));
+              }}
               containerStyle={{ marginBottom: 12 }}
+              error={errors.title}
             />
 
             <Text variant="md-semibold" style={styles.dropdownLabel}>
@@ -273,7 +291,11 @@ const SellItem: React.FC = () => {
               placeholder="0.00"
               keyboardType="decimal-pad"
               value={price}
-              onChangeText={setPrice}
+              onChangeText={(text) => {
+                setPrice(text);
+                if (errors.price) setErrors(prev => ({ ...prev, price: '' }));
+              }}
+              error={errors.price}
             // containerStyle={{ marginBottom: 12 }}
             />
 
@@ -295,8 +317,12 @@ const SellItem: React.FC = () => {
               label="Location"
               placeholder="e.g., East London, Zone 2"
               value={location}
-              onChangeText={setLocation}
+              onChangeText={(text) => {
+                setLocation(text);
+                if (errors.location) setErrors(prev => ({ ...prev, location: '' }));
+              }}
               containerStyle={{ marginBottom: 12 }}
+              error={errors.location}
             />
             <View style={{ marginBottom: 12 }}>
               <Text variant="sm-medium" style={{ marginBottom: 8, color: colors.text.secondary }}>
@@ -316,9 +342,13 @@ const SellItem: React.FC = () => {
               multiline
               numberOfLines={5}
               value={description}
-              onChangeText={setDescription}
+              onChangeText={(text) => {
+                setDescription(text);
+                if (errors.description) setErrors(prev => ({ ...prev, description: '' }));
+              }}
               inputContainerStyle={styles.descriptionInputContainer}
               inputStyle={styles.descriptionInput}
+              error={errors.description}
             />
           </View>
 
@@ -327,31 +357,43 @@ const SellItem: React.FC = () => {
               Contact details
             </Text>
             <Text variant="sm-normal" style={{ color: colors.text.secondary, marginBottom: 12 }}>
-              Buyers will use these to reach you. All fields are required.
+              Buyers will use these to reach you.
             </Text>
             <TextField
-              label="Phone number"
+              label="Phone number (Optional)"
               placeholder="e.g., +44 7XXX XXXXXX"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => {
+                setPhone(text);
+                if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+              }}
               keyboardType="phone-pad"
               containerStyle={{ marginBottom: 12 }}
+              error={errors.phone}
             />
             <TextField
               label="WhatsApp number"
               placeholder="e.g., +44 7XXX XXXXXX"
               value={whatsapp}
-              onChangeText={setWhatsapp}
+              onChangeText={(text) => {
+                setWhatsapp(text);
+                if (errors.whatsapp) setErrors(prev => ({ ...prev, whatsapp: '' }));
+              }}
               keyboardType="phone-pad"
               containerStyle={{ marginBottom: 12 }}
+              error={errors.whatsapp}
             />
             <TextField
               label="Email"
               placeholder="e.g., your.email@example.com"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
+              error={errors.email}
             />
           </View>
 

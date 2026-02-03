@@ -68,7 +68,10 @@ const PostRoom: React.FC = () => {
   const [yourName, setYourName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+
   const [confirm, setConfirm] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
 
   const handlePickPhotos = async () => {
     const options: ImageLibraryOptions = {
@@ -123,47 +126,64 @@ const PostRoom: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
     if (!roomTitle.trim()) {
-      Alert.alert('Validation Error', 'Please enter a room title.');
-      return false;
+      newErrors.roomTitle = 'Please enter a room title.';
     }
     if (!roomType) {
-      Alert.alert('Validation Error', 'Please select a room type.');
-      return false;
+      // Dropdown
     }
     if (!rent.trim()) {
-      Alert.alert('Validation Error', 'Please enter the monthly rent.');
-      return false;
+      newErrors.rent = 'Please enter the monthly rent.';
+    } else {
+      const rentNumber = parseFloat(rent);
+      if (isNaN(rentNumber) || rentNumber <= 0) {
+        newErrors.rent = 'Please enter a valid rent amount.';
+      }
     }
-    const rentNumber = parseFloat(rent);
-    if (isNaN(rentNumber) || rentNumber <= 0) {
-      Alert.alert('Validation Error', 'Please enter a valid rent amount.');
+    if (!city) {
+      // Dropdown
+    }
+    if (!area.trim()) {
+      newErrors.area = 'Please enter the area.';
+    }
+    if (!availableFrom) {
+      // Date Picker
+    }
+    if (!description.trim()) {
+      newErrors.description = 'Please enter a description.';
+    }
+    if (amenities.length === 0) {
+      // Custom UI
+    }
+    if (!phone.trim()) {
+      newErrors.phone = 'Please enter your contact number.';
+    }
+
+    setErrors(newErrors);
+
+    // Checks for non-TextFields
+    if (!roomType) {
+      Alert.alert('Validation Error', 'Please select a room type.');
       return false;
     }
     if (!city) {
       Alert.alert('Validation Error', 'Please select a city.');
       return false;
     }
-    if (!area.trim()) {
-      Alert.alert('Validation Error', 'Please enter the area.');
-      return false;
-    }
     if (!availableFrom) {
       Alert.alert('Validation Error', 'Please select the available from date.');
-      return false;
-    }
-    if (!description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description.');
       return false;
     }
     if (amenities.length === 0) {
       Alert.alert('Validation Error', 'Please select at least one amenity.');
       return false;
     }
-    if (!phone.trim()) {
-      Alert.alert('Validation Error', 'Please enter your contact number.');
+    if (Object.keys(newErrors).length > 0) {
       return false;
     }
+
     if (!confirm) {
       Alert.alert('Validation Error', 'Please confirm that all information is accurate.');
       return false;
@@ -296,20 +316,24 @@ const PostRoom: React.FC = () => {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
           <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
-          style={styles.headerRow}>
-          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
-          <Text variant="lg-semibold" style={styles.headerTitle}>
-            Post a Room
-          </Text>
-        </TouchableOpacity>
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerRow}>
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+            <Text variant="lg-semibold" style={styles.headerTitle}>
+              Post a Room
+            </Text>
+          </TouchableOpacity>
           <View style={styles.card}>
             <TextField
               label="Room Title"
               placeholder="e.g., Cozy Single Room near UCL"
               value={roomTitle}
-              onChangeText={setRoomTitle}
+              onChangeText={(text) => {
+                setRoomTitle(text);
+                if (errors.roomTitle) setErrors(prev => ({ ...prev, roomTitle: '' }));
+              }}
+              error={errors.roomTitle}
             />
             <Text variant="md-semibold" style={styles.label}>Room Type</Text>
             <Dropdown
@@ -328,7 +352,11 @@ const PostRoom: React.FC = () => {
               placeholder="e.g., 650"
               keyboardType="decimal-pad"
               value={rent}
-              onChangeText={setRent}
+              onChangeText={(text) => {
+                setRent(text);
+                if (errors.rent) setErrors(prev => ({ ...prev, rent: '' }));
+              }}
+              error={errors.rent}
             />
             <View style={[styles.row, { marginTop: 8 }]}>
               <View style={styles.halfInput}>
@@ -348,7 +376,11 @@ const PostRoom: React.FC = () => {
                   label="Area"
                   placeholder="e.g., Camden"
                   value={area}
-                  onChangeText={setArea}
+                  onChangeText={(text) => {
+                    setArea(text);
+                    if (errors.area) setErrors(prev => ({ ...prev, area: '' }));
+                  }}
+                  error={errors.area}
                 />
               </View>
             </View>
@@ -436,7 +468,11 @@ const PostRoom: React.FC = () => {
               multiline
               numberOfLines={5}
               value={description}
-              onChangeText={setDescription}
+              onChangeText={(text) => {
+                setDescription(text);
+                if (errors.description) setErrors(prev => ({ ...prev, description: '' }));
+              }}
+              error={errors.description}
             />
           </View>
 
@@ -497,7 +533,11 @@ const PostRoom: React.FC = () => {
               placeholder="+44 7XXX XXXXXX"
               keyboardType="phone-pad"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => {
+                setPhone(text);
+                if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+              }}
+              error={errors.phone}
             />
             <TextField
               label="Email Address (Optional)"

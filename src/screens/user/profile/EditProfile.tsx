@@ -147,6 +147,10 @@ const EditProfile = () => {
     communityAnnouncements: true,
   });
 
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [passwordErrors, setPasswordErrors] = useState<{ [key: string]: string }>({});
+  const [serviceErrors, setServiceErrors] = useState<{ [key: string]: string }>({});
+
   // Fetch user data on mount
   useEffect(() => {
     const fetchUserData = async () => {
@@ -216,10 +220,16 @@ const EditProfile = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handleServiceProviderChange = (field: string, value: string) => {
     setServiceProviderData(prev => ({ ...prev, [field]: value }));
+    if (serviceErrors[field]) {
+      setServiceErrors(prev => ({ ...prev, [field]: '' }));
+    }
   };
 
   const handlePrivacyToggle = (field: string) => {
@@ -249,41 +259,68 @@ const EditProfile = () => {
   };
 
   const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+    const newPasswordErrors: { [key: string]: string } = {};
+
     if (!formData.fullName.trim()) {
-      Alert.alert('Validation Error', 'Please enter your full name.');
-      return false;
+      newErrors.fullName = 'Please enter your full name.';
     }
     if (!formData.email.trim()) {
-      Alert.alert('Validation Error', 'Please enter your email address.');
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      Alert.alert('Validation Error', 'Please enter a valid email address.');
-      return false;
+      newErrors.email = 'Please enter your email address.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address.';
+      }
     }
     if (!formData.city.trim()) {
+      // City is a dropdown, might keeping Alert for non-TextFields or handle differently
       Alert.alert('Validation Error', 'Please select your city.');
       return false;
     }
+
     if (showPasswordForm) {
       if (!passwordForm.current) {
-        Alert.alert('Validation Error', 'Please enter your current password.');
-        return false;
+        newPasswordErrors.current = 'Please enter your current password.';
       }
       if (!passwordForm.new) {
-        Alert.alert('Validation Error', 'Please enter a new password.');
-        return false;
-      }
-      if (passwordForm.new.length < 6) {
-        Alert.alert('Validation Error', 'New password must be at least 6 characters.');
-        return false;
+        newPasswordErrors.new = 'Please enter a new password.';
+      } else if (passwordForm.new.length < 6) {
+        newPasswordErrors.new = 'New password must be at least 6 characters.';
       }
       if (passwordForm.new !== passwordForm.confirm) {
-        Alert.alert('Validation Error', 'New passwords do not match.');
+        newPasswordErrors.confirm = 'New passwords do not match.';
+      }
+    }
+
+    setErrors(newErrors);
+    setPasswordErrors(newPasswordErrors);
+
+    if (Object.keys(newErrors).length > 0 || Object.keys(newPasswordErrors).length > 0) {
+      return false;
+    }
+
+    // Service Provider Validation
+    if (formData.role === 'service_provider') {
+      const newServiceErrors: { [key: string]: string } = {};
+      if (!serviceProviderData.serviceTitle.trim()) {
+        newServiceErrors.serviceTitle = 'Service Title is required.';
+      }
+      if (!serviceProviderData.serviceCategory) {
+        // Dropdown
+        Alert.alert('Validation Error', 'Please select a service category.');
+        return false;
+      }
+      if (!serviceProviderData.serviceDescription.trim()) {
+        newServiceErrors.serviceDescription = 'Service Description is required.';
+      }
+
+      setServiceErrors(newServiceErrors);
+      if (Object.keys(newServiceErrors).length > 0) {
         return false;
       }
     }
+
     return true;
   };
 
@@ -530,6 +567,7 @@ const EditProfile = () => {
             onChangeText={value => handleInputChange('fullName', value)}
             leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.secondary} />}
             containerStyle={styles.inputField}
+            error={errors.fullName}
           />
 
           <TextField
@@ -544,6 +582,7 @@ const EditProfile = () => {
               <Ionicons name="checkmark-circle" size={20} color={colors.status.success} />
             }
             containerStyle={styles.inputField}
+            error={errors.email}
           />
 
           <View style={{ marginBottom: 16 }}>
@@ -708,6 +747,7 @@ const EditProfile = () => {
               value={serviceProviderData.serviceTitle}
               onChangeText={value => handleServiceProviderChange('serviceTitle', value)}
               containerStyle={styles.inputField}
+              error={serviceErrors.serviceTitle}
             />
 
             <View style={styles.dropdownContainer}>
@@ -731,6 +771,7 @@ const EditProfile = () => {
               multiline
               numberOfLines={4}
               containerStyle={styles.inputField}
+              error={serviceErrors.serviceDescription}
             />
 
             <TextField
@@ -882,23 +923,35 @@ const EditProfile = () => {
               <TextField
                 label="Current Password"
                 value={passwordForm.current}
-                onChangeText={v => setPasswordForm(prev => ({ ...prev, current: v }))}
+                onChangeText={v => {
+                  setPasswordForm(prev => ({ ...prev, current: v }));
+                  if (passwordErrors.current) setPasswordErrors(prev => ({ ...prev, current: '' }));
+                }}
                 secureTextEntry
                 containerStyle={styles.inputField}
+                error={passwordErrors.current}
               />
               <TextField
                 label="New Password"
                 value={passwordForm.new}
-                onChangeText={v => setPasswordForm(prev => ({ ...prev, new: v }))}
+                onChangeText={v => {
+                  setPasswordForm(prev => ({ ...prev, new: v }));
+                  if (passwordErrors.new) setPasswordErrors(prev => ({ ...prev, new: '' }));
+                }}
                 secureTextEntry
                 containerStyle={styles.inputField}
+                error={passwordErrors.new}
               />
               <TextField
                 label="Confirm New Password"
                 value={passwordForm.confirm}
-                onChangeText={v => setPasswordForm(prev => ({ ...prev, confirm: v }))}
+                onChangeText={v => {
+                  setPasswordForm(prev => ({ ...prev, confirm: v }));
+                  if (passwordErrors.confirm) setPasswordErrors(prev => ({ ...prev, confirm: '' }));
+                }}
                 secureTextEntry
                 containerStyle={styles.inputField}
+                error={passwordErrors.confirm}
               />
             </View>
           )}

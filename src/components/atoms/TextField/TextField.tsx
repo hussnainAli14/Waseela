@@ -62,7 +62,7 @@ const TextField: React.FC<TextFieldProps> = ({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text variant="md-medium" style={[styles.label, labelStyle]}>
+        <Text variant="md-medium" style={[styles.label, error && styles.labelError, labelStyle]}>
           {label}
         </Text>
       )}

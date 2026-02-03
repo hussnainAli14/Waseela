@@ -12,6 +12,9 @@ export const styles = StyleSheet.create({
     color: colors.common.black,
     marginBottom: 8,
   },
+  labelError: {
+    color: colors.status.error,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',

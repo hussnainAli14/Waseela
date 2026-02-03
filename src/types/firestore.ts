@@ -38,7 +38,7 @@ export interface Business {
     images: string[];
     logoUrl?: string;
     contactPerson: string;
-    whatsapp: string;
+    whatsapp?: string;
     email: string;
     phone?: string;
     website?: string;
@@ -66,7 +66,7 @@ export interface Service {
     areasCovered: string[];
     images: string[];
     profilePhoto?: string;
-    whatsapp: string;
+    whatsapp?: string;
     email: string;
     phone?: string;
     website?: string;
@@ -236,7 +236,7 @@ export interface BusinessFormData {
     city: string;
     address?: string;
     contactPerson: string;
-    whatsapp: string;
+    whatsapp?: string;
     email: string;
     phone?: string;
     website?: string;
@@ -251,7 +251,7 @@ export interface ServiceFormData {
     description: string;
     city: string;
     areasCovered: string[];
-    whatsapp: string;
+    whatsapp?: string;
     email: string;
     phone?: string;
     website?: string;
@@ -283,7 +283,7 @@ export interface ProductFormData {
     price: number;
     location: string;
     city: string;
-    phone: string;
+    phone?: string;
     whatsapp: string;
     email: string;
 }

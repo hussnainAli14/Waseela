@@ -65,6 +65,7 @@ const SubmitListing: React.FC = () => {
   const [document, setDocument] = useState<DocumentPickerResponse | null>(null);
   const [areaInput, setAreaInput] = useState('');
   const [areas, setAreas] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const isLoading = isBusinessLoading || isServiceLoading;
 
@@ -97,32 +98,41 @@ const SubmitListing: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
     if (!name.trim()) {
-      Alert.alert('Validation Error', `Please enter ${listingType === 'business' ? 'a business name' : 'your name'}.`);
-      return false;
+      newErrors.name = `Please enter ${listingType === 'business' ? 'a business name' : 'your name'}.`;
     }
+    if (!category) {
+      // Category is a dropdown, keep Alert or handle separately if Dropdown supports error
+      // For now, let's keep Alert for non-TextField inputs or check Dropdown implementation later
+    }
+    if (!city) {
+      // City is a dropdown
+    }
+    if (!description.trim()) {
+      newErrors.description = 'Please enter a description.';
+    }
+    if (!contactPerson.trim()) {
+      newErrors.contactPerson = 'Please enter the contact person name.';
+    }
+
+    // Validating email with regex
+    if (!email.trim()) {
+      newErrors.email = 'Please enter an email address.';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Please enter a valid email address.';
+    }
+
+    setErrors(newErrors);
+
+    // Initial check for non-TextFields (can be improved later)
     if (!category) {
       Alert.alert('Validation Error', `Please select ${listingType === 'business' ? 'a category' : 'a service type'}.`);
       return false;
     }
     if (!city) {
       Alert.alert('Validation Error', 'Please select a city.');
-      return false;
-    }
-    if (!description.trim()) {
-      Alert.alert('Validation Error', 'Please enter a description.');
-      return false;
-    }
-    if (!contactPerson.trim()) {
-      Alert.alert('Validation Error', 'Please enter the contact person name.');
-      return false;
-    }
-    if (!whatsapp.trim()) {
-      Alert.alert('Validation Error', 'Please enter a WhatsApp number.');
-      return false;
-    }
-    if (!email.trim()) {
-      Alert.alert('Validation Error', 'Please enter an email address.');
       return false;
     }
     if (!confirm) {
@@ -133,7 +143,8 @@ const SubmitListing: React.FC = () => {
       Alert.alert('Authentication Error', 'You must be logged in to submit a listing.');
       return false;
     }
-    return true;
+
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
@@ -163,10 +174,13 @@ const SubmitListing: React.FC = () => {
           description: description.trim(),
           city: city.trim(),
           contactPerson: contactPerson.trim(),
-          whatsapp: whatsapp.trim(),
           email: email.trim(),
           tags: tags,
         };
+
+        if (whatsapp.trim()) {
+          formData.whatsapp = whatsapp.trim();
+        }
 
         // Add optional fields only if they have values
         if (tagline.trim()) {
@@ -239,10 +253,13 @@ const SubmitListing: React.FC = () => {
           description: description.trim(),
           city: city.trim(),
           areasCovered: areas,
-          whatsapp: whatsapp.trim(),
           email: email.trim(),
           tags: tags,
         };
+
+        if (whatsapp.trim()) {
+          formData.whatsapp = whatsapp.trim();
+        }
 
         // Add optional fields only if they have values
         if (phone.trim()) {
@@ -411,7 +428,11 @@ const SubmitListing: React.FC = () => {
                 : 'e.g., Fatima Ahmed'
             }
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (errors.name) setErrors({ ...errors, name: '' });
+            }}
+            error={errors.name}
             containerStyle={styles.inputSpacing}
           />
           {listingType === 'business' && (
@@ -470,7 +491,11 @@ const SubmitListing: React.FC = () => {
             numberOfLines={4}
             textAlignVertical="top"
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(text) => {
+              setDescription(text);
+              if (errors.description) setErrors({ ...errors, description: '' });
+            }}
+            error={errors.description}
           />
         </View>
 
@@ -479,14 +504,18 @@ const SubmitListing: React.FC = () => {
             label="Contact Person Name"
             placeholder="e.g., Ahmed Khan"
             value={contactPerson}
-            onChangeText={setContactPerson}
+            onChangeText={(text) => {
+              setContactPerson(text);
+              if (errors.contactPerson) setErrors({ ...errors, contactPerson: '' });
+            }}
+            error={errors.contactPerson}
             containerStyle={styles.inputSpacing}
           />
           <Text variant="xl-semibold" style={styles.labelSpacing}>
             Contact Methods
           </Text>
           <TextField
-            label="WhatsApp Number"
+            label="WhatsApp Number (Optional)"
             placeholder="+44 7XXX XXXXXX"
             keyboardType="phone-pad"
             value={whatsapp}
@@ -498,7 +527,11 @@ const SubmitListing: React.FC = () => {
             placeholder="contact@example.com"
             keyboardType="email-address"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (errors.email) setErrors({ ...errors, email: '' });
+            }}
+            error={errors.email}
             containerStyle={styles.inputSpacing}
           />
           <TextField

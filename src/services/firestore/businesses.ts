@@ -70,6 +70,11 @@ export const createBusiness = async (
             updatedAt: toMilliseconds(new Date().toISOString()), // Store as number for consistency
         } as Business; // Cast to satisfy strict typing if needed
 
+        // Add optional whatsapp if present
+        if (data.whatsapp) {
+            businessData.whatsapp = data.whatsapp;
+        }
+
         await docRef.set(businessData);
         return businessId;
     } catch (error) {

@@ -60,7 +60,9 @@ const JoinProfessionalNetwork: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [linkedin, setLinkedin] = useState('');
   const [photo, setPhoto] = useState<Asset | null>(null);
+
   const [confirm, setConfirm] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const addExpertise = () => {
     const value = expertiseInput.trim();
@@ -92,14 +94,38 @@ const JoinProfessionalNetwork: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
     if (!fullName.trim()) {
-      Alert.alert('Validation Error', 'Please enter your full name.');
-      return false;
+      newErrors.fullName = 'Please enter your full name.';
     }
     if (!jobTitle.trim()) {
-      Alert.alert('Validation Error', 'Please enter your job title.');
-      return false;
+      newErrors.jobTitle = 'Please enter your job title.';
     }
+    if (!industry) {
+      // Dropdown
+    }
+    if (!location) {
+      // Dropdown
+    }
+    if (!bio.trim()) {
+      newErrors.bio = 'Please enter your professional bio.';
+    }
+    if (expertise.length === 0) {
+      // Custom UI
+    }
+    if (!email.trim()) {
+      newErrors.email = 'Please enter your email address.';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        newErrors.email = 'Please enter a valid email address.';
+      }
+    }
+
+    setErrors(newErrors);
+
+    // Checks for non-TextFields
     if (!industry) {
       Alert.alert('Validation Error', 'Please select an industry.');
       return false;
@@ -108,24 +134,14 @@ const JoinProfessionalNetwork: React.FC = () => {
       Alert.alert('Validation Error', 'Please select your location.');
       return false;
     }
-    if (!bio.trim()) {
-      Alert.alert('Validation Error', 'Please enter your professional bio.');
-      return false;
-    }
     if (expertise.length === 0) {
       Alert.alert('Validation Error', 'Please add at least one area of expertise.');
       return false;
     }
-    if (!email.trim()) {
-      Alert.alert('Validation Error', 'Please enter your email address.');
+    if (Object.keys(newErrors).length > 0) {
       return false;
     }
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Validation Error', 'Please enter a valid email address.');
-      return false;
-    }
+
     if (!confirm) {
       Alert.alert('Validation Error', 'Please confirm that you agree to the terms.');
       return false;
@@ -249,17 +265,17 @@ const JoinProfessionalNetwork: React.FC = () => {
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-             <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.goBack()}
-          style={styles.headerRow}>
-          <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
-          <Text variant="lg-semibold" style={styles.headerTitle}>
-            Join Professional Network
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+            style={styles.headerRow}>
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
+            <Text variant="lg-semibold" style={styles.headerTitle}>
+              Join Professional Network
+            </Text>
+          </TouchableOpacity>
           <View style={styles.infoCard}>
-           
+
             <Text variant="md-semibold" style={styles.infoTitle}>
               About This Network
             </Text>
@@ -274,13 +290,21 @@ const JoinProfessionalNetwork: React.FC = () => {
               label="Full Name"
               placeholder="e.g., Dr. Ahmed Hassan"
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text) => {
+                setFullName(text);
+                if (errors.fullName) setErrors(prev => ({ ...prev, fullName: '' }));
+              }}
+              error={errors.fullName}
             />
             <TextField
               label="Current Job Title"
               placeholder="e.g., Senior Software Engineer"
               value={jobTitle}
-              onChangeText={setJobTitle}
+              onChangeText={(text) => {
+                setJobTitle(text);
+                if (errors.jobTitle) setErrors(prev => ({ ...prev, jobTitle: '' }));
+              }}
+              error={errors.jobTitle}
             />
             <TextField
               label="Current Company/Organization"
@@ -330,8 +354,12 @@ const JoinProfessionalNetwork: React.FC = () => {
               multiline
               numberOfLines={5}
               value={bio}
-              onChangeText={setBio}
+              onChangeText={(text) => {
+                setBio(text);
+                if (errors.bio) setErrors(prev => ({ ...prev, bio: '' }));
+              }}
               inputContainerStyle={styles.textareaContainer}
+              error={errors.bio}
               inputStyle={styles.textareaInput}
             />
             <Text variant="sm-normal" style={styles.helperText}>
@@ -413,8 +441,12 @@ const JoinProfessionalNetwork: React.FC = () => {
               placeholder="professional.email@example.com"
               keyboardType="email-address"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+              }}
               rightIcon={<Ionicons name="mail-outline" size={18} color={colors.text.secondary} />}
+              error={errors.email}
             />
             <Text variant="sm-normal" style={styles.helperText}>
               This will be visible to those seeking guidance

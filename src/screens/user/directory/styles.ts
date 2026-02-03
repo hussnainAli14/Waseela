@@ -70,8 +70,8 @@ export const styles = StyleSheet.create({
     elevation: 2,
   },
   categoryIconWrapper: {
-    width: 48,
-    height: 48,
+    width: 24,
+    height: 24,
     borderRadius: 16,
     backgroundColor: colors.background.lightSecondary,
     alignItems: 'center',
