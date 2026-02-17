@@ -13,11 +13,11 @@ import type { ListingItem, MarketItem, RoomItem } from '@/navigation/types';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { createAllTestData, createTestCategories } from '@/utils/createTestData';
-import { fetchUserBusinesses } from '@/store/slices/businessesSlice';
-import { fetchUserServices } from '@/store/slices/servicesSlice';
-import { fetchUserProducts } from '@/store/slices/productsSlice';
-import { fetchUserRooms } from '@/store/slices/roomsSlice';
-import { fetchUserProfessional, fetchUserProfessionals } from '@/store/slices/professionalsSlice';
+import { fetchUserBusinesses, deleteBusiness } from '@/store/slices/businessesSlice';
+import { fetchUserServices, deleteService } from '@/store/slices/servicesSlice';
+import { fetchUserProducts, deleteProduct } from '@/store/slices/productsSlice';
+import { fetchUserRooms, deleteRoom } from '@/store/slices/roomsSlice';
+import { fetchUserProfessional, fetchUserProfessionals, deleteProfessional } from '@/store/slices/professionalsSlice';
 import { firebaseFirestore } from '@/config/firebase';
 import type { Product, Room } from '@/types/firestore';
 import { fetchSavedListings } from '@/store/slices/savedListingsSlice';
@@ -225,7 +225,7 @@ const Profile = () => {
       id: product.id,
       title: product.title,
       price: `£${product.price} `,
-      location: product.city,
+      location: product.location, // Use actual location, not city
       condition: conditionMap[product.condition] || product.condition,
       category: product.category,
       image: getListingImage(product.images, 'product'),
@@ -389,6 +389,47 @@ const Profile = () => {
     navigation.navigate('Details', { listing: listingForDetails });
   }, [navigation, buildListingItem]);
 
+  const handleEditListing = useCallback((item: Listing) => {
+    const listingForEdit = buildListingItem(item);
+    navigation.navigate('EditBusinessService', {
+      item: listingForEdit,
+      type: item.type,
+    });
+  }, [navigation, buildListingItem]);
+
+  const handleDeleteListing = useCallback(async (item: Listing) => {
+    Alert.alert(
+      'Delete Listing',
+      `Are you sure you want to delete "${item.title}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (item.type === 'business') {
+                await dispatch(deleteBusiness(item.id)).unwrap();
+              } else if (item.type === 'service') {
+                await dispatch(deleteService(item.id)).unwrap();
+              }
+              // Refresh data after deletion
+              if (user?.uid) {
+                await Promise.all([
+                  dispatch(fetchUserBusinesses(user.uid)),
+                  dispatch(fetchUserServices(user.uid)),
+                ]);
+              }
+              Alert.alert('Success', 'Listing deleted successfully.');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete listing.');
+            }
+          },
+        },
+      ]
+    );
+  }, [dispatch, user?.uid]);
+
   const renderListingItem = ({ item }: { item: Listing }) => {
     const imageSource = typeof item.image === 'string'
       ? { uri: item.image }
@@ -405,13 +446,21 @@ const Profile = () => {
             <Text variant="md-semibold" style={styles.listingTitle}>
               {item.title}
             </Text>
-            {item.status === 'approved' && (
-              <TouchableOpacity onPress={() => handleViewListing(item)}>
-                <Text variant="sm-medium" style={styles.listingActionText}>
-                  View
-                </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => handleEditListing(item)}>
+                <Ionicons name="create-outline" size={18} color={colors.primary[600]} />
               </TouchableOpacity>
-            )}
+              <TouchableOpacity onPress={() => handleDeleteListing(item)}>
+                <Ionicons name="trash-outline" size={18} color={colors.status.error} />
+              </TouchableOpacity>
+              {item.status === 'approved' && (
+                <TouchableOpacity onPress={() => handleViewListing(item)}>
+                  <Text variant="sm-medium" style={styles.listingActionText}>
+                    View
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
           <Text variant="sm-normal" style={styles.listingSubtitle}>
             {item.category}
@@ -507,71 +556,155 @@ const Profile = () => {
     );
   };
 
+  const handleEditProduct = useCallback((item: MarketItem) => {
+    navigation.navigate('EditProduct', { item });
+  }, [navigation]);
+
+  const handleDeleteProduct = useCallback(async (item: MarketItem) => {
+    Alert.alert(
+      'Delete Item',
+      `Are you sure you want to delete "${item.title}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dispatch(deleteProduct(item.id)).unwrap();
+              // Refresh data after deletion
+              if (user?.uid) {
+                await dispatch(fetchUserProducts(user.uid));
+              }
+              Alert.alert('Success', 'Item deleted successfully.');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete item.');
+            }
+          },
+        },
+      ]
+    );
+  }, [dispatch, user?.uid]);
+
   const renderBuySellItem = ({ item }: { item: MarketItem }) => (
-    <TouchableOpacity
-      style={styles.listingCard}
-      activeOpacity={0.9}
-      onPress={() => navigation.navigate('MarketItemDetails', { item })}>
-      <Image
-        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-        resizeMode="cover"
-        style={styles.listingImagePlaceholder}
-      />
-      <View style={styles.listingInfo}>
-        <Text variant="md-semibold" style={styles.listingTitle}>
-          {item.title}
-        </Text>
-        <Text variant="sm-normal" style={styles.listingSubtitle}>
-          {item.category} • {item.condition}
-        </Text>
-        <View style={styles.listingMetaRow}>
-          <Text variant="md-semibold" style={styles.listingPrice}>
-            {item.price}
+    <View style={styles.listingCard}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate('MarketItemDetails', { item })}
+        style={{ flex: 1 }}>
+        <Image
+          source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+          resizeMode="cover"
+          style={styles.listingImagePlaceholder}
+        />
+        <View style={styles.listingInfo}>
+          <View style={styles.listingHeaderRow}>
+            <Text variant="md-semibold" style={styles.listingTitle}>
+              {item.title}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => handleEditProduct(item)}>
+                <Ionicons name="create-outline" size={18} color={colors.primary[600]} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteProduct(item)}>
+                <Ionicons name="trash-outline" size={18} color={colors.status.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text variant="sm-normal" style={styles.listingSubtitle}>
+            {item.category} • {item.condition}
           </Text>
-          <Ionicons
-            name="location-outline"
-            size={14}
-            color={colors.text.secondary}
-          />
-          <Text variant="sm-medium" style={styles.listingSubtitle}>
-            {item.location}
-          </Text>
+          <View style={styles.listingMetaRow}>
+            <Text variant="md-semibold" style={styles.listingPrice}>
+              {item.price}
+            </Text>
+            <Ionicons
+              name="location-outline"
+              size={14}
+              color={colors.text.secondary}
+            />
+            <Text variant="sm-medium" style={styles.listingSubtitle}>
+              {item.location}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 
+  const handleEditRoom = useCallback((item: RoomItem) => {
+    navigation.navigate('EditRoom', { room: item });
+  }, [navigation]);
+
+  const handleDeleteRoom = useCallback(async (item: RoomItem) => {
+    Alert.alert(
+      'Delete Room Listing',
+      `Are you sure you want to delete "${item.title}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dispatch(deleteRoom(item.id)).unwrap();
+              // Refresh data after deletion
+              if (user?.uid) {
+                await dispatch(fetchUserRooms(user.uid));
+              }
+              Alert.alert('Success', 'Room listing deleted successfully.');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete room listing.');
+            }
+          },
+        },
+      ]
+    );
+  }, [dispatch, user?.uid]);
+
   const renderRoomItem = ({ item }: { item: RoomItem }) => (
-    <TouchableOpacity
-      style={styles.listingCard}
-      activeOpacity={0.9}
-      onPress={() => navigation.navigate('RoomDetails', { room: item })}>
-      <Image
-        source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-        resizeMode="cover"
-        style={styles.listingImagePlaceholder}
-      />
-      <View style={styles.listingInfo}>
-        <Text variant="md-semibold" style={styles.listingTitle}>
-          {item.title}
-        </Text>
-        <Text variant="sm-normal" style={styles.listingSubtitle}>
-          {item.type.charAt(0).toUpperCase() + item.type.slice(1)} • {item.locationLine1}
-        </Text>
-        <View style={styles.listingMetaRow}>
-          <Text variant="md-semibold" style={styles.listingPrice}>
-            {item.priceLabel}
-          </Text>
-          {item.billsIncluded && (
-            <View style={styles.billsIncludedTag}>
-              <Text variant="xs-medium" style={styles.billsIncludedText}>
-                Bills Included
-              </Text>
+    <View style={styles.listingCard}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate('RoomDetails', { room: item })}
+        style={{ flex: 1 }}>
+        <Image
+          source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+          resizeMode="cover"
+          style={styles.listingImagePlaceholder}
+        />
+        <View style={styles.listingInfo}>
+          <View style={styles.listingHeaderRow}>
+            <Text variant="md-semibold" style={styles.listingTitle}>
+              {item.title}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => handleEditRoom(item)}>
+                <Ionicons name="create-outline" size={18} color={colors.primary[600]} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteRoom(item)}>
+                <Ionicons name="trash-outline" size={18} color={colors.status.error} />
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
+          <Text variant="sm-normal" style={styles.listingSubtitle}>
+            {item.type.charAt(0).toUpperCase() + item.type.slice(1)} • {item.locationLine1}
+          </Text>
+          <View style={styles.listingMetaRow}>
+            <Text variant="md-semibold" style={styles.listingPrice}>
+              {item.priceLabel}
+            </Text>
+            {item.billsIncluded && (
+              <View style={styles.billsIncludedTag}>
+                <Text variant="xs-medium" style={styles.billsIncludedText}>
+                  Bills Included
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 
   const handleViewProfessionalProfile = useCallback(
@@ -602,54 +735,129 @@ const Profile = () => {
     [navigation],
   );
 
-  const renderProfessionalProfileItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.listingCard}
-      activeOpacity={0.9}
-      onPress={() => handleViewProfessionalProfile(item)}>
-      <View style={styles.listingInfo}>
-        <View style={styles.listingHeaderRow}>
-          <Text variant="md-semibold" style={styles.listingTitle}>
-            {item.fullName}
-          </Text>
-          <TouchableOpacity onPress={() => handleViewProfessionalProfile(item)}>
-            <Text variant="sm-medium" style={styles.listingActionText}>
-              View
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <Text variant="sm-normal" style={styles.listingSubtitle}>
-          {item.profession}
-        </Text>
-        <View style={styles.listingStatusRow}>
-          <Ionicons
-            name={item.status === 'approved' ? 'checkmark-circle' : 'time-outline'}
-            size={14}
-            color={
-              item.status === 'approved'
-                ? colors.status.success
-                : colors.status.warning
+  const handleEditProfessional = useCallback((item: any) => {
+    // Extract years from experience string if it exists
+    let yearsExperience = 0;
+    if (item.experience) {
+      const match = item.experience.match(/\d+/);
+      if (match) {
+        yearsExperience = parseInt(match[0], 10);
+      }
+    }
+
+    const profileData: ProfessionalProfileItem = {
+      id: item.id,
+      name: item.fullName || item.name || '',
+      title: item.profession || item.title || '',
+      company: item.company || '',
+      industry: item.industry || '',
+      city: item.location || item.city || '',
+      yearsExperience,
+      tags: item.skills || item.tags || [],
+      avatar: item.profilePhoto || item.avatar || '',
+      about: item.bio || item.about || '',
+      expertise: item.skills || item.expertise || [],
+      helpTitle: undefined,
+      helpDescription: undefined,
+      linkedinUrl: item.linkedIn || item.linkedinUrl || '',
+    };
+
+    // Add email and phone to the profileData object (they're not in ProfessionalProfileItem type but needed for editing)
+    (profileData as any).email = item.email || '';
+    (profileData as any).phone = item.phone || '';
+    (profileData as any).education = item.education || '';
+
+    navigation.navigate('EditProfessional', { professional: profileData });
+  }, [navigation]);
+
+  const handleDeleteProfessional = useCallback(async (item: any) => {
+    const displayName = item.fullName || item.name || 'Professional Profile';
+    Alert.alert(
+      'Delete Professional Profile',
+      `Are you sure you want to delete "${displayName}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dispatch(deleteProfessional(item.id)).unwrap();
+              // Refresh data after deletion
+              if (user?.uid) {
+                await Promise.all([
+                  dispatch(fetchUserProfessional(user.uid)),
+                  dispatch(fetchUserProfessionals(user.uid)),
+                ]);
+              }
+              Alert.alert('Success', 'Professional profile deleted successfully.');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete professional profile.');
             }
-          />
-          <View
-            style={
-              item.status === 'approved'
-                ? styles.statusPillApproved
-                : styles.statusPillPending
-            }>
-            <Text
-              variant="sm-medium"
+          },
+        },
+      ]
+    );
+  }, [dispatch, user?.uid]);
+
+  const renderProfessionalProfileItem = ({ item }: { item: any }) => (
+    <View style={styles.listingCard}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => handleViewProfessionalProfile(item)}
+        style={{ flex: 1 }}>
+        <View style={styles.listingInfo}>
+          <View style={styles.listingHeaderRow}>
+            <Text variant="md-semibold" style={styles.listingTitle}>
+              {item.fullName}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity onPress={() => handleEditProfessional(item)}>
+                <Ionicons name="create-outline" size={18} color={colors.primary[600]} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteProfessional(item)}>
+                <Ionicons name="trash-outline" size={18} color={colors.status.error} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleViewProfessionalProfile(item)}>
+                <Text variant="sm-medium" style={styles.listingActionText}>
+                  View
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <Text variant="sm-normal" style={styles.listingSubtitle}>
+            {item.profession}
+          </Text>
+          <View style={styles.listingStatusRow}>
+            <Ionicons
+              name={item.status === 'approved' ? 'checkmark-circle' : 'time-outline'}
+              size={14}
+              color={
+                item.status === 'approved'
+                  ? colors.status.success
+                  : colors.status.warning
+              }
+            />
+            <View
               style={
                 item.status === 'approved'
-                  ? styles.statusPillTextApproved
-                  : styles.statusPillTextPending
+                  ? styles.statusPillApproved
+                  : styles.statusPillPending
               }>
-              {item.status === 'approved' ? 'Approved' : 'Pending'}
-            </Text>
+              <Text
+                variant="sm-medium"
+                style={
+                  item.status === 'approved'
+                    ? styles.statusPillTextApproved
+                    : styles.statusPillTextPending
+                }>
+                {item.status === 'approved' ? 'Approved' : 'Pending'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 
   if (isLoading && listings.length === 0 && buySellItems.length === 0 && roomListings.length === 0) {

@@ -5,11 +5,22 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.lightSecondary,
+  },
+  header: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   logoContainer: {
     alignItems: 'center',

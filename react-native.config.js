@@ -5,7 +5,8 @@ module.exports = {
   },
   assets: [
     './src/assets/fonts/Outfit/static/',
-    './node_modules/react-native-vector-icons/Fonts/',
+    // react-native-vector-icons fonts are handled by the pod automatically
+    // Adding them here causes duplicate entries
   ],
 };
 

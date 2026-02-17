@@ -93,7 +93,14 @@ export const updateRoom = createAsyncThunk(
     ) => {
         try {
             await roomsService.updateRoom(roomId, data, images);
-            return { roomId, data, images };
+            
+            // Convert Date objects to serializable format before returning
+            const serializableData = { ...data };
+            if (serializableData.availableFrom instanceof Date) {
+                serializableData.availableFrom = serializableData.availableFrom.getTime() as any;
+            }
+            
+            return { roomId, data: serializableData, images };
         } catch (error: any) {
             return rejectWithValue(error.message);
         }
@@ -211,6 +218,7 @@ const roomsSlice = createSlice({
                 state.isLoading = false;
                 const index = state.userRooms.findIndex(r => r.id === action.payload.roomId);
                 if (index !== -1) {
+                    // availableFrom is already converted to milliseconds in the thunk
                     state.userRooms[index] = {
                         ...state.userRooms[index],
                         ...action.payload.data,

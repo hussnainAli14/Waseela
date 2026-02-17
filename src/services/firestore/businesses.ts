@@ -394,25 +394,95 @@ export const subscribeToBusinesses = (
     filters: ListingFilters,
     callback: (businesses: Business[]) => void
 ): (() => void) => {
-    let query = firebaseFirestore.collection(COLLECTION).where('status', '==', 'approved');
+    let unsubscribeFn: (() => void) | null = null;
 
-    if (filters.category) {
-        query = query.where('category', '==', filters.category);
-    }
+    const setupSubscription = (useOrderBy: boolean = true) => {
+        try {
+            let query = firebaseFirestore.collection(COLLECTION).where('status', '==', 'approved');
 
-    if (filters.city) {
-        query = query.where('city', '==', filters.city);
-    }
+            if (filters.category) {
+                query = query.where('category', '==', filters.category);
+            }
 
-    query = query.orderBy('createdAt', 'desc').limit(20);
+            if (filters.city) {
+                query = query.where('city', '==', filters.city);
+            }
 
-    const unsubscribe = query.onSnapshot(snapshot => {
-        const businesses: Business[] = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
+            // Check if we have filters that require a composite index
+            const hasFiltersRequiringIndex = !!(filters.category || filters.city);
 
-        callback(businesses);
-    });
+            // Only use orderBy if requested and we don't have filters that require an index
+            if (useOrderBy && !hasFiltersRequiringIndex) {
+                query = query.orderBy('createdAt', 'desc');
+            }
 
-    return unsubscribe;
+            query = query.limit(20);
+
+            unsubscribeFn = query.onSnapshot(
+                (snapshot) => {
+                    // Add null check for snapshot
+                    if (!snapshot || !snapshot.docs) {
+                        console.warn('⚠️ Firestore: Received null or invalid snapshot in subscribeToBusinesses');
+                        callback([]);
+                        return;
+                    }
+
+                    try {
+                        const businesses: Business[] = snapshot.docs.map(doc => serializeBusinessData(doc.id, doc.data()));
+
+                        // If we couldn't use orderBy due to filters requiring index, sort in memory
+                        if (hasFiltersRequiringIndex || !useOrderBy) {
+                            businesses.sort((a, b) => {
+                                const dateA = toMilliseconds(a.createdAt);
+                                const dateB = toMilliseconds(b.createdAt);
+                                return dateB - dateA; // Descending order
+                            });
+                        }
+
+                        callback(businesses);
+                    } catch (error) {
+                        console.error('❌ Firestore: Error processing snapshot in subscribeToBusinesses:', error);
+                        callback([]);
+                    }
+                },
+                (error) => {
+                    // Handle errors in the subscription
+                    console.error('❌ Firestore: Error in subscribeToBusinesses:', error);
+                    
+                    // If it's an index error and we haven't tried without orderBy yet, retry without it
+                    if ((error.code === 'failed-precondition' || error.message?.includes('index')) && useOrderBy) {
+                        console.warn('⚠️ Firestore: Index missing for subscription, retrying without orderBy');
+                        
+                        // Unsubscribe from the current subscription
+                        if (unsubscribeFn) {
+                            unsubscribeFn();
+                        }
+                        
+                        // Retry without orderBy
+                        setupSubscription(false);
+                        return;
+                    }
+                    
+                    // For other errors, return empty array
+                    callback([]);
+                }
+            );
+        } catch (error) {
+            console.error('❌ Firestore: Error setting up subscribeToBusinesses:', error);
+            callback([]);
+            unsubscribeFn = () => {}; // Return a no-op function
+        }
+    };
+
+    // Start with orderBy enabled
+    setupSubscription(true);
+
+    // Return unsubscribe function
+    return () => {
+        if (unsubscribeFn) {
+            unsubscribeFn();
+        }
+    };
 };
 
 /**

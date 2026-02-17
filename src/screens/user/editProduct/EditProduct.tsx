@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert, Image, ScrollView, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Text, Button, TextField } from '@/components/atoms';
 import { Dropdown, CityDropdown } from '@/components/molecules';
 import { colors } from '@/theme';
-import { styles } from './SellItem.styles';
+import { styles } from '@/components/templates/forms/SellItem.styles';
 import {
   launchImageLibrary,
   type Asset,
   type ImageLibraryOptions,
 } from 'react-native-image-picker';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { createProduct } from '@/store/slices/productsSlice';
+import { updateProduct } from '@/store/slices/productsSlice';
 import type { ProductFormData } from '@/types/firestore';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-
-// Categories will be fetched from Redux
+import { NavigationProp, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import type { MainStackParamList } from '@/navigation/types';
 
 const conditionOptions = [
   { label: 'New', value: 'new' },
@@ -26,25 +25,73 @@ const conditionOptions = [
   { label: 'Needs Repair', value: 'needs-repair' },
 ];
 
-const SellItem: React.FC = () => {
+const conditionMap: Record<string, string> = {
+  'New': 'new',
+  'Like New': 'like-new',
+  'Good': 'good',
+  'Fair': 'fair',
+  'Needs Repair': 'needs-repair',
+};
+
+type EditProductRoute = RouteProp<MainStackParamList, 'EditProduct'>;
+
+const EditProduct: React.FC = () => {
   const navigation = useNavigation<NavigationProp<any>>();
+  const route = useRoute<EditProductRoute>();
+  const { item } = route.params;
   const dispatch = useAppDispatch();
   const { user } = useAppSelector(state => state.auth);
   const { isLoading } = useAppSelector(state => state.products);
   const { marketplaceCategories } = useAppSelector(state => state.categories);
 
   const [photos, setPhotos] = useState<Asset[]>([]);
-  const [category, setCategory] = useState('');
-  const [condition, setCondition] = useState('');
-  const [price, setPrice] = useState('');
-  const [title, setTitle] = useState('');
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [category, setCategory] = useState(item.category || '');
+  const [condition, setCondition] = useState(
+    conditionMap[item.condition] || item.condition || ''
+  );
+  const [price, setPrice] = useState(item.price?.replace('£', '').trim() || '');
+  const [title, setTitle] = useState(item.title || '');
   const [location, setLocation] = useState('');
   const [city, setCity] = useState('');
-  const [description, setDescription] = useState('');
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [email, setEmail] = useState('');
+  const [description, setDescription] = useState(item.description || '');
+  const [phone, setPhone] = useState(item.phone || '');
+  const [whatsapp, setWhatsapp] = useState(item.whatsapp || '');
+  const [email, setEmail] = useState(item.email || '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Get the actual product from Redux to get both location and city fields separately
+  const { userProducts } = useAppSelector(state => state.products);
+  const actualProduct = userProducts.find(p => p.id === item.id);
+
+  // Initialize existing images, location, and city
+  useEffect(() => {
+    if (item.image) {
+      if (typeof item.image === 'string') {
+        setExistingImages([item.image]);
+      } else if (Array.isArray(item.image)) {
+        setExistingImages(item.image);
+      }
+    }
+
+    // Set location and city from actual product (they are separate fields)
+    if (actualProduct) {
+      if (actualProduct.location) {
+        setLocation(actualProduct.location);
+      }
+      if (actualProduct.city) {
+        setCity(actualProduct.city);
+      }
+    } else {
+      // Fallback to item values if product not found
+      if (item.location) {
+        setLocation(item.location);
+      }
+      if ((item as any).city) {
+        setCity((item as any).city);
+      }
+    }
+  }, [item, actualProduct]);
 
   const handlePickPhotos = async () => {
     const options: ImageLibraryOptions = {
@@ -68,12 +115,6 @@ const SellItem: React.FC = () => {
     if (!title.trim()) {
       newErrors.title = 'Please enter a title for your item.';
     }
-    if (!category) {
-      // Dropdown
-    }
-    if (!condition) {
-      // Dropdown
-    }
     if (!price.trim()) {
       newErrors.price = 'Please enter the price.';
     } else {
@@ -85,16 +126,9 @@ const SellItem: React.FC = () => {
     if (!location.trim()) {
       newErrors.location = 'Please enter the location.';
     }
-    if (!city) {
-      // Dropdown
-    }
     if (!description.trim()) {
       newErrors.description = 'Please enter a description.';
     }
-    // Phone is now optional
-    // if (!phone.trim()) {
-    //   newErrors.phone = 'Please enter your phone number.';
-    // }
     if (!whatsapp.trim()) {
       newErrors.whatsapp = 'Please enter your WhatsApp number.';
     }
@@ -105,7 +139,6 @@ const SellItem: React.FC = () => {
 
     setErrors(newErrors);
 
-    // Alert for non-TextField errors
     if (!category) {
       Alert.alert('Validation Error', 'Please select a category.');
       return false;
@@ -123,7 +156,7 @@ const SellItem: React.FC = () => {
     }
 
     if (!user?.uid) {
-      Alert.alert('Authentication Error', 'You must be logged in to post an item.');
+      Alert.alert('Authentication Error', 'You must be logged in to update an item.');
       return false;
     }
     return true;
@@ -134,22 +167,19 @@ const SellItem: React.FC = () => {
       return;
     }
 
-    // Double-check user is authenticated
     if (!user?.uid) {
-      Alert.alert('Authentication Error', 'You must be logged in to post an item.');
+      Alert.alert('Authentication Error', 'You must be logged in to update an item.');
       return;
     }
 
     try {
-      // Parse price to number
       const priceNumber = parseFloat(price);
       if (isNaN(priceNumber) || priceNumber <= 0) {
         Alert.alert('Validation Error', 'Please enter a valid price.');
         return;
       }
 
-      // Prepare form data
-      const formData: ProductFormData = {
+      const formData: Partial<ProductFormData> = {
         title: title.trim(),
         description: description.trim(),
         category: category,
@@ -157,59 +187,41 @@ const SellItem: React.FC = () => {
         price: priceNumber,
         location: location.trim(),
         city: city.trim(),
-        phone: phone.trim() || undefined, // Send undefined if empty
         whatsapp: whatsapp.trim(),
         email: email.trim(),
       };
 
-      // Extract image URIs from selected photos (if any)
+      if (phone.trim()) {
+        formData.phone = phone.trim();
+      }
+
       const imageUris = photos
         .map(photo => photo.uri)
         .filter((uri): uri is string => uri !== undefined);
 
-      // Dispatch the create product action with actual images (or empty array)
-      const result = await dispatch(
-        createProduct({
+      await dispatch(
+        updateProduct({
+          productId: item.id,
           data: formData,
-          sellerId: user.uid,
-          seller: {
-            name: user.displayName || 'Waseela User',
-            photo: user.photoURL || undefined,
-          },
-          images: imageUris, // Uses actual photos if selected, empty array if not
+          images: imageUris.length > 0 ? imageUris : undefined,
         })
       ).unwrap();
 
-      if (result) {
-        Alert.alert(
-          'Success!',
-          'Your item has been posted and will be reviewed. Interested buyers will be able to contact you soon.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form
-                setPhotos([]);
-                setCategory('');
-                setCondition('');
-                setPrice('');
-                setTitle('');
-                setLocation('');
-                setCity('');
-                setDescription('');
-                setPhone('');
-                setWhatsapp('');
-                setEmail('');
-              },
-            },
-          ]
-        );
-      }
+      Alert.alert(
+        'Success!',
+        'Your item has been updated.',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
     } catch (error: any) {
-      console.error('Error creating product:', error);
+      console.error('Error updating product:', error);
       Alert.alert(
         'Error',
-        error.message || 'Failed to post item. Please try again.',
+        error.message || 'Failed to update item. Please try again.',
       );
     }
   };
@@ -226,7 +238,7 @@ const SellItem: React.FC = () => {
             style={styles.headerRow}>
             <Ionicons name="arrow-back" size={22} color={colors.text.primary} />
             <Text variant="lg-semibold" style={styles.headerTitle}>
-              Sell an Item
+              Edit Item
             </Text>
           </TouchableOpacity>
           <View style={styles.card}>
@@ -239,19 +251,27 @@ const SellItem: React.FC = () => {
               onPress={handlePickPhotos}>
               <Ionicons name="camera-outline" size={32} color={colors.text.secondary} />
               <Text variant="md-medium" style={styles.uploadTitle}>
-                Add photos of your item
+                {photos.length > 0 || existingImages.length > 0 ? 'Change photos' : 'Add photos of your item'}
               </Text>
               <Text variant="sm-normal" style={styles.uploadSubtitle}>
                 Up to 5 photos
               </Text>
             </TouchableOpacity>
 
-            {photos.length > 0 && (
+            {(photos.length > 0 || existingImages.length > 0) && (
               <View style={styles.photoPreviewRow}>
                 {photos.map((asset, index) => (
                   <Image
                     key={asset.uri ?? asset.fileName ?? index.toString()}
                     source={{ uri: asset.uri }}
+                    resizeMode="cover"
+                    style={styles.photoThumb}
+                  />
+                ))}
+                {existingImages.map((uri, index) => (
+                  <Image
+                    key={`existing-${index}`}
+                    source={{ uri }}
                     resizeMode="cover"
                     style={styles.photoThumb}
                   />
@@ -297,7 +317,6 @@ const SellItem: React.FC = () => {
                 if (errors.price) setErrors(prev => ({ ...prev, price: '' }));
               }}
               error={errors.price}
-            // containerStyle={{ marginBottom: 12 }}
             />
 
             <Text variant="md-semibold" style={styles.dropdownLabel}>
@@ -398,26 +417,8 @@ const SellItem: React.FC = () => {
             />
           </View>
 
-          <View style={[styles.card, styles.guidelinesCard]}>
-            <Text variant="md-semibold" style={styles.guidelinesTitle}>
-              Posting Guidelines
-            </Text>
-            <Text variant="sm-normal" style={styles.guidelineItem}>
-              • Be honest about the item's condition
-            </Text>
-            <Text variant="sm-normal" style={styles.guidelineItem}>
-              • Set a fair price
-            </Text>
-            <Text variant="sm-normal" style={styles.guidelineItem}>
-              • Respond promptly to messages
-            </Text>
-            <Text variant="sm-normal" style={[styles.guidelineItem, { marginBottom: 0 }]}>
-              • No prohibited or illegal items
-            </Text>
-          </View>
-
           <Button
-            title={isLoading ? 'Posting...' : 'Post Item'}
+            title={isLoading ? 'Updating...' : 'Update Item'}
             fullWidth
             onPress={handleSubmit}
             disabled={isLoading}
@@ -434,6 +435,4 @@ const SellItem: React.FC = () => {
   );
 };
 
-export default SellItem;
-
-
+export default EditProduct;

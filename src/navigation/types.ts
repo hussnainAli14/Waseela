@@ -46,6 +46,19 @@ export type MainStackParamList = {
   ProfessionalProfile: {
     professional: ProfessionalProfileItem;
   };
+  EditBusinessService: {
+    item: ListingItem;
+    type: 'business' | 'service';
+  };
+  EditProduct: {
+    item: MarketItem;
+  };
+  EditRoom: {
+    room: RoomItem;
+  };
+  EditProfessional: {
+    professional: ProfessionalProfileItem;
+  };
 };
 
 // Root Navigator Param List

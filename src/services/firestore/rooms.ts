@@ -33,7 +33,7 @@ const serializeRoom = (data: any): Room => {
     return room as Room;
 };
 
-import { uploadListingImages } from '@/services/storage/imageUpload';
+import { uploadListingImages, deleteImage } from '@/services/storage/imageUpload';
 
 export const createRoom = async (
     data: RoomFormData,
@@ -325,6 +325,11 @@ export const updateRoom = async (
     data: Partial<RoomFormData>,
     images?: string[]
 ): Promise<void> => {
+    // Get current room data to compare images
+    const roomDoc = await firebaseFirestore.collection(COLLECTION).doc(roomId).get();
+    const currentRoom = roomDoc.data();
+    const currentImages: string[] = currentRoom?.images || [];
+
     const updateData: any = {
         ...data,
         updatedAt: new Date().toISOString(),
@@ -338,8 +343,25 @@ export const updateRoom = async (
         updateData.availableFrom = data.availableFrom.toISOString();
     }
 
-    if (images) {
+    // Always update images array (even if empty) to ensure removed images are deleted from DB
+    if (images !== undefined) {
         updateData.images = images;
+
+        // Find images that were removed (in current but not in new)
+        const removedImages = currentImages.filter(img => !images.includes(img));
+        
+        // Delete removed images from Firebase Storage
+        if (removedImages.length > 0) {
+            try {
+                await Promise.all(removedImages.map(img => deleteImage(img).catch(err => {
+                    console.warn('Failed to delete image:', img, err);
+                    // Continue even if deletion fails
+                })));
+            } catch (error) {
+                console.error('Error deleting removed images:', error);
+                // Continue with update even if image deletion fails
+            }
+        }
     }
 
     await firebaseFirestore.collection(COLLECTION).doc(roomId).update(updateData);

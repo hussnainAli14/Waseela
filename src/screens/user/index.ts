@@ -17,3 +17,7 @@ export * from './postRoom';
 export * from './joinProfessionalNetwork';
 export { default as UserProfessionalProfiles } from './userProfessionalProfiles/UserProfessionalProfiles';
 export { default as MyReports } from './myReports/MyReports';
+export * from './editBusinessService';
+export * from './editProduct';
+export * from './editRoom';
+export * from './editProfessional';

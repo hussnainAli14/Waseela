@@ -28,6 +28,10 @@ import {
   UserProfessionalProfiles,
   BuySell,
   MyReports,
+  EditBusinessService,
+  EditProduct,
+  EditRoom,
+  EditProfessional,
 } from '@/screens';
 import { colors } from '@/theme';
 import { BottomNavigator } from '@/components/organisms/BottomNavigator';
@@ -166,6 +170,10 @@ const ProfileStackNavigator = () => (
     />
     <ProfileStack.Screen name="SubmitListing" component={SubmitListing} />
     <ProfileStack.Screen name="Details" component={Details} />
+    <ProfileStack.Screen name="EditBusinessService" component={EditBusinessService} />
+    <ProfileStack.Screen name="EditProduct" component={EditProduct} />
+    <ProfileStack.Screen name="EditRoom" component={EditRoom} />
+    <ProfileStack.Screen name="EditProfessional" component={EditProfessional} />
   </ProfileStack.Navigator>
 );
 

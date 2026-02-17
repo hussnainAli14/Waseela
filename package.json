@@ -13,7 +13,7 @@
     "android-build": "cd android && ./gradlew assembleRelease",
     "android-bundle": "cd android && ./gradlew bundleRelease",
     "reinstall-modules": "rm -rf node_modules && npm i",
-    "reinstall-pods": "cd ios && rm -rf Podfile.lock Pods && pod --repo-update install",
+    "reinstall-pods": "cd ios && rm -rf Podfile.lock Pods build && pod deintegrate && rm -rf ~/Library/Developer/Xcode/DerivedData/* && pod --repo-update install",
     "reset-start": "react-native start --reset-cache",
     "generate-key": "cd android && ./gradlew signingReport"
   },

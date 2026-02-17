@@ -48,12 +48,14 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
   },
   forgotPasswordContainer: {
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    marginTop: 8,
     marginBottom: 32,
+    paddingVertical: 8,
   },
   forgotPasswordText: {
     fontFamily: 'Outfit-Medium',
-    fontSize: 14,
+    fontSize: 16,
     color: colors.secondary[500],
   },
   dividerContainer: {

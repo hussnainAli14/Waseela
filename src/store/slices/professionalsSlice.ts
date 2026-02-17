@@ -123,6 +123,18 @@ export const updateProfessional = createAsyncThunk(
     }
 );
 
+export const deleteProfessional = createAsyncThunk(
+    'professionals/deleteProfessional',
+    async (professionalId: string, { rejectWithValue }) => {
+        try {
+            await professionalsService.deleteProfessional(professionalId);
+            return professionalId;
+        } catch (error: any) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
 const professionalsSlice = createSlice({
     name: 'professionals',
     initialState,
@@ -241,8 +253,36 @@ const professionalsSlice = createSlice({
                         ...(action.payload.profilePhoto && { profilePhoto: action.payload.profilePhoto }),
                     };
                 }
+                // Update in userProfessionals array if it exists
+                const index = state.userProfessionals.findIndex(p => p.id === action.payload.professionalId);
+                if (index !== -1) {
+                    state.userProfessionals[index] = {
+                        ...state.userProfessionals[index],
+                        ...action.payload.data,
+                        ...(action.payload.profilePhoto && { profilePhoto: action.payload.profilePhoto }),
+                    };
+                }
             })
             .addCase(updateProfessional.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.payload as string;
+            });
+
+        // Delete professional
+        builder
+            .addCase(deleteProfessional.pending, state => {
+                state.isLoading = true;
+            })
+            .addCase(deleteProfessional.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Remove from userProfessionals array
+                state.userProfessionals = state.userProfessionals.filter(p => p.id !== action.payload);
+                // Clear userProfessional if it was deleted
+                if (state.userProfessional?.id === action.payload) {
+                    state.userProfessional = null;
+                }
+            })
+            .addCase(deleteProfessional.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.payload as string;
             });
