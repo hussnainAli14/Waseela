@@ -11,13 +11,14 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { RootNavigator, navigationRef } from '@/navigation';
 import { colors } from '@/theme';
-import { firebaseAuth } from '@/config/firebase';
 import { loadUser } from '@/store/slices/authSlice';
 import { persistor, store } from '@/store';
+import { firebaseAuth } from '@/config/firebase';
 
 function App() {
   useEffect(() => {
     // Listen to auth state changes
+    // Firebase should be initialized by now since we imported @react-native-firebase/app
     const unsubscribe = firebaseAuth.onAuthStateChanged((user) => {
       if (user) {
         // User is signed in, load user data

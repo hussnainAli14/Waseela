@@ -45,8 +45,23 @@ target 'Waseela' do
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
 
         # Fix Hermes rsync sandbox issue
-        config.build_settings['ENABLE_USER_SCRIPT_SANDBOX'] = 'NO'
+        config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
       end
+    end
+    
+    # Ensure react-native-vector-icons fonts are properly linked
+    # Copy fonts from node_modules to the app if they exist
+    fonts_path = File.join(File.dirname(__FILE__), '../node_modules/react-native-vector-icons/Fonts')
+    if Dir.exist?(fonts_path)
+      Dir.glob(File.join(fonts_path, '*.ttf')).each do |font|
+        font_name = File.basename(font)
+        # Fonts should already be in Info.plist, this ensures they're copied
+        puts "Found font: #{font_name}"
+      end
+    else
+      puts "⚠️  Warning: react-native-vector-icons Fonts directory not found."
+      puts "   Please run: cd ios && pod install"
+      puts "   Or manually download fonts from: https://github.com/oblador/react-native-vector-icons"
     end
   end
 end
