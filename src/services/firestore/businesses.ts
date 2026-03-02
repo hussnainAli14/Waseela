@@ -5,7 +5,7 @@ import { toMilliseconds } from '@/utils/dateUtils';
 
 const COLLECTION = 'businesses';
 
-import { uploadListingImages } from '@/services/storage/imageUpload';
+import { uploadListingImages, deleteImage } from '@/services/storage/imageUpload';
 
 /**
  * Helper function to serialize Firestore document data
@@ -48,20 +48,46 @@ export const createBusiness = async (
         // 2. Upload images in parallel (if any)
         let imageUrls: string[] = [];
         if (imageUris.length > 0) {
-            imageUrls = await uploadListingImages(
-                imageUris,
-                ownerId,
-                businessId,
-                'business'
+            // Separate local file URIs from Firebase Storage URLs
+            const localImageUris = imageUris.filter(uri => {
+                if (!uri) return false;
+                // Only upload local file URIs
+                return uri.startsWith('file://') || (!uri.startsWith('http://') && !uri.startsWith('https://'));
+            });
+            
+            const existingFirebaseUrls = imageUris.filter(uri => 
+                uri && (uri.startsWith('https://firebasestorage.googleapis.com') || uri.startsWith('http://firebasestorage.googleapis.com'))
             );
+            
+            // Upload local images if any
+            if (localImageUris.length > 0) {
+                try {
+                    const uploadedUrls = await uploadListingImages(
+                        localImageUris,
+                        ownerId,
+                        businessId,
+                        'business'
+                    );
+                    imageUrls = [...existingFirebaseUrls, ...uploadedUrls];
+                } catch (uploadError) {
+                    console.error('Error uploading business images:', uploadError);
+                    // If upload fails, only use existing Firebase URLs, never store local URIs
+                    imageUrls = existingFirebaseUrls;
+                    // Optionally: throw error to prevent creating business without images
+                    // throw new Error('Failed to upload images. Please try again.');
+                }
+            } else {
+                // No local files to upload, just use existing Firebase URLs
+                imageUrls = existingFirebaseUrls;
+            }
         }
 
-        // 3. Create document with real image URLs
+        // 3. Create document with real image URLs (never store local file URIs)
         const businessData: Business = {
             id: businessId,
             ...data,
             ownerId,
-            images: imageUrls,
+            images: imageUrls, // Only Firebase Storage URLs
             rating: 0,
             reviewCount: 0,
             verified: false,
@@ -105,13 +131,16 @@ export const getBusinesses = async (
     startAfterDocId?: string
 ): Promise<{ businesses: Business[]; lastDocId: string | null }> => {
     console.log('🔥 Firestore: getBusinesses called with filters:', filters);
-    // Start with base collection query - only filter by status if explicitly requested
-    // This allows businesses without status field to be included
+    // Start with base collection query
     let query: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
 
-    // Only filter by status if explicitly provided in filters
+    // Default to filtering out 'pending' items - only show 'approved' unless explicitly requested otherwise
+    // This ensures pending items are not shown in listings (except in profile tab)
     if (filters.status !== undefined) {
         query = query.where('status', '==', filters.status);
+    } else {
+        // Default: only show approved businesses
+        query = query.where('status', '==', 'approved');
     }
 
     // Apply filters
@@ -196,8 +225,11 @@ export const getBusinesses = async (
                 // Retry query without orderBy
                 let fallbackQuery: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
 
+                // Apply status filter (default to 'approved' if not specified)
                 if (filters.status !== undefined) {
                     fallbackQuery = fallbackQuery.where('status', '==', filters.status);
+                } else {
+                    fallbackQuery = fallbackQuery.where('status', '==', 'approved');
                 }
                 if (filters.category) {
                     fallbackQuery = fallbackQuery.where('category', '==', filters.category);
@@ -340,13 +372,61 @@ export const updateBusiness = async (
     data: Partial<BusinessFormData>,
     images?: string[]
 ): Promise<void> => {
+    // Get current business data to compare images
+    const businessDoc = await firebaseFirestore.collection(COLLECTION).doc(businessId).get();
+    const currentBusiness = businessDoc.data();
+    const currentImages: string[] = currentBusiness?.images || [];
+
     const updateData: any = {
         ...data,
         updatedAt: new Date().toISOString(),
     };
 
-    if (images) {
-        updateData.images = images;
+    // Handle images - upload local file URIs if present
+    if (images !== undefined) {
+        let finalImages = images;
+        
+        // Check if any images are local file URIs that need uploading
+        const localImageUris = images.filter(uri => 
+            uri && (uri.startsWith('file://') || (!uri.startsWith('http://') && !uri.startsWith('https://')))
+        );
+        
+        if (localImageUris.length > 0 && currentBusiness?.ownerId) {
+            // Upload local images to Firebase Storage
+            const uploadedUrls = await uploadListingImages(
+                localImageUris,
+                currentBusiness.ownerId,
+                businessId,
+                'business'
+            );
+            
+            // Replace local URIs with Firebase Storage URLs
+            finalImages = images.map(uri => {
+                const localIndex = localImageUris.indexOf(uri);
+                if (localIndex !== -1) {
+                    return uploadedUrls[localIndex];
+                }
+                return uri; // Keep Firebase URLs as-is
+            });
+        }
+        
+        updateData.images = finalImages;
+
+        // Find images that were removed (in current but not in new)
+        const removedImages = currentImages.filter(img => !finalImages.includes(img));
+        
+        // Delete removed images from Firebase Storage
+        if (removedImages.length > 0) {
+            try {
+                await Promise.all(removedImages.map(img => deleteImage(img).catch(err => {
+                    console.warn('Failed to delete image:', img, err);
+                    // Continue even if deletion fails
+                })));
+            } catch (error) {
+                console.error('Error deleting removed images:', error);
+                // Continue with update even if image deletion fails
+            }
+        }
     }
 
     await firebaseFirestore.collection(COLLECTION).doc(businessId).update(updateData);

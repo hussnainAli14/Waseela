@@ -21,6 +21,7 @@ export const styles = StyleSheet.create({
   },
   searchBlock: {
     gap: 12,
+    zIndex: 1000, // Ensure dropdown container has proper z-index
   },
   postButton: {
     flexDirection: 'row',

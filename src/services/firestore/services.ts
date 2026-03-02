@@ -50,15 +50,40 @@ export const createService = async (
         // 2. Upload images in parallel (if any)
         let imageUrls: string[] = [];
         if (imageUris.length > 0) {
-            imageUrls = await uploadListingImages(
-                imageUris,
-                providerId,
-                serviceId,
-                'service'
+            // Separate local file URIs from Firebase Storage URLs
+            const localImageUris = imageUris.filter(uri => {
+                if (!uri) return false;
+                // Only upload local file URIs
+                return uri.startsWith('file://') || (!uri.startsWith('http://') && !uri.startsWith('https://'));
+            });
+            
+            const existingFirebaseUrls = imageUris.filter(uri => 
+                uri && (uri.startsWith('https://firebasestorage.googleapis.com') || uri.startsWith('http://firebasestorage.googleapis.com'))
             );
+            
+            // Upload local images if any
+            if (localImageUris.length > 0) {
+                try {
+                    const uploadedUrls = await uploadListingImages(
+                        localImageUris,
+                        providerId,
+                        serviceId,
+                        'service'
+                    );
+                    imageUrls = [...existingFirebaseUrls, ...uploadedUrls];
+                } catch (uploadError) {
+                    console.error('Error uploading service images:', uploadError);
+                    // If upload fails, only use existing Firebase URLs, never store local URIs
+                    imageUrls = existingFirebaseUrls;
+                    // Optionally: throw error to prevent creating service without images
+                    // throw new Error('Failed to upload images. Please try again.');
+                }
+            } else {
+                // No local files to upload, just use existing Firebase URLs
+                imageUrls = existingFirebaseUrls;
+            }
         }
 
-        // 3. Build service data object
         // 3. Build service data object
         const serviceData: Service = {
             id: serviceId,
@@ -70,7 +95,7 @@ export const createService = async (
             email: data.email,
             tags: data.tags || [],
             providerId,
-            images: imageUrls,
+            images: imageUrls, // Only Firebase Storage URLs
             rating: 0,
             reviewCount: 0,
             verified: false,
@@ -120,13 +145,16 @@ export const getServices = async (
     startAfterDocId?: string
 ): Promise<{ services: Service[]; lastDocId: string | null }> => {
     console.log('🔥 Firestore: getServices called with filters:', filters);
-    // Start with base collection query - only filter by status if explicitly requested
-    // This allows services without status field to be included
+    // Start with base collection query
     let query: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
 
-    // Only filter by status if explicitly provided in filters
+    // Default to filtering out 'pending' items - only show 'approved' unless explicitly requested otherwise
+    // This ensures pending items are not shown in listings (except in profile tab)
     if (filters.status !== undefined) {
         query = query.where('status', '==', filters.status);
+    } else {
+        // Default: only show approved services
+        query = query.where('status', '==', 'approved');
     }
 
     // Apply filters
@@ -214,8 +242,11 @@ export const getServices = async (
                 // Retry query without orderBy
                 let fallbackQuery: FirebaseFirestoreTypes.Query = firebaseFirestore.collection(COLLECTION);
 
+                // Apply status filter (default to 'approved' if not specified)
                 if (filters.status !== undefined) {
                     fallbackQuery = fallbackQuery.where('status', '==', filters.status);
+                } else {
+                    fallbackQuery = fallbackQuery.where('status', '==', 'approved');
                 }
                 if (filters.serviceType) {
                     fallbackQuery = fallbackQuery.where('serviceType', '==', filters.serviceType);
@@ -368,13 +399,62 @@ export const updateService = async (
     data: Partial<ServiceFormData>,
     images?: string[]
 ): Promise<void> => {
+    // Get current service data to compare images
+    const serviceDoc = await firebaseFirestore.collection(COLLECTION).doc(serviceId).get();
+    const currentService = serviceDoc.data();
+    const currentImages: string[] = currentService?.images || [];
+
     const updateData: any = {
         ...data,
         updatedAt: new Date().toISOString(),
     };
 
-    if (images) {
-        updateData.images = images;
+    // Handle images - upload local file URIs if present
+    if (images !== undefined) {
+        let finalImages = images;
+        
+        // Check if any images are local file URIs that need uploading
+        const localImageUris = images.filter(uri => 
+            uri && (uri.startsWith('file://') || (!uri.startsWith('http://') && !uri.startsWith('https://')))
+        );
+        
+        if (localImageUris.length > 0 && currentService?.providerId) {
+            // Upload local images to Firebase Storage
+            const uploadedUrls = await uploadListingImages(
+                localImageUris,
+                currentService.providerId,
+                serviceId,
+                'service'
+            );
+            
+            // Replace local URIs with Firebase Storage URLs
+            finalImages = images.map(uri => {
+                const localIndex = localImageUris.indexOf(uri);
+                if (localIndex !== -1) {
+                    return uploadedUrls[localIndex];
+                }
+                return uri; // Keep Firebase URLs as-is
+            });
+        }
+        
+        updateData.images = finalImages;
+
+        // Find images that were removed (in current but not in new)
+        const removedImages = currentImages.filter(img => !finalImages.includes(img));
+        
+        // Delete removed images from Firebase Storage
+        if (removedImages.length > 0) {
+            try {
+                const { deleteImage } = await import('@/services/storage/imageUpload');
+                await Promise.all(removedImages.map(img => deleteImage(img).catch(err => {
+                    console.warn('Failed to delete image:', img, err);
+                    // Continue even if deletion fails
+                })));
+            } catch (error) {
+                console.error('Error deleting removed images:', error);
+                // Continue with update even if image deletion fails
+            }
+        }
     }
 
     await firebaseFirestore.collection(COLLECTION).doc(serviceId).update(updateData);

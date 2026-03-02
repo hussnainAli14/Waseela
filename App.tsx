@@ -14,6 +14,7 @@ import { colors } from '@/theme';
 import { loadUser } from '@/store/slices/authSlice';
 import { persistor, store } from '@/store';
 import { firebaseAuth } from '@/config/firebase';
+import { AccountDeletionListener } from '@/components/AccountDeletionListener';
 
 function App() {
   useEffect(() => {
@@ -38,6 +39,7 @@ function App() {
               barStyle="dark-content"
               backgroundColor={colors.background.light}
             />
+            <AccountDeletionListener />
             <RootNavigator />
           </NavigationContainer>
         </SafeAreaProvider>

@@ -5,6 +5,7 @@ import { Text } from '@/components/atoms';
 import { colors } from '@/theme';
 import { styles } from './styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PP } from '@/utils/responsive';
 
 const BottomNavigator: React.FC<BottomTabBarProps> = ({
   state,
@@ -12,7 +13,7 @@ const BottomNavigator: React.FC<BottomTabBarProps> = ({
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
-  const basePadding = 10;
+  const basePadding = PP(10);
 
   return (
     <View style={styles.wrapper}>
@@ -66,7 +67,7 @@ const BottomNavigator: React.FC<BottomTabBarProps> = ({
             options.tabBarIcon?.({
               focused: isFocused,
               color,
-              size: 24,
+              size: PP(24),
             }) ?? null;
 
           return (
@@ -75,7 +76,6 @@ const BottomNavigator: React.FC<BottomTabBarProps> = ({
               accessibilityRole="button"
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
-              testID={options.tabBarTestID}
               onPress={onPress}
               onLongPress={onLongPress}
               style={styles.tabItem}

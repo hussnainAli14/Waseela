@@ -203,6 +203,10 @@ export const styles = StyleSheet.create({
     color: colors.primary[500],
     fontFamily: 'Outfit-Medium',
   },
+  datePickerWrapper: {
+    backgroundColor: colors.common.white,
+    overflow: 'hidden',
+  },
 });
 
 

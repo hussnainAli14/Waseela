@@ -25,6 +25,7 @@ export const styles = StyleSheet.create({
   },
   searchBlock: {
     gap: 12,
+    zIndex: 1000, // Ensure dropdown container has proper z-index
   },
   searchBar: {
     backgroundColor: colors.common.white,
@@ -50,6 +51,7 @@ export const styles = StyleSheet.create({
   },
   filterBlock: {
     gap: 8,
+    zIndex: 1000, // Ensure dropdown container has proper z-index
   },
   filterLabel: {
     color: colors.text.primary,

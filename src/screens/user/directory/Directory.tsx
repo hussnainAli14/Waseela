@@ -13,6 +13,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchBusinesses, resetBusinesses } from '@/store/slices/businessesSlice';
 import { getListingImage } from '@/utils/placeholders';
 import { useBusinessSubscription } from '@/hooks/useBusinessSubscription';
+import { PP } from '@/utils/responsive';
 
 // Categories managed from Redux
 
@@ -212,7 +213,13 @@ const Directory = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.fixedHeader}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: PP(12),
+          }}>
           <Text variant="xl-bold" style={[styles.headerTitle, { marginBottom: 0 }]}>
             Business Directory
           </Text>
@@ -221,14 +228,16 @@ const Directory = () => {
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: colors.secondary[50],
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              borderRadius: 20,
+              paddingVertical: PP(6),
+              paddingHorizontal: PP(12),
+              borderRadius: PP(20),
             }}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('SubmitListing', { initialType: 'business' })}>
-            <Ionicons name="add" size={18} color={colors.secondary[700]} />
-            <Text variant="sm-semibold" style={{ color: colors.secondary[700], marginLeft: 4 }}>
+            <Ionicons name="add" size={PP(18)} color={colors.secondary[700]} />
+            <Text
+              variant="sm-semibold"
+              style={{ color: colors.secondary[700], marginLeft: PP(4) }}>
               Add Listing
             </Text>
           </TouchableOpacity>
@@ -290,19 +299,27 @@ const Directory = () => {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             isLoading ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
+              <View style={{ padding: PP(20), alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={colors.primary[500]} />
               </View>
             ) : null
           }
           ListEmptyComponent={
             !isLoading ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
-                <Ionicons name="business-outline" size={48} color={colors.text.secondary} />
-                <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+              <View style={{ padding: PP(20), alignItems: 'center' }}>
+                <Ionicons
+                  name="business-outline"
+                  size={PP(48)}
+                  color={colors.text.secondary}
+                />
+                <Text
+                  variant="md-semibold"
+                  style={{ marginTop: PP(10), color: colors.text.primary }}>
                   No businesses found
                 </Text>
-                <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+                <Text
+                  variant="sm-normal"
+                  style={{ marginTop: PP(5), color: colors.text.secondary }}>
                   Try adjusting your filters
                 </Text>
               </View>

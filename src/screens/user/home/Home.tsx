@@ -11,6 +11,7 @@ import { NavigationProp } from '@react-navigation/native';
 import { useAppDispatch } from '@/store/hooks';
 import { fetchFeaturedBusinesses } from '@/store/slices/businessesSlice';
 import { fetchFeaturedServices } from '@/store/slices/servicesSlice';
+import { PP } from '@/utils/responsive';
 
 const exploreItems = [
   {
@@ -106,7 +107,7 @@ const Home = () => {
               <Card
                 style={[styles.exploreCard, { borderColor: colors.border.light }]}
                 backgroundColor={colors.background.light}
-                padding={16}
+                padding={PP(16)}
                 contentStyle={styles.exploreContent}
                 onPress={() => handleExplorePress(item.key)}>
                 <View
@@ -125,7 +126,7 @@ const Home = () => {
           <Card
             style={[styles.networkCard, { borderColor: colors.border.light }]}
             backgroundColor={colors.background.light}
-            padding={18}
+                padding={PP(18)}
             onPress={() => navigation.navigate('ProfessionalNetwork')}>
             <View style={styles.networkContent}>
               <View
@@ -138,7 +139,7 @@ const Home = () => {
                 ]}>
                 <Ionicons
                   name="people-outline"
-                  size={24}
+                  size={PP(24)}
                   color={colors.common.white}
                 />
               </View>

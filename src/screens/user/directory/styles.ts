@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '@/theme';
+import { PP } from '@/utils/responsive';
 
 export const styles = StyleSheet.create({
   container: {
@@ -8,12 +9,12 @@ export const styles = StyleSheet.create({
   },
   fixedHeader: {
     backgroundColor: colors.secondary[500],
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    gap: 14,
+    paddingHorizontal: PP(16),
+    paddingTop: PP(24),
+    paddingBottom: PP(16),
+    borderBottomLeftRadius: PP(20),
+    borderBottomRightRadius: PP(20),
+    gap: PP(14),
     zIndex: 3,
   },
   headerTitle: {
@@ -21,65 +22,66 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   searchBlock: {
-    gap: 12,
+    gap: PP(12),
+    zIndex: 1000, // Ensure dropdown container has proper z-index
   },
   citySelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.common.white,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: PP(14),
+    paddingHorizontal: PP(14),
+    paddingVertical: PP(12),
   },
   citySelectorContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: PP(8),
   },
   citySelectorText: {
     color: colors.text.primary,
   },
   categoryBar: {
     backgroundColor: colors.background.lightSecondary,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingHorizontal: PP(16),
+    paddingTop: PP(12),
+    paddingBottom: PP(16),
     zIndex: 2,
   },
   categoryList: {
-    gap: 12,
-    paddingRight: 8,
-    paddingBottom: 8,
+    gap: PP(12),
+    paddingRight: PP(8),
+    paddingBottom: PP(8),
   },
   categoryCard: {
-    width: 100,
+    width: PP(100),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background.light,
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-    gap: 10,
-    borderWidth: 1,
+    borderRadius: PP(18),
+    paddingVertical: PP(4),
+    paddingHorizontal: PP(10),
+    gap: PP(10),
+    borderWidth: PP(1),
     borderColor: colors.border.light,
     shadowColor: colors.common.black,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: PP(2) },
     shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowRadius: PP(6),
     elevation: 2,
-  },
-  categoryIconWrapper: {
-    width: 24,
-    height: 24,
-    borderRadius: 16,
-    backgroundColor: colors.background.lightSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   categoryCardActive: {
     backgroundColor: colors.secondary[50],
     borderColor: colors.secondary[500],
+  },
+  categoryIconWrapper: {
+    width: PP(48),
+    height: PP(48),
+    borderRadius: PP(16),
+    backgroundColor: colors.background.lightSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryIconWrapperActive: {
     backgroundColor: colors.secondary[50],
@@ -93,11 +95,11 @@ export const styles = StyleSheet.create({
   },
   listArea: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingHorizontal: PP(16),
+    paddingTop: PP(8),
   },
   sectionHeader: {
-    marginBottom: 12,
+    marginBottom: PP(12),
   },
   sectionTitle: {
     color: colors.text.primary,
@@ -107,10 +109,10 @@ export const styles = StyleSheet.create({
     width: '100%',
   },
   separator: {
-    height: 12,
+    height: PP(12),
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: PP(24),
   },
 });
 

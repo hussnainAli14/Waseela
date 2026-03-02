@@ -19,6 +19,7 @@ import { fetchUserProducts, deleteProduct } from '@/store/slices/productsSlice';
 import { fetchUserRooms, deleteRoom } from '@/store/slices/roomsSlice';
 import { fetchUserProfessional, fetchUserProfessionals, deleteProfessional } from '@/store/slices/professionalsSlice';
 import { firebaseFirestore } from '@/config/firebase';
+import firestore from '@react-native-firebase/firestore';
 import type { Product, Room } from '@/types/firestore';
 import { fetchSavedListings } from '@/store/slices/savedListingsSlice';
 import { fetchFullSavedListings, formatSavedDate, type FullSavedListing } from '@/utils/savedListingsHelper';
@@ -800,6 +801,72 @@ const Profile = () => {
     );
   }, [dispatch, user?.uid]);
 
+  const handleDeleteAccount = useCallback(async () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action will request account deletion and cannot be undone. All your data will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user?.uid) {
+              Alert.alert('Error', 'User information not available.');
+              return;
+            }
+
+            try {
+              // Collect user details
+              const userDetails = {
+                uid: user.uid,
+                email: user.email || '',
+                displayName: user.displayName || '',
+                phoneNumber: user.phoneNumber || '',
+                photoURL: user.photoURL || '',
+                location: userProfile.location || '',
+                phone: userProfile.phone || '',
+                createdAt: user.metadata?.creationTime || '',
+                lastSignInTime: user.metadata?.lastSignInTime || '',
+                // Additional profile data
+                businessesCount: userBusinesses.length,
+                servicesCount: userServices.length,
+                productsCount: userProducts.length,
+                roomsCount: userRooms.length,
+                professionalsCount: professionalProfiles.length,
+              };
+
+              // Store deletion request in Firestore
+              await firebaseFirestore.collection('account_deletions').add({
+                ...userDetails,
+                status: 'pending',
+                requestedAt: firestore.FieldValue.serverTimestamp(),
+                timestamp: Date.now(),
+              });
+
+              Alert.alert(
+                'Deletion Request Submitted',
+                'Your account deletion request has been submitted and is pending review. You will be logged out shortly.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Sign out the user after submitting deletion request
+                      handleSignOut();
+                    },
+                  },
+                ]
+              );
+            } catch (error: any) {
+              console.error('Error submitting deletion request:', error);
+              Alert.alert('Error', error.message || 'Failed to submit deletion request. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  }, [user, userProfile, userBusinesses.length, userServices.length, userProducts.length, userRooms.length, professionalProfiles.length, handleSignOut]);
+
   const renderProfessionalProfileItem = ({ item }: { item: any }) => (
     <View style={styles.listingCard}>
       <TouchableOpacity
@@ -1286,6 +1353,21 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.logoutButtonWrapper}>
+          <TouchableOpacity
+            style={[styles.logoutButton, { backgroundColor: colors.status.error + '15', borderWidth: 1, borderColor: colors.status.error }]}
+            activeOpacity={0.9}
+            onPress={handleDeleteAccount}>
+            <Ionicons
+              name="trash-outline"
+              size={18}
+              color={colors.status.error}
+            />
+            <Text variant="md-semibold" style={[styles.logoutText, { color: colors.status.error }]}>
+              Delete Account
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.logoutButtonWrapper}>
           <TouchableOpacity

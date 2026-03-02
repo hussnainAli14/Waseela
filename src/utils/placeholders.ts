@@ -31,6 +31,8 @@ export const getPlaceholderImage = (type: ListingType): any => {
  * @returns First image URL (string) or placeholder source (any)
  */
 export const getListingImage = (images: string[] | undefined, type: ListingType): any => {
+    console.log('🔍 getListingImage: images:', images);
+    console.log('🔍 getListingImage: type:', type);
     if (images && images.length > 0) {
         return images[0];
     }

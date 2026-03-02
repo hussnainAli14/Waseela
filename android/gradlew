@@ -114,6 +114,12 @@ case "$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
+# Add Node.js to PATH for React Native packages (e.g., react-native-gesture-handler)
+# This ensures Gradle can find 'node' when executing build scripts
+if [ -d "/opt/homebrew/bin" ] && ! echo "$PATH" | grep -q "/opt/homebrew/bin"; then
+    export PATH="/opt/homebrew/bin:$PATH"
+fi
+
 CLASSPATH="\\\"\\\""
 
 

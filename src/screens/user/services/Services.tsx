@@ -12,6 +12,7 @@ import { ListingItem } from '@/navigation/types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchServices, resetServices } from '@/store/slices/servicesSlice';
 import { getListingImage } from '@/utils/placeholders';
+import { PP } from '@/utils/responsive';
 
 // Categories managed from Redux
 
@@ -142,7 +143,7 @@ const Services = () => {
         ]}>
         <Ionicons
           name={item.icon as string}
-          size={22}
+          size={PP(22)}
           color={item.name === selectedServiceType ? colors.common.white : colors.text.primary}
         />
       </View>
@@ -204,7 +205,13 @@ const Services = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.fixedHeader}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: PP(12),
+          }}>
           <Text variant="xl-bold" style={[styles.headerTitle, { marginBottom: 0 }]}>
             Service Marketplace
           </Text>
@@ -213,14 +220,16 @@ const Services = () => {
               flexDirection: 'row',
               alignItems: 'center',
               backgroundColor: colors.primary[50],
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              borderRadius: 20,
+              paddingVertical: PP(6),
+              paddingHorizontal: PP(12),
+              borderRadius: PP(20),
             }}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('SubmitListing', { initialType: 'service' })}>
-            <Ionicons name="add" size={18} color={colors.primary[700]} />
-            <Text variant="sm-semibold" style={{ color: colors.primary[700], marginLeft: 4 }}>
+            <Ionicons name="add" size={PP(18)} color={colors.primary[700]} />
+            <Text
+              variant="sm-semibold"
+              style={{ color: colors.primary[700], marginLeft: PP(4) }}>
               Post Service
             </Text>
           </TouchableOpacity>
@@ -289,19 +298,27 @@ const Services = () => {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             isLoading ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
+              <View style={{ padding: PP(20), alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={colors.primary[500]} />
               </View>
             ) : null
           }
           ListEmptyComponent={
             !isLoading ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
-                <Ionicons name="briefcase-outline" size={48} color={colors.text.secondary} />
-                <Text variant="md-semibold" style={{ marginTop: 10, color: colors.text.primary }}>
+              <View style={{ padding: PP(20), alignItems: 'center' }}>
+                <Ionicons
+                  name="briefcase-outline"
+                  size={PP(48)}
+                  color={colors.text.secondary}
+                />
+                <Text
+                  variant="md-semibold"
+                  style={{ marginTop: PP(10), color: colors.text.primary }}>
                   No services found
                 </Text>
-                <Text variant="sm-normal" style={{ marginTop: 5, color: colors.text.secondary }}>
+                <Text
+                  variant="sm-normal"
+                  style={{ marginTop: PP(5), color: colors.text.secondary }}>
                   Try adjusting your filters
                 </Text>
               </View>

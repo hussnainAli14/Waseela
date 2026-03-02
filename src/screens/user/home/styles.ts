@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '@/theme';
+import { PP } from '@/utils/responsive';
 
 export const styles = StyleSheet.create({
   container: {
@@ -13,20 +14,20 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 32,
+    paddingBottom: PP(32),
   },
   separator: {
-    height: 12,
+    height: PP(12),
   },
   listItemContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: PP(20),
   },
   headerContent: {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingBottom: 12,
+    gap: PP(6),
+    paddingBottom: PP(12),
   },
   headerTitle: {
     color: colors.common.white,
@@ -37,16 +38,16 @@ export const styles = StyleSheet.create({
     opacity: 0.9,
   },
   searchWrapper: {
-    marginTop: 12,
+    marginTop: PP(12),
     width: '100%',
   },
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: PP(20),
+    paddingTop: PP(20),
   },
   sectionTitle: {
     color: colors.text.primary,
-    marginBottom: 16,
+    marginBottom: PP(16),
     fontFamily: 'Outfit-Bold',
   },
   exploreGrid: {
@@ -57,26 +58,26 @@ export const styles = StyleSheet.create({
   },
   exploreRow: {
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: PP(14),
   },
   exploreCard: {
     width: '48%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    borderRadius: 18,
-    paddingVertical: 20,
+    gap: PP(12),
+    borderRadius: PP(18),
+    paddingVertical: PP(20),
     marginBottom: 0,
   },
   exploreContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: PP(12),
   },
   exploreIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 18,
+    width: PP(44),
+    height: PP(44),
+    borderRadius: PP(18),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -86,22 +87,22 @@ export const styles = StyleSheet.create({
     fontFamily: 'Outfit-Medium',
   },
   networkCard: {
-    marginTop: 16,
+    marginTop: PP(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
   networkContent: {
     alignItems: 'center',
-    gap: 12,
+    gap: PP(12),
   },
   networkIconWrapper: {
-    width: 54,
-    height: 54,
+    width: PP(54),
+    height: PP(54),
   },
   featuredSection: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 14,
+    paddingHorizontal: PP(20),
+    paddingTop: PP(20),
+    gap: PP(14),
   },
 });
 

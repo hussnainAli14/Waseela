@@ -14,3 +14,7 @@ gem 'bigdecimal'
 gem 'logger'
 gem 'benchmark'
 gem 'mutex_m'
+
+gem "nkf", "~> 0.2.0"
+
+gem "tsort", "~> 0.2.0"

@@ -1,0 +1,39 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Allow users to upload and manage their own profile photos
+    match /users/{userId}/profile/{fileName} {
+      allow read: if true; // Anyone can read profile photos
+      allow write: if isOwner(userId); // Only the owner can write
+      allow delete: if isOwner(userId); // Only the owner can delete
+    }
+    
+    // Allow users to upload and manage listing images
+    // This covers: businesses, services, products, rooms, professionals
+    match /listings/{listingType}/{userId}/{listingId}/{fileName} {
+      allow read: if true; // Anyone can read listing images
+      allow write: if isOwner(userId); // Only the owner can write
+      allow delete: if isOwner(userId); // Only the owner can delete
+    }
+    
+    // Fallback: Deny all other access
+    match /{allPaths=**} {
+      allow read: if true; // Allow reading any file (public read)
+      allow write: if isAuthenticated(); // Allow authenticated users to write
+      allow delete: if isAuthenticated(); // Allow authenticated users to delete
+    }
+  }
+}

@@ -1,12 +1,13 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '@/theme';
+import { PP } from '@/utils/responsive';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.lightSecondary,
-    paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingHorizontal: PP(24),
+    paddingTop: PP(60),
   },
   scrollContent: {
     flexGrow: 1,
@@ -15,74 +16,74 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
+    width: PP(80),
+    height: PP(80),
+    marginBottom: PP(16),
   },
   logoText: {
     fontFamily: 'Outfit-Bold',
-    fontSize: 24,
+    fontSize: PP(24),
     color: colors.secondary[500],
-    letterSpacing: 1,
+    letterSpacing: PP(1),
   },
   welcomeContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: PP(32),
   },
   welcomeTitle: {
     fontFamily: 'Outfit-Bold',
-    fontSize: 28,
+    fontSize: PP(28),
     color: colors.text.primary,
   },
   welcomeSubtitle: {
     fontFamily: 'Outfit-Regular',
-    fontSize: 14,
+    fontSize: PP(14),
     color: colors.text.secondary,
     opacity: 0.7,
   },
   formContainer: {
-    marginBottom: 24,
+    marginBottom: PP(24),
   },
   signInButton: {
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: PP(16),
+    borderRadius: PP(16),
   },
   forgotPasswordContainer: {
     alignItems: 'flex-end',
-    marginTop: 8,
-    marginBottom: 32,
-    paddingVertical: 8,
+    marginTop: PP(8),
+    marginBottom: PP(32),
+    paddingVertical: PP(8),
   },
   forgotPasswordText: {
     fontFamily: 'Outfit-Medium',
-    fontSize: 16,
+    fontSize: PP(16),
     color: colors.secondary[500],
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: PP(24),
   },
   dividerLine: {
     flex: 1,
-    height: 1,
+    height: PP(1),
     backgroundColor: colors.neutral[600],
     opacity: 0.1,
   },
   dividerText: {
     fontFamily: 'Outfit-Regular',
-    fontSize: 14,
+    fontSize: PP(14),
     color: colors.text.secondary,
     opacity: 0.7,
-    marginHorizontal: 16,
+    marginHorizontal: PP(16),
   },
   createAccountButton: {
-    marginBottom: 32,
-    borderRadius: 16,
+    marginBottom: PP(32),
+    borderRadius: PP(16),
 
   },
   icon: {
-    fontSize: 20,
+    fontSize: PP(20),
     color: colors.text.secondary,
     opacity: 0.5,
   },

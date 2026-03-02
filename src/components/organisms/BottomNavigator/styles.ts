@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { colors } from '@/theme';
+import { PP } from '@/utils/responsive';
 
 export const styles = StyleSheet.create({
   wrapper: {
@@ -10,8 +11,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     backgroundColor: colors.background.light,
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    paddingVertical: PP(10),
+    paddingHorizontal: PP(6),
   },
   tabItem: {
     flex: 1,
@@ -24,8 +25,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingHorizontal: PP(18),
+    paddingVertical: PP(10),
   },
   tabInnerActive: {
     backgroundColor: colors.secondary[50],

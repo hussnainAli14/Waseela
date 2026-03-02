@@ -20,3 +20,27 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Set REACT_NATIVE_NODE_MODULES_DIR early to prevent react-native-gesture-handler from calling node
+// This must be set before any subprojects are evaluated
+project.ext.REACT_NATIVE_NODE_MODULES_DIR = file("${project.projectDir}/../node_modules/react-native").absolutePath
+
+// Configure Node.js path for React Native packages
+def nodeExecutable = project.findProperty('NODE_BINARY') ?: '/opt/homebrew/bin/node'
+
+// Verify node exists
+def nodeFile = new File(nodeExecutable)
+if (!nodeFile.exists()) {
+    throw new GradleException("Node.js not found at ${nodeExecutable}. Please install Node.js or set NODE_BINARY in gradle.properties")
+}
+
+// Set node executable as project property for all subprojects
+project.ext.nodeExecutable = nodeExecutable
+project.ext.NODE_BINARY = nodeExecutable
+
+// Configure all subprojects to use the node executable and REACT_NATIVE_NODE_MODULES_DIR
+subprojects {
+    ext.NODE_BINARY = rootProject.ext.NODE_BINARY
+    ext.nodeExecutable = rootProject.ext.nodeExecutable
+    ext.REACT_NATIVE_NODE_MODULES_DIR = rootProject.ext.REACT_NATIVE_NODE_MODULES_DIR
+}

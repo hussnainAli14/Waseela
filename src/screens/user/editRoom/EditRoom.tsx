@@ -514,13 +514,18 @@ const EditRoom: React.FC = () => {
                             </Text>
                           </TouchableOpacity>
                         </View>
-                        <DateTimePicker
-                          value={availableFrom || new Date()}
-                          mode="date"
-                          display="spinner"
-                          onChange={handleDateChange}
-                          minimumDate={new Date()}
-                        />
+                        <View style={{ backgroundColor: colors.common.white }}>
+                          <DateTimePicker
+                            value={availableFrom || new Date()}
+                            mode="date"
+                            display="default"
+                            onChange={handleDateChange}
+                            minimumDate={new Date()}
+                            textColor={colors.text.primary}
+                            themeVariant="light"
+                            accentColor={colors.primary[500]}
+                          />
+                        </View>
                       </View>
                     </View>
                   </Modal>

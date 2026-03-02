@@ -152,7 +152,35 @@ const EditBusinessService: React.FC = () => {
     }
 
     try {
-      const logoUri = logo?.uri ? [logo.uri] : undefined;
+      // Upload new logo/image first if selected (similar to EditRoom)
+      let finalImageUrls: string[] | undefined = undefined;
+      
+      if (logo?.uri) {
+        // Check if it's already a Firebase Storage URL or a local file URI
+        const isLocalFile = logo.uri.startsWith('file://') || logo.uri.startsWith('/');
+        const isFirebaseUrl = logo.uri.startsWith('https://firebasestorage.googleapis.com');
+        
+        if (isLocalFile) {
+          // Upload new image to Firebase Storage
+          const { uploadListingImages } = await import('@/services/storage/imageUpload');
+          const uploadedUrls = await uploadListingImages(
+            [logo.uri],
+            user.uid,
+            item.id,
+            listingType === 'business' ? 'business' : 'service'
+          );
+          finalImageUrls = uploadedUrls;
+        } else if (isFirebaseUrl) {
+          // Already a Firebase URL, use it directly
+          finalImageUrls = [logo.uri];
+        } else {
+          // Use existing images if logo is not set or invalid
+          finalImageUrls = existingImages.length > 0 ? existingImages : undefined;
+        }
+      } else if (existingImages.length > 0) {
+        // No new logo selected, keep existing images
+        finalImageUrls = existingImages;
+      }
 
       if (listingType === 'business') {
         const formData: Partial<BusinessFormData> = {
@@ -176,7 +204,7 @@ const EditBusinessService: React.FC = () => {
           updateBusiness({
             businessId: item.id,
             data: formData,
-            images: logoUri,
+            images: finalImageUrls,
           })
         ).unwrap();
 
@@ -207,7 +235,7 @@ const EditBusinessService: React.FC = () => {
           updateService({
             serviceId: item.id,
             data: formData,
-            images: logoUri,
+            images: finalImageUrls,
           })
         ).unwrap();
 
